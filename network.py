@@ -38,8 +38,6 @@ def get_embedding_loss(list_embeddings):
     pass
 
 
-
-
 class UNet(nn.Module):
 
     def __init__(self):

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.matmul as mm
 
 import config
 
@@ -23,6 +24,20 @@ def get_up_layer(num_input, num_output):
             nn.ConvTranspose2d(num_input, num_output, kernel_size=2, stride=2),
             nn.BatchNorm2d(num_output, momentum=0.5),
         )
+
+
+def normalize(input_matrix):
+    return F.normalize(input_matrix, p=2, dim=2)
+
+
+def cos_similarity(vec1, vec2):
+    return 1/2 * (1 + mm(vec1.t(), vec2) / (torch.norm(vec1) * torch.norm(vec2)))
+
+
+def get_embedding_loss(list_embeddings):
+    pass
+
+
 
 
 class UNet(nn.Module):
@@ -155,10 +170,61 @@ class UNet(nn.Module):
         return x
 
 
-model = UNet()
-print(model)
+class MS(nn.Module):
+
+    def __init__(self):
+        super(MS, self).__init__()
+
+        self.embedding_dim = config.mean_shift['embedding_dim']
+        # setting kernel bandwidth
+        if config.mean_shift['kernel_bandwidth'] is not None:
+            self.kernel_bandwidth = config.mean_shift['kernel_bandwidth']
+        else:
+            self.kernel_bandwidth = 1 / (1 - config.embedding_loss['margin'])/3
+        self.step_size = config.mean_shift['step_size']
+        self.nb_iterations = config.mean_shift['nb_iterations']
+        self.embeddings_list = []
+        self.nb_pixels = None  # to be defined when foward is called
+
+    # x_in flattened image in D x N , N number of Pixels
+
+    def forward(self, x_in):
+        """
+        :param x_in: flattened image in D x N , N number of Pixels
+        :return: embeddings x_in mean shifted
+        """
+        x = x_in
+        self.nb_pixels = x_in.size()[1]
+        for t in range(self.nb_iterations):
+            # kernel_mat N x N , N number of pixels
+            kernel_mat = torch.exp(mm(self.kernel_bandwidth, mm(x.t(), x)))
+            # diag_mat N x N
+            diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(1, self.nb_pixels)), diagonal=0)
+            x = mm(x,
+                   mm(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))) +
+                   mm((1 - self.step_size), torch.eye(self.nb_pixels, self.nb_pixels)))
+            self.embeddings_list.append(x)
+        return x
+
+
+class UNet_MS(nn.Module):
+    def __init__(self):
+        super(UNet_MS, self).__init__()
+
+        self.UNet = UNet()
+        self.MS = MS()
+
+    def forward(self, x):
+        x = self.UNet(x)
+        x = F.normalize(x, p=2, dim=1)
+        x = self.MS(x)
+
+
+
+model_UNet = UNet()
+print(model_UNet)
 
 input = torch.randn(1, 1, 128, 128)
-out = model(input)
+out = model_UNet(input)
 print(out)
 print(out.size())

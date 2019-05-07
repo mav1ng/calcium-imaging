@@ -23,7 +23,7 @@ import config
 
 def tomask(coords, dims):
     mask = zeros(dims)
-    mask[list(zip(*coords))] = 1
+    mask[list(zip(*coords))] = 1.
     return mask
 
 
@@ -53,8 +53,8 @@ class NeurofinderDataset(Dataset):
 
         if self.different_labels:
             for s in self.masks:
-                self.masks[self.counter, :, :] = np.where(s == 1, 1 + self.counter, 0)
-                self.counter = self.counter + 1
+                self.masks[self.counter, :, :] = np.where(s == 1., 1. + self.counter, 0.)
+                self.counter = self.counter + 1.
 
     def __len__(self):
         return self.len
@@ -64,7 +64,6 @@ class NeurofinderDataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
         return sample
-
 
 
 def load_data(neurofinder_path):
@@ -82,7 +81,7 @@ def load_data(neurofinder_path):
 
     def tomask(coords):
         mask = zeros(dims)
-        mask[list(zip(*coords))] = 1
+        mask[list(zip(*coords))] = 1.
         return mask
 
     masks = array([tomask(s['coordinates']) for s in regions])
@@ -90,6 +89,11 @@ def load_data(neurofinder_path):
 
     if config.data['different_labels']:
         for s in masks:
-            masks[counter, :, :] = np.where(s == 1, 1 + counter, 0)
-            counter = counter + 1
+            masks[counter, :, :] = np.where(s == 1., 1. + counter, 0.)
+            counter = counter + 1.
 
+
+neurofinder_dataset = NeurofinderDataset('data/neurofinder.00.00')
+sample = neurofinder_dataset[0]
+print(sample)
+plt.imshow(sample)

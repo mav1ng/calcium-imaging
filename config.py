@@ -18,3 +18,7 @@ embedding_loss = dict(
 data = dict(
     different_labels=True,
 )
+
+corr = dict(
+    corr_form='big_star'
+)

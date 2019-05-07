@@ -40,10 +40,12 @@ with open('data/neurofinder.00.00/regions/regions.json') as f:
 for s in regions:
     print(s['coordinates'])
 
+
 def tomask(coords):
     mask = zeros(dims)
     mask[list(zip(*coords))] = 1
     return mask
+
 
 masks = array([tomask(s['coordinates']) for s in regions])
 counter = 0

@@ -14,3 +14,7 @@ mean_shift = dict(
 embedding_loss = dict(
     margin=0.5,
 )
+
+data = dict(
+    different_labels=True,
+)

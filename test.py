@@ -9,6 +9,8 @@ import numpy as np
 from scipy.misc import imread
 from glob import glob
 
+import config
+
 
 a = torch.randn(1, 1, 32, 32)
 b = torch.randn(32, 32)
@@ -47,6 +49,8 @@ masks = array([tomask(s['coordinates']) for s in regions])
 counter = 0
 print(masks.shape)
 for s in masks:
+    if not config.data['different_labels']:
+        counter = 0
     masks[counter, :, :] = np.where(s == 1, 1 + counter, s)
     counter = counter + 1
     print(counter)

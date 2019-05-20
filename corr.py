@@ -77,7 +77,6 @@ def get_sliced_corr(input_video, corr_form, slice_size=100):
     number_iter = int(np.floor(input_video.size()[0] / slice_size))
 
     rolled_input_video = np.roll(input_video, startidx, axis=0)
-    print(str(rolled_input_video.shape) + 'herere 1')
 
     for i in range(number_iter):
         if i == 0:

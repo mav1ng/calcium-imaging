@@ -11,8 +11,12 @@ from glob import glob
 
 import config
 
-for i in range(5):
-    print(i)
+
+x = torch.tensor([5.5, 3])
+print(x)
+array = np.random.rand(5, 3)
+y = torch.as_tensor(array)
+print(y)
 
 # a = torch.randn(1, 1, 32, 32)
 # b = torch.randn(32, 32)

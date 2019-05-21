@@ -17,6 +17,7 @@ from numpy import array, zeros
 import numpy as np
 from scipy.misc import imread
 from glob import glob
+import torch.tensor
 
 import config
 
@@ -54,7 +55,7 @@ class NeurofinderDataset(Dataset):
         if self.different_labels:
             for s in self.masks:
                 self.masks[self.counter, :, :] = np.where(s == 1., 1. + self.counter, 0.)
-                self.counter = self.counter + 1.
+                self.counter = self.counter + 1
 
     def __len__(self):
         return self.len
@@ -93,7 +94,21 @@ def load_data(neurofinder_path):
             counter = counter + 1.
 
 
+def get_corr_data(neurofinder_dataset, corrform):
+    length = neurofinder_dataset.__len__()
+    data_tensor = torch.tensor.as_tensor()(neurofinder_dataset[0])
+    for i in range(length):
+        pass
+    return
+
+def get_sliced_corr_data(neurofinder_dataset, corrform, slice_size):
+    return
+
+
 neurofinder_dataset = NeurofinderDataset('data/neurofinder.00.00')
-sample = neurofinder_dataset[0]
+sample = neurofinder_dataset[0]['image']
+data_tensor = torch.Tensor()
+x = torch.Tensor
+print(x)
 print(sample)
 plt.imshow(sample)

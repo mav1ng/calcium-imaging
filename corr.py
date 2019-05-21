@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from scipy.stats.stats import pearsonr
-
+import torch.nn.functional as F
 
 def get_big_star_mask():
     """
@@ -95,9 +95,13 @@ def get_sliced_corr(input_video, corr_form, slice_size=100):
 
 
 a = torch.randn((30, 50, 50))
-print(a.size())
-b = get_sliced_corr(a, corr_form='small_star', slice_size=5)
+a = F.normalize(a, p=2, dim=0)
+b = get_corr(a, corr_form='small_star')
+print(b)
 print(b.shape)
+print(np.argwhere(b > 1).size)
+print(np.argwhere(b < -1).size)
+print(np.argwhere(b < 1).size)
 
 
 

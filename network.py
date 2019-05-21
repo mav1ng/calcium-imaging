@@ -214,9 +214,10 @@ class UNet_MS(nn.Module):
 
     def forward(self, x):
         x = self.UNet(x)
+        """Does the normalization really work that way?"""
         x = F.normalize(x, p=2, dim=1)
         x = self.MS(x)
-
+        return x
 
 
 model_UNet = UNet()

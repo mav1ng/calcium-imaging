@@ -96,7 +96,7 @@ def load_data(neurofinder_path):
 
 def get_corr_data(neurofinder_dataset, corrform):
     length = neurofinder_dataset.__len__()
-    data_tensor = torch.tensor.as_tensor()(neurofinder_dataset[0])
+    data_tensor = torch.tensor(neurofinder_dataset[0])
     for i in range(length):
         pass
     return

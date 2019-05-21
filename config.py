@@ -20,5 +20,5 @@ data = dict(
 )
 
 corr = dict(
-    corr_form='big_star'
+    corr_form='small_star'
 )

@@ -65,6 +65,7 @@ def get_corr(input_video, corr_form):
     correlation_pic = torch.zeros((corr_mask.size()[0], pixel_nb, pixel_nb))
 
     for x in range(input_video.size()[1] - 1):
+        print(x)
         for y in range(input_video.size()[2] - 1):
             correlation_pic[:, x, y] = calc_corr(input_video, input_video[:, x, y], corr_mask, (x, y))
 

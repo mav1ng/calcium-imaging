@@ -1,4 +1,5 @@
 import torch
+import os
 import torch.nn as nn
 import torch.nn.functional as F
 import h5py
@@ -11,6 +12,7 @@ from glob import glob
 
 import config
 
+print(torch.cuda.is_available())
 
 x = torch.tensor([5.5, 3])
 print(x)

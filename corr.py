@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.stats.stats import pearsonr
 import torch.nn.functional as F
 
+
 def get_big_star_mask():
     """
     :return: offsets of correlation pixels
@@ -94,10 +95,6 @@ def get_sliced_corr(input_video, corr_form, slice_size=100):
     return torch.max(corr_array, dim=3)[0]
 
 
-a = torch.randn((30, 50, 50))
-a = F.normalize(a, p=2, dim=0)
-b = get_corr(a, corr_form='small_star')
-b = get_sliced_corr(a, corr_form='small_star', slice_size=10)
 
 
 

@@ -17,6 +17,7 @@ embedding_loss = dict(
 
 data = dict(
     different_labels=True,
+    use_compression=True,
 )
 
 corr = dict(

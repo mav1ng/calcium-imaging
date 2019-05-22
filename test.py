@@ -10,7 +10,11 @@ import numpy as np
 from scipy.misc import imread
 from glob import glob
 
-import config
+import config as c
+import data
+
+data, labels = data.load_numpy_from_h5py(file_name='corr_nf_0000_full', file_path='data/corr/')
+print(data.shape, labels.shape)
 
 
 # a = torch.randn(1, 1, 32, 32)

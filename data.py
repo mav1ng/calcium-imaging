@@ -123,13 +123,14 @@ def create_corr_data(neurofinder_dataset, corr_form='small_star', slicing=c.corr
     """
 
     length = neurofinder_dataset.__len__()
-    length = 1        # just for testing purposes to speed up testing
+    # length = 1        # just for testing purposes to speed up testing
 
     assert (not slicing) or slice_size < length, 'Slicing Size must be smaller than the length of the Video'
 
     data_tensor = torch.from_numpy(neurofinder_dataset[0]['image'].astype(float)).unsqueeze(dim=0)
     target_tensor = torch.from_numpy(neurofinder_dataset[0]['label'].astype(float)).unsqueeze(dim=0)
     for i in range(1, length):
+        print(i) # helps for seeing it work
         data_tensor = torch.cat((data_tensor, torch.from_numpy(neurofinder_dataset[i]['image'].astype(float)).unsqueeze(dim=0)), dim=0)
 
     # if not using slicing correlations:
@@ -145,13 +146,13 @@ def create_corr_data(neurofinder_dataset, corr_form='small_star', slicing=c.corr
 
 def save_numpy_to_h5py(data_array, label_array, file_name, file_path, use_compression=c.data['use_compression']):
     """
-    Method to save numpy arrays to disk either compressed or not
+    Method to save correlation data and label numpy arrays to disk either compressed or not
     :param use_compression: whether to use compression or not
     :param label_array: array of labels for data
     :param data_array: Numpy Array of data to be saved
     :param file_name: Name of The File that should be created
     :param file_path: Path to the File that should be created
-    :return: Tensor:
+    :return:
     """
     if not use_compression:
         # Dump data to file
@@ -176,7 +177,7 @@ def save_numpy_to_h5py(data_array, label_array, file_name, file_path, use_compre
 
 def load_numpy_from_h5py(file_name, file_path, use_compression=c.data['use_compression']):
     """
-    Method that loads numpy array from h5py file
+    Method that loads correlation data and labels numpy arrays from h5py file
     :param use_compression: whether data to be loaded is compressed or not
     :param file_name:
     :param file_path: if /.../dir/

@@ -11,4 +11,4 @@ print(corr_nf_0000['correlations'].size())
 print(corr_nf_0000['labels'].size())
 
 data.save_numpy_to_h5py(data_array=corr_nf_0000['correlations'].numpy(), label_array=corr_nf_0000['labels'].numpy(),
-                        file_name='corr_nf_0000_full', file_path='data/corr/')
+                        file_name='corr_nf_0000_full_correct', file_path='data/corr/')

@@ -10,4 +10,5 @@ corr_nf_0000 = data.create_corr_data(neurofinder_dataset=nf_0000)
 print(corr_nf_0000['correlations'].size())
 print(corr_nf_0000['labels'].size())
 
-data.save_numpy_to_h5py(corr_nf_0000.numpy(), 'corr_nf_0000_full', '/data/corr/')
+data.save_numpy_to_h5py(data_array=corr_nf_0000['correlations'].numpy(), label_array=corr_nf_0000['labels'].numpy(),
+                        file_name='corr_nf_0000_full', file_path='data/corr/')

@@ -220,10 +220,10 @@ class UNet_MS(nn.Module):
         return x
 
 
-model_UNet = UNet()
-print(model_UNet)
-
-input = torch.randn(1, 1, 128, 128)
-out = model_UNet(input)
-print(out)
-print(out.size())
+# model_UNet = UNet()
+# print(model_UNet)
+#
+# input = torch.randn(1, 1, 128, 128)
+# out = model_UNet(input)
+# print(out)
+# print(out.size())

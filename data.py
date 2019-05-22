@@ -28,6 +28,21 @@ def tomask(coords, dims):
     mask[list(zip(*coords))] = 1.
     return mask
 
+class CorrelationDataset(Dataset):
+    """Correlation Dataset"""
+
+    def __init__(self, folder_path, transform=None):
+        """
+        :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
+        be used for training/testing
+        :param transform: whether a transform should be used on a sample that is getting drawn
+        """
+
+        self.folder_path = folder_path
+        self.transform = transform
+        '''
+        WORKING HERE AT THE MOMENT
+        '''
 
 class NeurofinderDataset(Dataset):
     """Neurofinder Dataset"""
@@ -35,7 +50,7 @@ class NeurofinderDataset(Dataset):
     def __init__(self, neurofinder_path, transform=None):
         """
         :param neurofinder_path: Path to the neurofinder dataset
-        :param transform:
+        :param transform: whether a transform should be used on a sample that is getting drawn
         """
 
         self.neurofinder_path = neurofinder_path
@@ -108,7 +123,7 @@ def create_corr_data(neurofinder_dataset, corr_form='small_star', slicing=c.corr
     """
 
     length = neurofinder_dataset.__len__()
-    # length = 10        # just for testing purposes to speed up testing
+    length = 1        # just for testing purposes to speed up testing
 
     assert (not slicing) or slice_size < length, 'Slicing Size must be smaller than the length of the Video'
 
@@ -128,36 +143,51 @@ def create_corr_data(neurofinder_dataset, corr_form='small_star', slicing=c.corr
     return corr_sample
 
 
-def save_numpy_to_h5py(array_object, file_name, file_path, use_compression=c.data['use_compression']):
+def save_numpy_to_h5py(data_array, label_array, file_name, file_path, use_compression=c.data['use_compression']):
     """
     Method to save numpy arrays to disk either compressed or not
-    :param array_object: Numpy Array to be saved
+    :param use_compression: whether to use compression or not
+    :param label_array: array of labels for data
+    :param data_array: Numpy Array of data to be saved
     :param file_name: Name of The File that should be created
     :param file_path: Path to the File that should be created
-    :param compression: Boolean Whether to use compression or not
     :return: Tensor:
     """
     if not use_compression:
-        # Dump to file
-        hkl.dump(array_object, str(file_path) + str(file_name) + '.hkl', mode='w')
+        # Dump data to file
+        hkl.dump(data_array, str(file_path) + str(file_name) + '.hkl', mode='w')
         print('File ' + str(file_path) + str(file_name) + '.hkl' +
               ' saved uncompressed: %i bytes' % os.path.getsize(str(file_path) + str(file_name) + '.hkl'))
+        hkl.dump(label_array, str(file_path) + str(file_name) + '_labels.hkl', mode='w')
+        # Dump Labels to file
+        print('File ' + str(file_path) + str(file_name) + '_labels.hkl' +
+              ' saved uncompressed: %i bytes' % os.path.getsize(str(file_path) + str(file_name) + '_labels.hkl'))
     else:
-        # Dump data, with compression
-        hkl.dump(array_object, str(file_path) + str(file_name) + '_gzip.hkl', mode='w', compression='gzip')
+        # Dump data, with compression to file
+        hkl.dump(data_array, str(file_path) + str(file_name) + '_gzip.hkl', mode='w', compression='gzip')
         print('File ' + str(file_path) + str(file_name) + '_gzip.hkl' +
               ' saved compressed:   %i bytes' % os.path.getsize(str(file_path) + str(file_name) + '_gzip.hkl'))
+        # Dump labels, with compression to file
+        hkl.dump(label_array, str(file_path) + str(file_name) + '_labels_gzip.hkl', mode='w', compression='gzip')
+        print('File ' + str(file_path) + str(file_name) + '_labels_gzip.hkl' +
+              ' saved compressed:   %i bytes' % os.path.getsize(str(file_path) + str(file_name) + '_labels_gzip.hkl'))
     pass
 
 
-def load_numpy_from_h5py(file_name, file_path):
+def load_numpy_from_h5py(file_name, file_path, use_compression=c.data['use_compression']):
     """
     Method that loads numpy array from h5py file
-    :param file_name: is 'name_ifcompressed.hkl'
+    :param use_compression: whether data to be loaded is compressed or not
+    :param file_name:
     :param file_path: if /.../dir/
-    :return: numpy array loaded from file
+    :return: numpy array data and numpy array labels loaded from file
     """
-    return hkl.load(str(file_path) + str(file_name))
+    if use_compression:
+        return hkl.load(str(file_path) + str(file_name) + '_gzip.hkl'), \
+               hkl.load(str(file_path) + str(file_name) + '_labels_gzip.hkl')
+    else:
+        return hkl.load(str(file_path) + str(file_name) + '.hkl'), \
+               hkl.load(str(file_path) + str(file_name) + '_labels.hkl')
 
 
 # neurofinder_dataset = NeurofinderDataset('data/neurofinder.00.00')

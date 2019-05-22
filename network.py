@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.matmul as mm
+from torch import matmul as mm
 
 import config
 
@@ -182,7 +182,7 @@ class MS(nn.Module):
         self.step_size = config.mean_shift['step_size']
         self.nb_iterations = config.mean_shift['nb_iterations']
         self.embeddings_list = []
-        self.nb_pixels = None  # to be defined when foward is called
+        self.nb_pixels = None  # to be defined when forward is called
 
     # x_in flattened image in D x N , N number of Pixels
 

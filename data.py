@@ -97,14 +97,14 @@ def load_data(neurofinder_path):
             counter = counter + 1.
 
 
-def create_corr_data(neurofinder_dataset, corr_form='small_star', slicing=False, slice_size=1):
+def create_corr_data(neurofinder_dataset, corr_form='small_star', slicing=c.corr['use_slicing'], slice_size=1):
     """
     Method that creates the corresponding correlation data from the neurofinder videos and returns them
     :param neurofinder_dataset:
     :param corr_form:
     :param slicing:
     :param slice_size:
-    :return: Number of Correlations (Depending on Corr_Form) x NbPixelsX x NbPixelsY
+    :return: Tensor: Number of Correlations (Depending on Corr_Form) x NbPixelsX x NbPixelsY
     """
 
     length = neurofinder_dataset.__len__()
@@ -135,7 +135,7 @@ def save_numpy_to_h5py(array_object, file_name, file_path, use_compression=c.dat
     :param file_name: Name of The File that should be created
     :param file_path: Path to the File that should be created
     :param compression: Boolean Whether to use compression or not
-    :return:
+    :return: Tensor:
     """
     if not use_compression:
         # Dump to file

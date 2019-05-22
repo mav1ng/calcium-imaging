@@ -3,6 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 from scipy.stats.stats import pearsonr
 import torch.nn.functional as F
+import config as c
 
 
 def get_big_star_mask():
@@ -45,8 +46,10 @@ def calc_corr(input_video, input_line, corr_mask, coordinates):
     return correlations
 
 
-def get_corr(input_video, corr_form):
+def get_corr(input_video, corr_form=c.corr['corr_form']):
     """
+    Method that computes the correlations for a series of images
+    :param corr_form: form of the correlation mask that is used for calculating the correlations
     :param input_video: T * N * N,  N number of pixels on one side, T number of Frames
     needs to be normalized
     :return: C * N * N, C number of correlations
@@ -73,7 +76,14 @@ def get_corr(input_video, corr_form):
     return correlation_pic
 
 
-def get_sliced_corr(input_video, corr_form, slice_size=100):
+def get_sliced_corr(input_video, corr_form=c.corr['corr_form'], slice_size=100):
+    """
+    Method that computes the correlations for a series of images with the slicing process
+    :param input_video: T * N * N,  N number of pixels on one side, T number of Frames
+    :param corr_form: form of the correlation mask that is used for calculating the correlations
+    :param slice_size: number of frames in one slice
+    :return: C * N * N, C number of correlations
+    """
     corr_array = torch.tensor([])
     startidx = np.random.randint(0, input_video.size()[0] - 1)
     number_iter = int(np.floor(input_video.size()[0] / slice_size))

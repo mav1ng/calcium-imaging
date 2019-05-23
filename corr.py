@@ -11,7 +11,7 @@ def get_big_star_mask():
     :return: offsets of correlation pixels
     """
     indices_list = torch.tensor([(-1, 0), (0, -1), (1, 0), (0, 1), (0, -6), (5, -2), (5, 2), (0, 6), (-5, 2), (-5, -2),
-                             (0, -18), (15, -6), (15, 6), (0, 18), (-15, 6), (-15, -6)])
+                                 (0, -18), (15, -6), (15, 6), (0, 18), (-15, 6), (-15, -6)])
     return indices_list
 
 
@@ -23,39 +23,16 @@ def get_small_star_mask():
     return indices_list
 
 
-def calc_corr(input_video, input_line, corr_mask, coordinates):
+def get_corr(self, input_video, corr_form=c.corr['corr_form']):
     """
-    Calculates Correlation for One Pixel, specifying correlation mask
-    :param input_video: torch tensor
-    :param input_line: torch tensor
-    :param corr_mask:
-    :param coordinates:
+    With Tips of Elke: New Way of Calculating Corrs with two less for loops
+    :param self:
+    :param input_video: T * N * N,  N number of pixels on one side, T number of Frames
     :return:
     """
 
-    '''working here right now trying to fix'''
-    corr_mask = corr_mask + torch.tensor(coordinates)
-    correlations = torch.zeros(corr_mask.shape[0])
-
-    for idx, corr_pixel in enumerate(corr_mask):
-        if (corr_pixel <= -1).any() or (corr_pixel >= input_video.size()[1]).any():
-            correlations[idx] = 0
-        else:
-            #print(corr_pixel[0], corr_pixel[1])
-            correlations[idx] = torch.tensor(pearsonr(input_line, input_video[:, corr_pixel[0], corr_pixel[1]])[0])
-    return correlations
-
-
-def get_corr(input_video, corr_form=c.corr['corr_form']):
-    """
-    Method that computes the correlations for a series of images
-    :param corr_form: form of the correlation mask that is used for calculating the correlations
-    :param input_video: T * N * N,  N number of pixels on one side, T number of Frames
-    needs to be normalized
-    :return: C * N * N, C number of correlations
-    """
-
-    pixel_nb = input_video.size()[1]
+    X = input_video.size(1)
+    Y = input_video.size(2)
 
     corr_mask = torch.tensor([])
 
@@ -66,12 +43,25 @@ def get_corr(input_video, corr_form=c.corr['corr_form']):
     if corr_form == 'small_star':
         corr_mask = get_small_star_mask()
 
-    correlation_pic = torch.zeros((corr_mask.size()[0], pixel_nb, pixel_nb))
+    correlation_pic = torch.zeros((corr_mask.size(0), X, Y))
 
-    for x in range(input_video.size()[1]):
-        print(x)
-        for y in range(input_video.size()[2]):
-            correlation_pic[:, x, y] = calc_corr(input_video, input_video[:, x, y], corr_mask, (x, y))
+    u = input_video
+    u_ = torch.mean(u, dim=0)
+    u_u_ = u - u_
+    u_u_n = torch.sqrt(torch.sum(u_u_ ** 2, dim=0))
+
+    for o, off in enumerate(corr_mask):
+        print(o)
+        v = torch.zeros(input_video.size())
+        v[:, off[0]:, off[1]:] = input_video[:, :(input_video.size(1) - off[0]), :(input_video.size(2) - off[1])]
+        v_ = torch.mean(v, dim=0)
+        v_v_ = v - v_
+        v_v_n = torch.sqrt(torch.sum(v_v_ ** 2, dim=0))
+
+        zaehler = torch.sum(torch.mul(u_u_, v_v_), dim=0)
+        nenner = torch.mul(u_u_n, v_v_n)
+
+        correlation_pic[o] = torch.where(nenner > 0., zaehler.div(nenner), torch.zeros((X, Y)))
 
     return correlation_pic
 
@@ -93,8 +83,8 @@ def get_sliced_corr(input_video, corr_form=c.corr['corr_form'], slice_size=100):
     for i in range(number_iter):
         if i == 0:
             corr_array = torch.reshape(get_corr(rolled_input_video[i * slice_size: (i + 1) * slice_size, :, :],
-                                                               corr_form), (-1, input_video.size()[1],
-                                                                            input_video.size()[2], 1))
+                                                 corr_form), (-1, input_video.size(1),
+                                                              input_video.size(2), 1))
         else:
             corr_array = torch.cat(
                 (corr_array, torch.reshape(
@@ -103,14 +93,3 @@ def get_sliced_corr(input_video, corr_form=c.corr['corr_form'], slice_size=100):
                     ), (-1, input_video.size()[1], input_video.size()[2], 1))), dim=3)
 
     return torch.max(corr_array, dim=3)[0]
-
-
-
-
-
-
-
-
-
-
-

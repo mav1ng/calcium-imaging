@@ -129,50 +129,18 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
 
     # if not using slicing correlations:
     if not slicing:
+        print('yep we are stuck here')
         corr_tensor = corr.get_corr(imgs, corr_form=corr_form)
     else:
         corr_tensor = corr.get_sliced_corr(imgs, corr_form=corr_form, slice_size=slice_size)
-
+    print('oh we are almost finished')
     corr_sample = {'correlations': corr_tensor, 'labels': mask}
 
     return corr_sample
 
-a = create_corr_data('data/neurofinder.00.00')
-print(a[0].size(), a[1].size())
 
-
-def create_corr_data_outdated(neurofinder_dataset, corr_form='small_star', slicing=c.corr['use_slicing'], slice_size=1):
-    """
-    Method that creates the corresponding correlation data from the neurofinder videos and returns them
-    :param neurofinder_dataset:
-    :param corr_form:
-    :param slicing:
-    :param slice_size:
-    :return: Tensor: Number of Correlations (Depending on Corr_Form) x NbPixelsX x NbPixelsY
-    """
-
-    length = neurofinder_dataset.__len__()
-
-    assert (not slicing) or slice_size < length, 'Slicing Size must be smaller than the length of the Video'
-
-    data_tensor = torch.from_numpy(neurofinder_dataset[0]['image'].astype(float)).unsqueeze(dim=0)
-    target_tensor = torch.from_numpy(neurofinder_dataset[0]['label'].astype(float)).unsqueeze(dim=0)
-    for i in range(1, length):
-        '''
-        TOOOOOOOO SLOOOWWWWWW
-        '''
-        print(i) # helps for seeing it work
-        data_tensor = torch.cat((data_tensor, torch.from_numpy(neurofinder_dataset[i]['image'].astype(float)).unsqueeze(dim=0)), dim=0)
-
-    # if not using slicing correlations:
-    if not slicing:
-        corr_tensor = corr.get_corr(data_tensor, corr_form=corr_form)
-    else:
-        corr_tensor = corr.get_sliced_corr(data_tensor, corr_form=corr_form, slice_size=slice_size)
-
-    corr_sample = {'correlations': corr_tensor, 'labels': target_tensor}
-
-    return corr_sample
+# a = create_corr_data('data/neurofinder.00.00')
+# print(a['correlations'].size(), a['labels'].size())
 
 
 def save_numpy_to_h5py(data_array, label_array, file_name, file_path, use_compression=c.data['use_compression']):

@@ -23,7 +23,7 @@ def get_small_star_mask():
     return indices_list
 
 
-def get_corr(self, input_video, corr_form=c.corr['corr_form']):
+def get_corr(input_video, corr_form=c.corr['corr_form']):
     """
     With Tips of Elke: New Way of Calculating Corrs with two less for loops
     :param self:

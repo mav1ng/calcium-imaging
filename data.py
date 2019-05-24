@@ -41,8 +41,9 @@ class CorrelationDataset(Dataset):
         self.folder_path = folder_path
         self.transform = transform
         '''
-        WORKING HERE AT THE MOMENT
+        WORKING HERE AT THE MOMENT CAN PROBABLY DO IT VIA SORTED
         '''
+
 
 class NeurofinderDataset(Dataset):
     """Neurofinder Dataset"""

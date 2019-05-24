@@ -89,7 +89,7 @@ class NeurofinderDataset(Dataset):
 def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['use_slicing'], slice_size=1):
     """
     Method that creates the corresponding correlation data from the neurofinder videos and returns them
-    :param neurofinder_dataset:
+    :param neurofinder_path:
     :param corr_form:
     :param slicing:
     :param slice_size:
@@ -97,7 +97,8 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
     """
 
     files = sorted(glob(neurofinder_path + '/images/*.tiff'))
-    imgs = torch.tensor(array([imread(f) for f in files]).astype(float))
+    imgs = torch.tensor(array([imread(f) for f in files]).astype(np.float64), dtype=torch.double,
+                        device=c.cuda['device'])
     dims = imgs.size()[1:]  # 512 x 512
     len = imgs.size(0)  # 3024
 

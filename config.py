@@ -1,3 +1,5 @@
+import torch
+
 UNet = dict(
     input_channels=1,                       # specifies the number of channels of the input image
     embedding_dim=32,                       # sets the base embedding dimension of UNet
@@ -23,4 +25,8 @@ data = dict(
 corr = dict(
     corr_form='small_star',
     use_slicing=False,
+)
+
+cuda = dict(
+    device=torch.device('cpu'),
 )

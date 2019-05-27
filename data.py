@@ -48,7 +48,7 @@ class CorrelationDataset(Dataset):
 class NeurofinderDataset(Dataset):
     """Neurofinder Dataset"""
 
-    def __init__(self, neurofinder_path, transform=None):
+    def __init__(self, neurofinder_path, transform=None, test=False):
         """
         :param neurofinder_path: Path to the neurofinder dataset
         :param transform: whether a transform should be used on a sample that is getting drawn
@@ -61,26 +61,31 @@ class NeurofinderDataset(Dataset):
         self.len = self.imgs.shape[0]           # 3024
         self.transform = transform
         self.different_labels = c.data['different_labels']
+        self.test = test
 
         # load the regions (training data only)
-        with open(neurofinder_path + '/regions/regions.json') as f:
-            self.regions = json.load(f)
+        if not test:
+            with open(neurofinder_path + '/regions/regions.json') as f:
+                self.regions = json.load(f)
 
-        self.mask = array([tomask(s['coordinates'], self.dims) for s in self.regions])
-        self.counter = 0
+            self.mask = array([tomask(s['coordinates'], self.dims) for s in self.regions])
+            self.counter = 0
 
-        if self.different_labels:
-            for s in self.mask:
-                self.mask[self.counter, :, :] = np.where(s == 1., 1. + self.counter, 0.)
-                self.counter = self.counter + 1
+            if self.different_labels:
+                for s in self.mask:
+                    self.mask[self.counter, :, :] = np.where(s == 1., 1. + self.counter, 0.)
+                    self.counter = self.counter + 1
 
-        self.mask = np.amax(self.mask, axis=0)
+            self.mask = np.amax(self.mask, axis=0)
 
     def __len__(self):
         return self.len
 
     def __getitem__(self, idx):
-        sample = {'image': self.imgs[idx, :, :], 'label': self.mask}
+        if not self.test:
+            sample = {'image': self.imgs[idx, :, :], 'label': self.mask}
+        else:
+            sample = {'image': self.imgs[idx, :, :]}
         if self.transform:
             sample = self.transform(sample)
         return sample
@@ -97,7 +102,7 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
     """
 
     files = sorted(glob(neurofinder_path + '/images/*.tiff'))
-    imgs = torch.tensor(array([imread(f) for f in files]).astype(np.float64), dtype=torch.double,
+    imgs = torch.tensor(array([imread(f) for f in files]).astype(torch.double), dtype=torch.double,
                         device=c.cuda['device'])
     dims = imgs.size()[1:]  # 512 x 512
     len = imgs.size(0)  # 3024

@@ -20,10 +20,10 @@ def get_conv_layer(num_input, num_output):
 
 
 def get_up_layer(num_input, num_output):
-        return nn.Sequential(
-            nn.ConvTranspose2d(num_input, num_output, kernel_size=2, stride=2),
-            nn.BatchNorm2d(num_output, momentum=0.5),
-        )
+    return nn.Sequential(
+        nn.ConvTranspose2d(num_input, num_output, kernel_size=2, stride=2),
+        nn.BatchNorm2d(num_output, momentum=0.5),
+    )
 
 
 def normalize(input_matrix):
@@ -31,7 +31,7 @@ def normalize(input_matrix):
 
 
 def cos_similarity(vec1, vec2):
-    return 1/2 * (1 + mm(vec1.t(), vec2) / (torch.norm(vec1) * torch.norm(vec2)))
+    return 1 / 2 * (1 + mm(vec1.t(), vec2) / (torch.norm(vec1) * torch.norm(vec2)))
 
 
 def get_embedding_loss(list_embeddings):
@@ -95,7 +95,7 @@ class UNet(nn.Module):
         x = F.relu(x)
         x = self.conv_layer_2(x)
         x = F.relu(x)
-        conc_in_1 = x   # used later when filters are concatenated
+        conc_in_1 = x  # used later when filters are concatenated
 
         x = self.max_pool_2D_1(x)
         x = self.conv_layer_3(x)
@@ -178,7 +178,7 @@ class MS(nn.Module):
         if config.mean_shift['kernel_bandwidth'] is not None:
             self.kernel_bandwidth = config.mean_shift['kernel_bandwidth']
         else:
-            self.kernel_bandwidth = 1 / (1 - config.embedding_loss['margin'])/3
+            self.kernel_bandwidth = 1 / (1 - config.embedding_loss['margin']) / 3
         self.step_size = config.mean_shift['step_size']
         self.nb_iterations = config.mean_shift['nb_iterations']
         self.embeddings_list = []
@@ -205,9 +205,9 @@ class MS(nn.Module):
         return x
 
 
-class UNet_MS(nn.Module):
+class UNetMS(nn.Module):
     def __init__(self):
-        super(UNet_MS, self).__init__()
+        super(UNetMS, self).__init__()
 
         self.UNet = UNet()
         self.MS = MS()
@@ -218,7 +218,6 @@ class UNet_MS(nn.Module):
         x = F.normalize(x, p=2, dim=1)
         x = self.MS(x)
         return x
-
 
 # model_UNet = UNet()
 # print(model_UNet)

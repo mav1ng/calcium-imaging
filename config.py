@@ -10,7 +10,7 @@ mean_shift = dict(
     embedding_dim=32,
     kernel_bandwidth=None,                  # set to float if should be used, margin is now used to calculate bandwidth
     step_size=1,                            # mean shift step size
-    nb_iterations=10,                       # number of iterations
+    nb_iterations=2,                       # number of iterations
 )
 
 embedding_loss = dict(
@@ -20,6 +20,7 @@ embedding_loss = dict(
 data = dict(
     different_labels=True,
     use_compression=True,
+    dtype=torch.float,
 )
 
 corr = dict(
@@ -28,5 +29,5 @@ corr = dict(
 )
 
 cuda = dict(
-    device=torch.device('cpu'),
+    device=torch.device('cuda'),
 )

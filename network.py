@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import matmul as mm
 
-import config
+import config as c
 
 
 def get_conv_layer(num_input, num_output):
@@ -43,9 +43,9 @@ class UNet(nn.Module):
     def __init__(self):
         super(UNet, self).__init__()
 
-        self.input_channels = config.UNet['input_channels']
-        self.embedding_dim = config.UNet['embedding_dim']
-        self.dropout_rate = config.UNet['dropout_rate']
+        self.input_channels = c.UNet['input_channels']
+        self.embedding_dim = c.UNet['embedding_dim']
+        self.dropout_rate = c.UNet['dropout_rate']
 
         self.conv_layer_1 = get_conv_layer(self.input_channels, self.embedding_dim)
         self.conv_layer_2 = get_conv_layer(self.embedding_dim, self.embedding_dim)
@@ -88,7 +88,7 @@ class UNet(nn.Module):
 
         self.conv_layer_17 = get_conv_layer(self.embedding_dim * 2, self.embedding_dim)
         self.conv_layer_18 = get_conv_layer(self.embedding_dim, self.embedding_dim)
-        self.conv_layer_end = nn.Conv2d(self.embedding_dim, 2, 1)
+        self.conv_layer_end = nn.Conv2d(self.embedding_dim, self.embedding_dim, 1)
 
     def forward(self, x):
         x = self.conv_layer_1(x)
@@ -173,16 +173,18 @@ class MS(nn.Module):
     def __init__(self):
         super(MS, self).__init__()
 
-        self.embedding_dim = config.mean_shift['embedding_dim']
+        self.embedding_dim = c.mean_shift['embedding_dim']
         # setting kernel bandwidth
-        if config.mean_shift['kernel_bandwidth'] is not None:
-            self.kernel_bandwidth = config.mean_shift['kernel_bandwidth']
+        if c.mean_shift['kernel_bandwidth'] is not None:
+            self.kernel_bandwidth = c.mean_shift['kernel_bandwidth']
         else:
-            self.kernel_bandwidth = 1 / (1 - config.embedding_loss['margin']) / 3
-        self.step_size = config.mean_shift['step_size']
-        self.nb_iterations = config.mean_shift['nb_iterations']
+            self.kernel_bandwidth = 1 / (1 - c.embedding_loss['margin']) / 3
+        self.step_size = c.mean_shift['step_size']
+        self.nb_iterations = c.mean_shift['nb_iterations']
         self.embeddings_list = []
         self.nb_pixels = None  # to be defined when forward is called
+        self.pic_res = None
+        self.device = c.cuda['device']
 
     # x_in flattened image in D x N , N number of Pixels
 
@@ -191,18 +193,22 @@ class MS(nn.Module):
         :param x_in: flattened image in D x N , N number of Pixels
         :return: embeddings x_in mean shifted
         """
-        x = x_in
-        self.nb_pixels = x_in.size()[1]
+        self.pic_res = x_in.size(3)
+        x = x_in.view(self.embedding_dim, -1)
+        self.nb_pixels = x.size(1)
+        print('input Mean Shift Block' + str(x.size()))
         for t in range(self.nb_iterations):
+            print('Mean Shift: ' + str(t) + ' First Iteration')
             # kernel_mat N x N , N number of pixels
-            kernel_mat = torch.exp(mm(self.kernel_bandwidth, mm(x.t(), x)))
+            kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(x.t(), x)))
             # diag_mat N x N
-            diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(1, self.nb_pixels)), diagonal=0)
+            diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones((self.nb_pixels, 1), device=self.device)).squeeze(dim=1), diagonal=0)
+
             x = mm(x,
-                   mm(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))) +
-                   mm((1 - self.step_size), torch.eye(self.nb_pixels, self.nb_pixels)))
-            self.embeddings_list.append(x)
-        return x
+                   torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))) +
+                   torch.mul((1 - self.step_size), torch.eye(self.nb_pixels, self.nb_pixels, device=self.device)))
+            self.embeddings_list.append(x.view(self.embedding_dim, self.pic_res, self.pic_res))
+        return x.view(self.embedding_dim, self.pic_res, self.pic_res), self.embeddings_list
 
 
 class UNetMS(nn.Module):

@@ -207,6 +207,8 @@ class MS(nn.Module):
             x = mm(x,
                    torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))) +
                    torch.mul((1 - self.step_size), torch.eye(self.nb_pixels, self.nb_pixels, device=self.device)))
+            '''
+            PERHAPS CALCULATE LOSS BEFORE PUTTING INTO LIST BECAUSE OF MEMORY PROBLEMS'''
             self.embeddings_list.append(x.view(self.embedding_dim, self.pic_res, self.pic_res))
         return x.view(self.embedding_dim, self.pic_res, self.pic_res), self.embeddings_list
 
@@ -224,6 +226,12 @@ class UNetMS(nn.Module):
         x = F.normalize(x, p=2, dim=1)
         x = self.MS(x)
         return x
+
+
+def embedding_loss(embedding_matrix, labels):
+    pass
+
+
 
 # model_UNet = UNet()
 # print(model_UNet)

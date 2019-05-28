@@ -18,7 +18,7 @@ import json
 import socket
 import urllib.request as req
 
-print(torch.cuda.is_available())
-print(torch.cuda.current_device())
-print(torch.cuda.device_count())
-print(torch.cuda.get_device_name(device=None))
+a = torch.rand(3, 3, 3)
+print(a[0, :, :])
+a = a.roll(shifts=(0, 0, 1), dims=(0, 1, 2))
+print(a[0, :, :])

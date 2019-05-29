@@ -20,5 +20,5 @@ import urllib.request as req
 
 a = torch.rand(3, 3, 3)
 print(a[0, :, :])
-a = a.roll(shifts=(0, 0, 1), dims=(0, 1, 2))
+a = torch.roll(a.view(3, -1), shifts=1, dims=1).view(3, 3, 3)
 print(a[0, :, :])

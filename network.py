@@ -229,6 +229,16 @@ class UNetMS(nn.Module):
 
 
 def embedding_loss(embedding_matrix, labels):
+    embedding_dim = embedding_matrix.size(0)
+    for n, _ in enumerate(embedding_matrix[0, :, :].view(embedding_matrix.size(0), -1)):
+        if n == 0: pass
+        rolling_matrix = torch.roll(embedding_matrix.view(embedding_dim, -1), shifts=n, dims=1)
+        rolling_labels = torch.roll(labels.view(-1), shifts=n, dims=1)
+        similarity_matrix = torch.ones_like(rolling_labels)
+        for p, _ in enumerate(rolling_matrix[0, :]):
+            similarity_matrix[p] = cos_similarity(embedding_matrix.view(embedding_dim, -1)[:, p], rolling_matrix[:, p])
+        
+        similarity_matrix[]
     pass
 
 

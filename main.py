@@ -31,15 +31,29 @@ torch.cuda.empty_cache()
 #                         file_name='corr_nf_0001', file_path='data/corr/small_star/full/')
 
 
-input = torch.tensor(data.load_numpy_from_h5py(file_name='corr_nf_0000', file_path='data/corr/small_star/full/')[0],
-                     dtype=dtype, device=device)
-input = torch.unsqueeze(input, dim=0)
+input_test = torch.tensor(
+    data.load_numpy_from_h5py(
+        file_name='corr_nf_0000', file_path='data/corr/small_star/full/')[0], dtype=dtype, device=device)
 
-input = torch.rand(1, 10, 128, 128, dtype=dtype, device=device)
+labels = torch.tensor(
+    data.load_numpy_from_h5py(
+        file_name='corr_nf_0000', file_path='data/corr/small_star/full/')[1], dtype=dtype, device=device)
 
-model = n.UNetMS()
-model = model.type(dtype)
-model = model.to(device)
+print(input_test.size(), labels.size())
 
-out = model(input)
-print(out[0].size())
+input_test = torch.unsqueeze(input_test, dim=0)
+
+
+input_test = torch.rand(1, 10, 32, 32, dtype=dtype, device=device)
+labels = torch.randint(0, 10, (32, 32), dtype=dtype, device=device)
+
+# model = n.UNetMS()
+# model = model.type(dtype)
+# model = model.to(device)
+#
+# out = model(input_test)
+# print(out[0].size())
+
+loss = n.embedding_loss(embedding_matrix=input_test, labels=labels, device=device, dtype=dtype)
+
+print(loss)

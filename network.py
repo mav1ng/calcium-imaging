@@ -194,33 +194,40 @@ class MS(nn.Module):
             self.pic_res = x_in.size(3)
 
         x = x_in.view(self.embedding_dim, -1)
+        print(x.size())
 
         with torch.no_grad():
             self.nb_pixels = x.size(1)
             print('input Mean Shift Block' + str(x.size()))
 
         for t in range(self.nb_iterations):
+            x = x.view(-1, self.embedding_dim, self.nb_pixels)
             print('Mean Shift: ' + str(t) + ' First Iteration')
             # kernel_mat N x N , N number of pixels
-            kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(x.t(), x)))
+            kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(
+                x[t, :, :].view(self.embedding_dim,
+                                self.nb_pixels).t(), x[t, :, :].view(self.embedding_dim, self.nb_pixels))))
             # diag_mat N x N
             diag_mat = torch.diag(
                 mm(kernel_mat.t(), torch.ones((self.nb_pixels, 1), device=self.device)).squeeze(dim=1), diagonal=0)
 
-            x = mm(x,
+            x = torch.cat((x.view(-1, self.embedding_dim, self.pic_res, self.pic_res), mm(x[t, :, :],
                    torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))) +
-                   torch.mul((1 - self.step_size), torch.eye(self.nb_pixels, self.nb_pixels, device=self.device)))
+                   torch.mul((1 - self.step_size), torch.eye(self.nb_pixels, self.nb_pixels, device=self.device))).view(
+                1, self.embedding_dim, self.pic_res, self.pic_res)))
+
+
 
             '''WORKING HERE AT THE MOMENT'''
             '''NEW'''
-            self.embeddings_list_tensor = torch.cat((x.view(1, self.embedding_dim, self.pic_res, self.pic_res),
-                                                     self.embeddings_list_tensor.view(-1, self.embedding_dim,
-                                                                                      self.pic_res, self.pic_res)))
+            # self.embeddings_list_tensor = torch.cat((x.view(1, self.embedding_dim, self.pic_res, self.pic_res),
+            #                                          self.embeddings_list_tensor.view(-1, self.embedding_dim,
+            #                                                                           self.pic_res, self.pic_res)))
             '''OLD'''
             # with torch.no_grad():
             #     self.embeddings_list.append(x.view(self.embedding_dim, self.pic_res, self.pic_res))
 
-        return x.view(self.embedding_dim, self.pic_res, self.pic_res), self.embeddings_list_tensor
+        return x.view(-1, self.embedding_dim, self.pic_res, self.pic_res)
 
 
 class UNetMS(nn.Module):
@@ -387,10 +394,9 @@ def get_embedding_loss(embedding_list, labels, dtype=c.data['dtype'], device=c.c
     :return: Tensor, returns the accumulated loss
     """
     loss = torch.tensor(0., dtype=dtype, device=device)
-    for i in range(embedding_list.size(0)):
+    for i in range(1, embedding_list.size(0)):
         loss = torch.add(loss, embedding_loss(embedding_matrix=embedding_list[i, :, :, :], labels=labels, dtype=dtype,
                                               device=device))
-
     return loss
 
 # model_UNet = UNet()

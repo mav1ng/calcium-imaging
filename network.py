@@ -35,10 +35,6 @@ def cos_similarity(vec1, vec2):
     return 1 / 2 * (1 + torch.dot(vec1, vec2) / (torch.norm(vec1) * torch.norm(vec2)))
 
 
-def get_embedding_loss(list_embeddings):
-    pass
-
-
 class UNet(nn.Module):
 
     def __init__(self):
@@ -182,7 +178,7 @@ class MS(nn.Module):
             self.kernel_bandwidth = 1 / (1 - c.embedding_loss['margin']) / 3
         self.step_size = c.mean_shift['step_size']
         self.nb_iterations = c.mean_shift['nb_iterations']
-        self.embeddings_list = []
+        self.embeddings_list_tensor = torch.tensor([])
         self.nb_pixels = None  # to be defined when forward is called
         self.pic_res = None
         self.device = c.cuda['device']
@@ -194,10 +190,15 @@ class MS(nn.Module):
         :param x_in: flattened image in D x N , N number of Pixels
         :return: embeddings x_in mean shifted
         """
-        self.pic_res = x_in.size(3)
+        with torch.no_grad():
+            self.pic_res = x_in.size(3)
+
         x = x_in.view(self.embedding_dim, -1)
-        self.nb_pixels = x.size(1)
-        print('input Mean Shift Block' + str(x.size()))
+
+        with torch.no_grad():
+            self.nb_pixels = x.size(1)
+            print('input Mean Shift Block' + str(x.size()))
+
         for t in range(self.nb_iterations):
             print('Mean Shift: ' + str(t) + ' First Iteration')
             # kernel_mat N x N , N number of pixels
@@ -209,10 +210,17 @@ class MS(nn.Module):
             x = mm(x,
                    torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))) +
                    torch.mul((1 - self.step_size), torch.eye(self.nb_pixels, self.nb_pixels, device=self.device)))
-            '''
-            PERHAPS CALCULATE LOSS BEFORE PUTTING INTO LIST BECAUSE OF MEMORY PROBLEMS'''
-            self.embeddings_list.append(x.view(self.embedding_dim, self.pic_res, self.pic_res))
-        return x.view(self.embedding_dim, self.pic_res, self.pic_res), self.embeddings_list
+
+            '''WORKING HERE AT THE MOMENT'''
+            '''NEW'''
+            self.embeddings_list_tensor = torch.cat((x.view(1, self.embedding_dim, self.pic_res, self.pic_res),
+                                                     self.embeddings_list_tensor.view(-1, self.embedding_dim,
+                                                                                      self.pic_res, self.pic_res)))
+            '''OLD'''
+            # with torch.no_grad():
+            #     self.embeddings_list.append(x.view(self.embedding_dim, self.pic_res, self.pic_res))
+
+        return x.view(self.embedding_dim, self.pic_res, self.pic_res), self.embeddings_list_tensor
 
 
 class UNetMS(nn.Module):
@@ -233,30 +241,35 @@ class UNetMS(nn.Module):
 def embedding_loss(embedding_matrix, labels, dtype=c.data['dtype'], device=c.cuda['device']):
     """
     Method that exhaustively calculates the embedding loss of an embedding when given the labels
-    :param embedding_matrix: matrix with the predicted embeddings B x C x PixelX x PixelY
+    :param embedding_matrix: matrix with the predicted embeddings C x PixelX x PixelY
     :param labels: torch tensor with the ground truth
     :param dtype: dtype of the tensors
     :param device: device which cuda uses
     :return: the total loss
     """
 
-    pic_dim = embedding_matrix.size()[2:4]
+    pic_dim = embedding_matrix.size()[1:3]
 
     similarity_matrix = compute_similarity(embedding_matrix=embedding_matrix, dtype=dtype, device=device)
     weights = compute_weight_matrix(compute_pre_weight_matrix(labels_matrix=labels, dtype=dtype, device=device),
                                     dtype=dtype, device=device)
     label_pairs = compute_label_pair(label_matrix=labels, dtype=dtype, device=device)
 
-    indices_positive = (label_pairs == 1).nonzero()
-    indices_negative = (label_pairs == -1).nonzero()
+    # indices_positive = (label_pairs == 1).nonzero()
+    # indices_negative = (label_pairs == -1).nonzero()
 
     loss = torch.zeros(pic_dim[0] * pic_dim[1], pic_dim[0] * pic_dim[1], dtype=dtype, device=device)
-    loss[indices_positive] = torch.sub(1., similarity_matrix[indices_positive])
-    loss[indices_negative] = torch.where(similarity_matrix[indices_negative] - c.embedding_loss['margin'] >= 0,
-                                         similarity_matrix[indices_negative] - c.embedding_loss['margin'], torch.tensor(
-            0, device=device, dtype=dtype))
+    loss = torch.where(label_pairs == 1, torch.sub(1., similarity_matrix), loss)
+    loss = torch.where(label_pairs == -1, torch.where(similarity_matrix - c.embedding_loss['margin'] >= 0,
+                                                      similarity_matrix - c.embedding_loss['margin'], torch.tensor(
+            0, device=device, dtype=dtype)), loss)
 
-    del indices_positive, indices_negative
+    # loss[indices_positive] = torch.sub(1., similarity_matrix[indices_positive])
+    # loss[indices_negative] = torch.where(similarity_matrix[indices_negative] - c.embedding_loss['margin'] >= 0,
+    #                                      similarity_matrix[indices_negative] - c.embedding_loss['margin'], torch.tensor(
+    #         0, device=device, dtype=dtype))
+
+    # del indices_positive, indices_negative
 
     loss = torch.mul(1 / (pic_dim[0] * pic_dim[1]), torch.sum(torch.mul(weights, loss)))
 
@@ -273,7 +286,7 @@ def compute_similarity(embedding_matrix, dtype=c.data['dtype'], device=c.cuda['d
     pairwise similarity values
     """
 
-    embedding_dim = embedding_matrix.size(1)
+    embedding_dim = embedding_matrix.size(0)
     x = embedding_matrix.view(embedding_dim, -1)
     x_norm = x / x.norm(dim=0)[None, :]
     similarity_matrix = torch.mm(x_norm.transpose(0, 1), x_norm)
@@ -283,7 +296,7 @@ def compute_similarity(embedding_matrix, dtype=c.data['dtype'], device=c.cuda['d
 
     similarity_matrix = torch.where(torch.tensor(np.tri(sim_dim_x, sim_dim_y), dtype=dtype, device=device) == 1,
                                     torch.tensor(0, dtype=dtype, device=device), torch.mul(torch.add(similarity_matrix,
-                                                                                                     1.), 1/2))
+                                                                                                     1.), 1 / 2))
     del sim_dim_x, sim_dim_y, x, x_norm
 
     return similarity_matrix
@@ -357,12 +370,28 @@ def compute_weight_matrix(pre_weight_matrix, dtype=c.data['dtype'], device=c.cud
     sim_dim_y = weight_matrix.size(1)
 
     weight_matrix = torch.where(torch.tensor(np.tri(sim_dim_x, sim_dim_y), dtype=dtype, device=device) == 1,
-                                    torch.tensor(0, dtype=dtype, device=device), weight_matrix)
+                                torch.tensor(0, dtype=dtype, device=device), weight_matrix)
 
     del sim_dim_x, sim_dim_y, x
 
     return weight_matrix
 
+
+def get_embedding_loss(embedding_list, labels, dtype=c.data['dtype'], device=c.cuda['device']):
+    """
+    Method to compute the accumulated loss after the several MS iterations
+    :param embedding_list: List of Embeddings Computed by the Net
+    :param labels: Ground Truth of Labels
+    :param dtype:
+    :param device:
+    :return: Tensor, returns the accumulated loss
+    """
+    loss = torch.tensor(0., dtype=dtype, device=device)
+    for i in range(embedding_list.size(0)):
+        loss = torch.add(loss, embedding_loss(embedding_matrix=embedding_list[i, :, :, :], labels=labels, dtype=dtype,
+                                              device=device))
+
+    return loss
 
 # model_UNet = UNet()
 # print(model_UNet)

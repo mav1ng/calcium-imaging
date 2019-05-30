@@ -10,7 +10,7 @@ mean_shift = dict(
     embedding_dim=64,
     kernel_bandwidth=None,                  # set to float if should be used, margin is now used to calculate bandwidth
     step_size=1,                            # mean shift step size
-    nb_iterations=2,                       # number of iterations
+    nb_iterations=5,                       # number of iterations
 )
 
 embedding_loss = dict(

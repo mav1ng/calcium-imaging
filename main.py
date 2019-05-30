@@ -44,24 +44,24 @@ torch.cuda.empty_cache()
 # input_test = torch.unsqueeze(input_test, dim=0)
 
 
-input_test = torch.rand(1, 64, 128, 128, dtype=dtype, device=device)
-labels = torch.randint(0, 10, (128, 128), dtype=dtype, device=device)
+input_test = torch.rand(1, 10, 32, 32, dtype=dtype, device=device)
+labels = torch.randint(0, 10, (32, 32), dtype=dtype, device=device)
 
-# model = n.UNetMS()
-# model = model.type(dtype)
-# model = model.to(device)
-#
-# out = model(input_test)
-# print(out[0].size())
+model = n.UNetMS()
+model = model.type(dtype)
+model = model.to(device)
 
-loss = n.embedding_loss(embedding_matrix=input_test, labels=labels, device=device, dtype=dtype)
+optimizer = torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.9)
 
-print(loss)
+for t in range(10):
+    # Forward pass: Compute predicted y by passing x to the model
+    _, embedding_list = model(input_test)
 
-# similarity = n.compute_similarity(input_test, dtype=dtype, device=device)
-# pre_weigth_matrix = n.compute_pre_weight_matrix(labels, dtype=dtype, device=device)
-# weight_matrix = n.compute_weight_matrix(pre_weigth_matrix, dtype=dtype, device=device)
-# labels = n.compute_label_pair(labels, dtype=dtype, device=device)
-#
-# print(pre_weigth_matrix)
-# print(weight_matrix)
+    # Compute and print loss
+    loss = n.get_embedding_loss(embedding_list, labels, device=device, dtype=dtype)
+    print(t, loss.item())
+
+    # Zero gradients, perform a backward pass, and update the weights.
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()

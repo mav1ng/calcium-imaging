@@ -31,21 +31,21 @@ torch.cuda.empty_cache()
 #                         file_name='corr_nf_0001', file_path='data/corr/small_star/full/')
 
 
-input_test = torch.tensor(
-    data.load_numpy_from_h5py(
-        file_name='corr_nf_0000', file_path='data/corr/small_star/full/')[0], dtype=dtype, device=device)
+# input_test = torch.tensor(
+#     data.load_numpy_from_h5py(
+#         file_name='corr_nf_0000', file_path='data/corr/small_star/full/')[0], dtype=dtype, device=device)
+#
+# labels = torch.tensor(
+#     data.load_numpy_from_h5py(
+#         file_name='corr_nf_0000', file_path='data/corr/small_star/full/')[1], dtype=dtype, device=device)
+#
+# print(input_test.size(), labels.size())
+#
+# input_test = torch.unsqueeze(input_test, dim=0)
 
-labels = torch.tensor(
-    data.load_numpy_from_h5py(
-        file_name='corr_nf_0000', file_path='data/corr/small_star/full/')[1], dtype=dtype, device=device)
 
-print(input_test.size(), labels.size())
-
-input_test = torch.unsqueeze(input_test, dim=0)
-
-
-input_test = torch.rand(1, 10, 32, 32, dtype=dtype, device=device)
-labels = torch.randint(0, 10, (32, 32), dtype=dtype, device=device)
+input_test = torch.rand(1, 10, 8, 8, dtype=dtype, device=device)
+labels = torch.randint(0, 10, (8, 8), dtype=dtype, device=device)
 
 # model = n.UNetMS()
 # model = model.type(dtype)

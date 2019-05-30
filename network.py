@@ -245,13 +245,23 @@ def embedding_loss(embedding_matrix, labels, dtype=c.data['dtype'], device=c.cud
     # calculating similarity matrix
     similarity_matrix = torch.zeros(pic_dim[0] * pic_dim[1], pic_dim[0] * pic_dim[1], dtype=dtype, device=device)
     labels_matrix = torch.zeros(pic_dim[0] * pic_dim[1], pic_dim[0] * pic_dim[1], dtype=dtype, device=device)
-    pre_weights_matrix = torch.ones_like(labels, dtype=dtype, device=device)
+    pre_weights_matrix = labels
     weights_matrix = torch.zeros_like(labels_matrix)
 
-    for w in range(labels.size(0)):
-        for v in range(labels.size(1)):
-            pre_weights_matrix[w, v] = torch.div(torch.tensor(1, dtype=dtype, device=device),
-                                                 ((labels == labels[w, v]).nonzero()).size(0))
+    # for w in range(labels.size(0)):
+    #     for v in range(labels.size(1)):
+    #         pre_weights_matrix[w, v] = torch.div(torch.tensor(1, dtype=dtype, device=device),
+    #                                              ((labels == labels[w, v]).nonzero()).size(0))
+
+    # calculate pre-weighting matrix
+    unique_labels = torch.unique(labels, sorted=True)
+    'see if enumerate works correctly here'
+    for _, l in enumerate(unique_labels):
+        pre_weights_matrix = torch.where(pre_weights_matrix == l, torch.div(torch.tensor(
+            1, dtype=dtype, device=device), ((labels == l).nonzero()).size(0)), pre_weights_matrix)
+    del unique_labels
+
+    print(pre_weights_matrix)
 
     for n in range(embedding_matrix[0, :, :].size(0) * embedding_matrix[0, :, :].size(1)):
         rolling_matrix = torch.roll(embedding_matrix.view(embedding_dim, -1), shifts=n, dims=1)

@@ -44,8 +44,8 @@ torch.cuda.empty_cache()
 # input_test = torch.unsqueeze(input_test, dim=0)
 
 
-input_test = torch.rand(1, 64, 32, 32, dtype=dtype, device=device)
-labels = torch.randint(0, 10, (32, 32), dtype=dtype, device=device)
+input_test = torch.rand(1, 64, 128, 128, dtype=dtype, device=device)
+labels = torch.randint(0, 10, (128, 128), dtype=dtype, device=device)
 
 # model = n.UNetMS()
 # model = model.type(dtype)

@@ -44,8 +44,8 @@ torch.cuda.empty_cache()
 # input_test = torch.unsqueeze(input_test, dim=0)
 
 
-input_test = torch.rand(1, 10, 8, 8, dtype=dtype, device=device)
-labels = torch.randint(0, 10, (8, 8), dtype=dtype, device=device)
+input_test = torch.rand(1, 64, 32, 32, dtype=dtype, device=device)
+labels = torch.randint(0, 10, (32, 32), dtype=dtype, device=device)
 
 # model = n.UNetMS()
 # model = model.type(dtype)
@@ -57,3 +57,11 @@ labels = torch.randint(0, 10, (8, 8), dtype=dtype, device=device)
 loss = n.embedding_loss(embedding_matrix=input_test, labels=labels, device=device, dtype=dtype)
 
 print(loss)
+
+# similarity = n.compute_similarity(input_test, dtype=dtype, device=device)
+# pre_weigth_matrix = n.compute_pre_weight_matrix(labels, dtype=dtype, device=device)
+# weight_matrix = n.compute_weight_matrix(pre_weigth_matrix, dtype=dtype, device=device)
+# labels = n.compute_label_pair(labels, dtype=dtype, device=device)
+#
+# print(pre_weigth_matrix)
+# print(weight_matrix)

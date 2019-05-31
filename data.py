@@ -28,10 +28,11 @@ def tomask(coords, dims):
     mask[list(zip(*coords))] = 1.
     return mask
 
+
 class CorrelationDataset(Dataset):
     """Correlation Dataset"""
 
-    def __init__(self, folder_path, transform=None):
+    def __init__(self, folder_path, transform=None, test=False):
         """
         :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
         be used for training/testing
@@ -40,9 +41,28 @@ class CorrelationDataset(Dataset):
 
         self.folder_path = folder_path
         self.transform = transform
-        '''
-        WORKING HERE AT THE MOMENT CAN PROBABLY DO IT VIA SORTED
-        '''
+        self.files = sorted(glob(folder_path + '*.hkl'))
+        # removing label files from files list
+        for index, i in enumerate(self.files):
+            if 'labels' in i:
+                del self.files[index]
+        self.imgs = array([load_numpy_from_h5py(file_name=f, file_path=folder_path)[0] for f in self.files])
+        self.labels = array([load_numpy_from_h5py(file_name=f, file_path=folder_path)[1] for f in self.files])
+        self.dims = self.imgs.shape[2:]  # 512 x 512
+        self.len = self.imgs.shape[0]
+        self.test = test
+
+    def __len__(self):
+        return self.len
+
+    def __getitem__(self, idx):
+        if not self.test:
+            sample = {'image': self.imgs[idx, :, :, :], 'label': self.labels[idx, :, :]}
+        else:
+            sample = {'image': self.imgs[idx, :, :, :]}
+        if self.transform:
+            sample = self.transform(sample)
+        return sample
 
 
 class NeurofinderDataset(Dataset):

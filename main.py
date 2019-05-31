@@ -47,7 +47,30 @@ torch.cuda.empty_cache()
 input_test = torch.rand(1, 10, 32, 32, dtype=dtype, device=device, requires_grad=True)
 labels = torch.randint(0, 10, (32, 32), dtype=dtype, device=device)
 
-model = n.UNetMS()
+# model = n.UNetMS()
+# model = model.type(dtype)
+# model = model.to(device)
+#
+# print(model.parameters().__sizeof__())
+#
+# optimizer = torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.9)
+#
+# for t in range(10):
+#     # Forward pass: Compute predicted y by passing x to the model
+#     embedding_list = model(input_test)
+#     print(embedding_list.size())
+#
+#     # Compute and print loss
+#     #loss = n.get_embedding_loss(embedding_list, labels, device=device, dtype=dtype)
+#     loss = n.embedding_loss(embedding_matrix=embedding_list.view(64, 32, 32), labels=labels, dtype=dtype, device=device)
+#     print(t, loss.item())
+#
+#     # Zero gradients, perform a backward pass, and update the weights.
+#     optimizer.zero_grad()
+#     loss.backward()
+#     optimizer.step()
+
+model = n.UNet()
 model = model.type(dtype)
 model = model.to(device)
 
@@ -59,37 +82,18 @@ for t in range(10):
     # Forward pass: Compute predicted y by passing x to the model
     embedding_list = model(input_test)
 
+    print(embedding_list.size())
+
     # Compute and print loss
-    loss = n.get_embedding_loss(embedding_list, labels, device=device, dtype=dtype)
+    loss = n.embedding_loss(embedding_list.view(64, 32, 32), labels, device=device, dtype=dtype)
     print(t, loss.item())
+
+    print(model.conv_layer_1.weight)
 
     # Zero gradients, perform a backward pass, and update the weights.
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-
-# model = n.UNet()
-# model = model.type(dtype)
-# model = model.to(device)
-#
-# print(model.parameters().__sizeof__())
-#
-# optimizer = torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.9)
-#
-# for t in range(10):
-#     # Forward pass: Compute predicted y by passing x to the model
-#     embedding_list = model(input_test)
-#
-#     print(embedding_list.size())
-#
-#     # Compute and print loss
-#     loss = n.embedding_loss(embedding_list, labels, device=device, dtype=dtype)
-#     print(t, loss.item())
-#
-#     # Zero gradients, perform a backward pass, and update the weights.
-#     optimizer.zero_grad()
-#     loss.backward()
-#     optimizer.step()
 
 # model = n.MS()
 # model = model.type(dtype)

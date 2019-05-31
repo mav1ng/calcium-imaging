@@ -11,6 +11,7 @@ from scipy.misc import imread
 from glob import glob
 
 import config as c
+import network as n
 import data
 
 
@@ -18,14 +19,31 @@ import json
 import socket
 import urllib.request as req
 
-# a = torch.randint(0, 10, (2, 2, 2)).float()
-# a = a.view(2, -1)
-# print(a)
-# print(a.norm(dim=0))
-# a_norm = a / a.norm(dim=0)[None, :]
-# b_norm = a / a.norm(dim=0)[None, :]
-# print(a_norm)
-# print(b_norm)
-# res = torch.mm(a_norm.transpose(0, 1), b_norm)
-# print(torch.mm(res)
-#
+
+dtype = c.data['dtype']
+device = c.cuda['device']
+
+torch.cuda.empty_cache()
+
+input_test = torch.rand(1, 10, 32, 32, dtype=dtype, device=device, requires_grad=True)
+labels = torch.randint(0, 10, (32, 32), dtype=dtype, device=device)
+
+model = n.UNet()
+model.to(device, dtype)
+
+optimizer = torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.9)
+
+for t in range(100):
+    # Forward pass: Compute predicted y by passing x to the model
+    embedding_list = model(input_test)
+
+    print(embedding_list.size())
+
+    # Compute and print loss
+    loss = n.embedding_loss(embedding_list.view(10, 32, 32), labels, device=device, dtype=dtype)
+    print(t, loss.item())
+
+    # Zero gradients, perform a backward pass, and update the weights.
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()

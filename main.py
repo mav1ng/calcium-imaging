@@ -85,10 +85,8 @@ for t in range(10):
     print(embedding_list.size())
 
     # Compute and print loss
-    loss = n.embedding_loss(embedding_list.view(64, 32, 32), labels, device=device, dtype=dtype)
+    loss = n.embedding_loss(embedding_list.view(32, 32, 32), labels, device=device, dtype=dtype)
     print(t, loss.item())
-
-    print(model.conv_layer_1.weight)
 
     # Zero gradients, perform a backward pass, and update the weights.
     optimizer.zero_grad()

@@ -101,14 +101,12 @@ def get_sliced_corr(input_video, corr_form=c.corr['corr_form'], slice_size=100):
 
     for i in range(number_iter):
         if i == 0:
-            corr_array = torch.reshape(get_corr(rolled_input_video[i * slice_size: (i + 1) * slice_size, :, :],
-                                                corr_form), (-1, input_video.size(1),
-                                                             input_video.size(2), 1))
+            corr_array = torch.reshape(
+                get_corr(rolled_input_video[i * slice_size: (i + 1) * slice_size, :, :], corr_form),
+                (-1, input_video.size(1), input_video.size(2), 1))
         else:
-            corr_array = torch.cat(
-                (corr_array, torch.reshape(
-                    get_corr(
-                        rolled_input_video[i * slice_size: (i + 1) * slice_size, :, :], corr_form
-                    ), (-1, input_video.size(1), input_video.size(2), 1))), dim=3)
+            corr_array = torch.cat((corr_array, torch.reshape(
+                get_corr(rolled_input_video[i * slice_size: (i + 1) * slice_size, :, :], corr_form),
+                (-1, input_video.size(1), input_video.size(2), 1))), dim=3)
 
     return torch.max(corr_array, dim=3)[0]

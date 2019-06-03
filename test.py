@@ -34,6 +34,17 @@ for index, folder in enumerate(sorted(os.listdir('data/training_data'))):
     data.save_numpy_to_h5py(data_array=corr['correlations'].numpy(), label_array=corr['labels'].numpy(),
                                 file_name='corr_nf_' + str(index), file_path='data/corr/big_star/full/')
 
+for index, folder in enumerate(sorted(os.listdir('data/training_data'))):
+    print(folder)
+    corr = data.create_corr_data(neurofinder_path='data/training_data/' + str(folder), slicing=True, slice_size=100)
+    data.save_numpy_to_h5py(data_array=corr['correlations'].numpy(), label_array=corr['labels'].numpy(),
+                                file_name='corr_nf_' + str(index), file_path='data/corr/big_star/sliced/slice_size_100/')
+
+for index, folder in enumerate(sorted(os.listdir('data/training_data'))):
+    print(folder)
+    corr = data.create_corr_data(neurofinder_path='data/training_data/' + str(folder), corr_form='small_star', slicing=True, slice_size=100)
+    data.save_numpy_to_h5py(data_array=corr['correlations'].numpy(), label_array=corr['labels'].numpy(),
+                                file_name='corr_nf_' + str(index), file_path='data/corr/small_star/sliced/slice_size_100/')
 
 # test_array = torch.rand(10, 32, 32, dtype=dtype)
 # corrs = corr.get_corr(test_array)

@@ -20,11 +20,11 @@ embedding_loss = dict(
 data = dict(
     different_labels=True,
     use_compression=True,
-    dtype=torch.float,
+    dtype=torch.double,
 )
 
 corr = dict(
-    corr_form='small_star',
+    corr_form='big_star',
     use_slicing=False,
 )
 

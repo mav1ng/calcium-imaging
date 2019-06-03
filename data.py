@@ -32,7 +32,7 @@ def tomask(coords, dims):
 class CorrelationDataset(Dataset):
     """Correlation Dataset"""
 
-    def __init__(self, folder_path, transform=None, test=False):
+    def __init__(self, folder_path, transform=None, test=False, dtype=c.data['dtype']):
         """
         :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
         be used for training/testing
@@ -42,22 +42,27 @@ class CorrelationDataset(Dataset):
         self.folder_path = folder_path
         self.transform = transform
         self.files = sorted(glob(folder_path + '*.hkl'))
+        print(self.files)
         # removing label files from files list
         for index, i in enumerate(self.files):
             if 'labels' in i:
                 del self.files[index]
-        self.imgs = array([load_numpy_from_h5py(file_name=f, file_path=folder_path)[0] for f in self.files])
-        self.labels = array([load_numpy_from_h5py(file_name=f, file_path=folder_path)[1] for f in self.files])
+        self.imgs = array([load_numpy_from_h5py(file_name=f)[0] for f in self.files])
+        self.labels = array([load_numpy_from_h5py(file_name=f)[1] for f in self.files])
+        print(self.imgs.shape)
+        print(self.labels.shape)
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
         self.test = test
+        self.dtype = dtype
 
     def __len__(self):
         return self.len
 
     def __getitem__(self, idx):
         if not self.test:
-            sample = {'image': self.imgs[idx, :, :, :], 'label': self.labels[idx, :, :]}
+            sample = {'image': torch.tensor(self.imgs[idx, :, :], dtype=self.dtype),
+                      'label': torch.tensor(self.labels[idx, :, :], dtype=self.dtype)}
         else:
             sample = {'image': self.imgs[idx, :, :, :]}
         if self.transform:
@@ -201,7 +206,7 @@ def save_numpy_to_h5py(data_array, label_array, file_name, file_path, use_compre
     pass
 
 
-def load_numpy_from_h5py(file_name, file_path, use_compression=c.data['use_compression']):
+def load_numpy_from_h5py(file_name):
     """
     Method that loads correlation data and labels numpy arrays from h5py file
     :param use_compression: whether data to be loaded is compressed or not
@@ -209,12 +214,7 @@ def load_numpy_from_h5py(file_name, file_path, use_compression=c.data['use_compr
     :param file_path: if /.../dir/
     :return: numpy array data and numpy array labels loaded from file
     """
-    if use_compression:
-        return hkl.load(str(file_path) + str(file_name) + '_gzip.hkl'), \
-               hkl.load(str(file_path) + str(file_name) + '_labels_gzip.hkl')
-    else:
-        return hkl.load(str(file_path) + str(file_name) + '.hkl'), \
-               hkl.load(str(file_path) + str(file_name) + '_labels.hkl')
+    return hkl.load(str(file_name))
 
 
 # neurofinder_dataset = NeurofinderDataset('data/neurofinder.00.00')

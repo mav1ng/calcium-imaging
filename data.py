@@ -180,10 +180,12 @@ class CorrRandomCrop(object):
 
         image = image[:, top: top + new_h, left: left + new_w]
 
-        # deleting information about not available offset pixels
-        correction_image = corr.get_corr(image[0, :, :].view(1, self.output_size[0], self.output_size[1]),
-                                         self.corr_form)
+        # deleting information about not available offset pixels, need 2 dimensions otherwise correlation always 0
+        correction_image = corr.get_corr(
+            torch.rand(2, self.output_size[0], self.output_size[1], device=c.cuda['device'], dtype=c.data['dtype']),
+            self.corr_form)
         image = torch.where(correction_image == 0., correction_image, image)
+
         del correction_image
 
         label = label[top: top + new_h, left: left + new_w]

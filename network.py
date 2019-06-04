@@ -167,8 +167,6 @@ class UNet(nn.Module):
         x = self.conv_layer_end(x)
         x = F.softmax(x, dim=-1)
 
-        print('dimension after UNet(), ', x.size())
-
         return x
 
 
@@ -201,8 +199,6 @@ class MS(nn.Module):
         W width of the image, H height of the image, embeddings x_in mean shifted
         """
 
-        print(x_in.size())
-
         with torch.no_grad():
             self.pic_res_X = x_in.size(2)
             self.pic_res_Y = x_in.size(3)
@@ -210,17 +206,12 @@ class MS(nn.Module):
 
         x = x_in.view(self.batch_size, self.embedding_dim, -1)
         y = x.clone()
-        print(y.size())
-        print(x.device)
-        print(y.device)
+
         out = torch.empty(self.batch_size, self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y,
                           device=self.device, dtype=self.dtype)
-        print('size of x in:', x.size())
-        print('size of out', out.size())
 
         with torch.no_grad():
             self.nb_pixels = x.size(2)
-            print('input Mean Shift Block' + str(x.size()))
 
         # iterating over all samples in the batch
         for b in range(self.batch_size):
@@ -228,8 +219,6 @@ class MS(nn.Module):
             # looping over the number of iterations
             for t in range(self.nb_iterations):
                 x = x.view(-1, self.embedding_dim, self.nb_pixels)
-                print(x.size())
-                print('Mean Shift: ' + str(t) + ' First Iteration')
                 # kernel_mat N x N , N number of pixels
                 kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(
                     x[t, :, :].view(self.embedding_dim,
@@ -253,49 +242,9 @@ class MS(nn.Module):
                                                                                                       device=self.device,
                                                                                                       dtype=self.dtype))).view(
                     1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)))
-            print(x.size())
+
             out[b, :, :, :] = x.view(self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)
-            print(out.size())
-            print(out.device)
 
-
-        # for t in range(self.nb_iterations):
-        #     x = x.view(-1, self.embedding_dim, self.nb_pixels)
-        #     print(x.size())
-        #     print('Mean Shift: ' + str(t) + ' First Iteration')
-        #     # kernel_mat N x N , N number of pixels
-        #     kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(
-        #         x[t, :, :].view(self.embedding_dim,
-        #                         self.nb_pixels).t(), x[t, :, :].view(self.embedding_dim, self.nb_pixels))))
-        #
-        #     # diag_mat N x N
-        #     diag_mat = torch.diag(
-        #         mm(kernel_mat.t(), torch.ones((self.nb_pixels, 1), device=self.device, dtype=self.dtype)).squeeze(dim=1), diagonal=0)
-        #
-        #     x = torch.cat((x.view(-1, self.embedding_dim, self.pic_res, self.pic_res), mm(x[t, :, :],
-        #                                                                                   torch.mul(self.step_size,
-        #                                                                                             mm(kernel_mat,
-        #                                                                                                torch.inverse(
-        #                                                                                                    diag_mat))) +
-        #                                                                                   torch.mul(
-        #                                                                                       (1 - self.step_size),
-        #                                                                                       torch.eye(self.nb_pixels,
-        #                                                                                                 self.nb_pixels,
-        #                                                                                                 device=self.device,
-        #                                                                                                 dtype=self.dtype))).view(
-        #         1, self.embedding_dim, self.pic_res, self.pic_res)))
-
-
-            '''WORKING HERE AT THE MOMENT'''
-            '''NEW'''
-            # self.embeddings_list_tensor = torch.cat((x.view(1, self.embedding_dim, self.pic_res, self.pic_res),
-            #                                          self.embeddings_list_tensor.view(-1, self.embedding_dim,
-            #                                                                           self.pic_res, self.pic_res)))
-            '''OLD'''
-            # with torch.no_grad():
-            #     self.embeddings_list.append(x.view(self.embedding_dim, self.pic_res, self.pic_res))
-
-        # return x.view(self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)
         return out
 
 
@@ -323,7 +272,6 @@ def embedding_loss(embedding_matrix, labels, dtype=c.data['dtype'], device=c.cud
     :param device: device which cuda uses
     :return: the total loss
     """
-
     pic_dim = embedding_matrix.size()[1:3]
 
     similarity_matrix = compute_similarity(embedding_matrix=embedding_matrix, dtype=dtype, device=device)
@@ -331,21 +279,11 @@ def embedding_loss(embedding_matrix, labels, dtype=c.data['dtype'], device=c.cud
                                     dtype=dtype, device=device)
     label_pairs = compute_label_pair(label_matrix=labels, dtype=dtype, device=device)
 
-    # indices_positive = (label_pairs == 1).nonzero()
-    # indices_negative = (label_pairs == -1).nonzero()
-
     loss = torch.zeros(pic_dim[0] * pic_dim[1], pic_dim[0] * pic_dim[1], dtype=dtype, device=device)
     loss = torch.where(label_pairs == 1, torch.sub(1., similarity_matrix), loss)
     loss = torch.where(label_pairs == -1, torch.where(similarity_matrix - c.embedding_loss['margin'] >= 0,
                                                       similarity_matrix - c.embedding_loss['margin'], torch.tensor(
             0, device=device, dtype=dtype)), loss)
-
-    # loss[indices_positive] = torch.sub(1., similarity_matrix[indices_positive])
-    # loss[indices_negative] = torch.where(similarity_matrix[indices_negative] - c.embedding_loss['margin'] >= 0,
-    #                                      similarity_matrix[indices_negative] - c.embedding_loss['margin'], torch.tensor(
-    #         0, device=device, dtype=dtype))
-
-    # del indices_positive, indices_negative
 
     loss = torch.mul(1 / (pic_dim[0] * pic_dim[1]), torch.sum(torch.mul(weights, loss)))
 
@@ -462,8 +400,8 @@ def get_embedding_loss(embedding_list, labels, dtype=c.data['dtype'], device=c.c
     :param device:
     :return: Tensor, returns the accumulated loss
     """
-    loss = torch.tensor(0., dtype=dtype, device=device)
-    for i in range(1, embedding_list.size(0)):
+    loss = torch.tensor(0., dtype=dtype, device=device,requires_grad=True)
+    for i in range(0, embedding_list.size(0)):
         loss = torch.add(loss, embedding_loss(embedding_matrix=embedding_list[i, :, :, :], labels=labels, dtype=dtype,
                                               device=device))
     return loss
@@ -478,8 +416,7 @@ def get_batch_embedding_loss(embedding_list, labels_list, dtype=c.data['dtype'],
     :param device:
     :return: Tensor, returns the accumulated loss over a batch
     """
-    loss = torch.tensor(0., dtype=dtype, device=device)
-    print(embedding_list.size())
+    loss = torch.tensor(0., dtype=dtype, device=device, requires_grad=True)
     for b in range(embedding_list.size(0)):
         loss = torch.add(loss,
                          get_embedding_loss(embedding_list[b], labels=labels_list[b], dtype=dtype,

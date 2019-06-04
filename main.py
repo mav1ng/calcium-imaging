@@ -40,7 +40,7 @@ for epoch in range(2):
 
         output = model(input)
 
-        # p.plot3Dembeddings(output.clone().detach())
+        p.plot3Dembeddings(output.clone().detach())
 
         loss = n.get_batch_embedding_loss(embedding_list=output, labels_list=label, device=device, dtype=dtype)
 

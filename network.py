@@ -185,8 +185,10 @@ class MS(nn.Module):
             self.kernel_bandwidth = 1 / (1 - c.embedding_loss['margin']) / 3
         self.step_size = c.mean_shift['step_size']
         self.nb_iterations = c.mean_shift['nb_iterations']
+        self.batch_size = None
         self.nb_pixels = None  # to be defined when forward is called
-        self.pic_res = None
+        self.pic_res_X = None
+        self.pic_res_Y = None
         self.device = c.cuda['device']
         self.dtype = c.data['dtype']
 
@@ -195,42 +197,93 @@ class MS(nn.Module):
     def forward(self, x_in):
         """
         :param x_in: flattened image in D x N , D embedding Dimension, N number of Pixels
-        :return: embeddings x_in mean shifted
+        :return: tensor with dimension B x I x D x W x H, B batch size, I number of iterations, D embedding dimension,
+        W width of the image, H height of the image, embeddings x_in mean shifted
         """
-        with torch.no_grad():
-            self.pic_res = x_in.size(3)
 
-        x = x_in.view(self.embedding_dim, -1)
+        print(x_in.size())
+
+        with torch.no_grad():
+            self.pic_res_X = x_in.size(2)
+            self.pic_res_Y = x_in.size(3)
+            self.batch_size = x_in.size(0)
+
+        x = x_in.view(self.batch_size, self.embedding_dim, -1)
+        y = x.clone()
+        print(y.size())
+        print(x.device)
+        print(y.device)
+        out = torch.empty(self.batch_size, self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y,
+                          device=self.device, dtype=self.dtype)
         print('size of x in:', x.size())
+        print('size of out', out.size())
 
         with torch.no_grad():
-            self.nb_pixels = x.size(1)
+            self.nb_pixels = x.size(2)
             print('input Mean Shift Block' + str(x.size()))
 
-        for t in range(self.nb_iterations):
-            x = x.view(-1, self.embedding_dim, self.nb_pixels)
-            print('Mean Shift: ' + str(t) + ' First Iteration')
-            # kernel_mat N x N , N number of pixels
-            kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(
-                x[t, :, :].view(self.embedding_dim,
-                                self.nb_pixels).t(), x[t, :, :].view(self.embedding_dim, self.nb_pixels))))
+        # iterating over all samples in the batch
+        for b in range(self.batch_size):
+            x = y[b, :, :]
+            # looping over the number of iterations
+            for t in range(self.nb_iterations):
+                x = x.view(-1, self.embedding_dim, self.nb_pixels)
+                print(x.size())
+                print('Mean Shift: ' + str(t) + ' First Iteration')
+                # kernel_mat N x N , N number of pixels
+                kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(
+                    x[t, :, :].view(self.embedding_dim,
+                                    self.nb_pixels).t(), x[t, :, :].view(self.embedding_dim, self.nb_pixels))))
 
-            # diag_mat N x N
-            diag_mat = torch.diag(
-                mm(kernel_mat.t(), torch.ones((self.nb_pixels, 1), device=self.device, dtype=self.dtype)).squeeze(dim=1), diagonal=0)
+                # diag_mat N x N
+                diag_mat = torch.diag(
+                    mm(kernel_mat.t(), torch.ones((self.nb_pixels, 1), device=self.device, dtype=self.dtype)).squeeze(
+                        dim=1), diagonal=0)
 
-            x = torch.cat((x.view(-1, self.embedding_dim, self.pic_res, self.pic_res), mm(x[t, :, :],
-                                                                                          torch.mul(self.step_size,
-                                                                                                    mm(kernel_mat,
-                                                                                                       torch.inverse(
-                                                                                                           diag_mat))) +
-                                                                                          torch.mul(
-                                                                                              (1 - self.step_size),
-                                                                                              torch.eye(self.nb_pixels,
-                                                                                                        self.nb_pixels,
-                                                                                                        device=self.device,
-                                                                                                        dtype=self.dtype))).view(
-                1, self.embedding_dim, self.pic_res, self.pic_res)))
+                x = torch.cat((x.view(-1, self.embedding_dim, self.pic_res_X, self.pic_res_Y), mm(x[t, :, :],
+                                                                                              torch.mul(self.step_size,
+                                                                                                        mm(kernel_mat,
+                                                                                                           torch.inverse(
+                                                                                                               diag_mat))) +
+                                                                                              torch.mul(
+                                                                                                  (1 - self.step_size),
+                                                                                                  torch.eye(
+                                                                                                      self.nb_pixels,
+                                                                                                      self.nb_pixels,
+                                                                                                      device=self.device,
+                                                                                                      dtype=self.dtype))).view(
+                    1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)))
+            print(x.size())
+            out[b, :, :, :] = x.view(self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)
+            print(out.size())
+            print(out.device)
+
+
+        # for t in range(self.nb_iterations):
+        #     x = x.view(-1, self.embedding_dim, self.nb_pixels)
+        #     print(x.size())
+        #     print('Mean Shift: ' + str(t) + ' First Iteration')
+        #     # kernel_mat N x N , N number of pixels
+        #     kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(
+        #         x[t, :, :].view(self.embedding_dim,
+        #                         self.nb_pixels).t(), x[t, :, :].view(self.embedding_dim, self.nb_pixels))))
+        #
+        #     # diag_mat N x N
+        #     diag_mat = torch.diag(
+        #         mm(kernel_mat.t(), torch.ones((self.nb_pixels, 1), device=self.device, dtype=self.dtype)).squeeze(dim=1), diagonal=0)
+        #
+        #     x = torch.cat((x.view(-1, self.embedding_dim, self.pic_res, self.pic_res), mm(x[t, :, :],
+        #                                                                                   torch.mul(self.step_size,
+        #                                                                                             mm(kernel_mat,
+        #                                                                                                torch.inverse(
+        #                                                                                                    diag_mat))) +
+        #                                                                                   torch.mul(
+        #                                                                                       (1 - self.step_size),
+        #                                                                                       torch.eye(self.nb_pixels,
+        #                                                                                                 self.nb_pixels,
+        #                                                                                                 device=self.device,
+        #                                                                                                 dtype=self.dtype))).view(
+        #         1, self.embedding_dim, self.pic_res, self.pic_res)))
 
 
             '''WORKING HERE AT THE MOMENT'''
@@ -242,7 +295,8 @@ class MS(nn.Module):
             # with torch.no_grad():
             #     self.embeddings_list.append(x.view(self.embedding_dim, self.pic_res, self.pic_res))
 
-        return x.view(-1, self.embedding_dim, self.pic_res, self.pic_res)
+        # return x.view(self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)
+        return out
 
 
 class UNetMS(nn.Module):
@@ -402,7 +456,7 @@ def compute_weight_matrix(pre_weight_matrix, dtype=c.data['dtype'], device=c.cud
 def get_embedding_loss(embedding_list, labels, dtype=c.data['dtype'], device=c.cuda['device']):
     """
     Method to compute the accumulated loss after the several MS iterations
-    :param embedding_list: List of Embeddings Computed by the Net
+    :param embedding_list: tensor dimension I x D x W x H
     :param labels: Ground Truth of Labels
     :param dtype:
     :param device:
@@ -412,6 +466,24 @@ def get_embedding_loss(embedding_list, labels, dtype=c.data['dtype'], device=c.c
     for i in range(1, embedding_list.size(0)):
         loss = torch.add(loss, embedding_loss(embedding_matrix=embedding_list[i, :, :, :], labels=labels, dtype=dtype,
                                               device=device))
+    return loss
+
+
+def get_batch_embedding_loss(embedding_list, labels_list, dtype=c.data['dtype'], device=c.cuda['device']):
+    """
+    Method to compute the accumulated loss after the several MS iterations
+    :param embedding_list: tensor dimension B x I x D x W x H
+    :param labels_list: Ground Truth of Labels of dimension B x W x H
+    :param dtype:
+    :param device:
+    :return: Tensor, returns the accumulated loss over a batch
+    """
+    loss = torch.tensor(0., dtype=dtype, device=device)
+    print(embedding_list.size())
+    for b in range(embedding_list.size(0)):
+        loss = torch.add(loss,
+                         get_embedding_loss(embedding_list[b], labels=labels_list[b], dtype=dtype,
+                                            device=device))
     return loss
 
 # model_UNet = UNet()

@@ -29,5 +29,5 @@ corr = dict(
 )
 
 cuda = dict(
-    device=torch.device('cpu'),
+    device=torch.device('cuda'),
 )

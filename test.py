@@ -30,9 +30,14 @@ device = c.cuda['device']
 torch.cuda.empty_cache()
 
 test = torch.rand(2, 10, 64, 64, dtype=dtype, device=device)
+test_label = torch.randint(0, 10, (2, 64, 64), device=device, dtype=dtype)
 model = n.UNetMS()
 model.to(device)
 model.type(dtype)
 
 output = model(test)
+loss = n.get_batch_embedding_loss(embedding_list=output, labels_list=test_label, dtype=dtype, device=device)
+print('output size', output.size())
+print(loss.size())
+print(loss)
 

@@ -42,15 +42,10 @@ class CorrelationDataset(Dataset):
         self.folder_path = folder_path
         self.transform = transform
         self.files = sorted(glob(folder_path + '*.hkl'))
-        print(self.files)
-        # removing label files from files list
-        for index, i in enumerate(self.files):
-            if 'labels' in i:
-                del self.files[index]
-        self.imgs = array([load_numpy_from_h5py(file_name=f)[0] for f in self.files])
-        self.labels = array([load_numpy_from_h5py(file_name=f)[1] for f in self.files])
-        print(self.imgs.shape)
-        print(self.labels.shape)
+        self.imgs = torch.tensor(
+            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f])
+        self.labels = torch.tensor(
+            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' in f and '16' not in f])
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
         self.test = test
@@ -61,8 +56,8 @@ class CorrelationDataset(Dataset):
 
     def __getitem__(self, idx):
         if not self.test:
-            sample = {'image': torch.tensor(self.imgs[idx, :, :], dtype=self.dtype),
-                      'label': torch.tensor(self.labels[idx, :, :], dtype=self.dtype)}
+            sample = {'image': self.imgs[idx, :, :, :],
+                      'label': self.labels[idx, :, :]}
         else:
             sample = {'image': self.imgs[idx, :, :, :]}
         if self.transform:
@@ -82,8 +77,8 @@ class NeurofinderDataset(Dataset):
         self.neurofinder_path = neurofinder_path
         self.files = sorted(glob(neurofinder_path + '/images/*.tiff'))
         self.imgs = array([imread(f) for f in self.files])
-        self.dims = self.imgs.shape[1:]         # 512 x 512
-        self.len = self.imgs.shape[0]           # 3024
+        self.dims = self.imgs.shape[1:]  # 512 x 512
+        self.len = self.imgs.shape[0]  # 3024
         self.transform = transform
         self.different_labels = c.data['different_labels']
         self.test = test
@@ -145,9 +140,51 @@ class RandomCrop(object):
         left = np.random.randint(0, w - new_w)
 
         image = image[top: top + new_h,
-                      left: left + new_w]
+                left: left + new_w]
 
         label = label - [left, top]
+
+        return {'image': image, 'landmarks': label}
+
+
+class CorrRandomCrop(object):
+    """Copied from Pytorch Documentation
+
+    Crop with Correlation Correction
+    Crop randomly the correlation image in a sample with regards to the calculated correlations.
+
+    Args:
+        output_size (tuple or int): Desired output size. If int, square crop
+            is made.
+    """
+
+    def __init__(self, output_size, corr_form=c.corr['corr_form']):
+        assert isinstance(output_size, (int, tuple))
+        if isinstance(output_size, int):
+            self.output_size = (output_size, output_size)
+        else:
+            assert len(output_size) == 2
+            self.output_size = output_size
+        self.corr_form = corr_form
+
+    def __call__(self, sample):
+        image, label = sample['image'], sample['label']
+
+        h, w = image.shape[1:3]
+        new_h, new_w = self.output_size
+
+        top = np.random.randint(0, h - new_h)
+        left = np.random.randint(0, w - new_w)
+
+        image = image[:, top: top + new_h, left: left + new_w]
+
+        # deleting information about not available offset pixels
+        correction_image = corr.get_corr(image[0, :, :].view(1, self.output_size[0], self.output_size[1]),
+                                         self.corr_form)
+        image = torch.where(correction_image == 0., correction_image, image)
+        del correction_image
+
+        label = label[top: top + new_h, left: left + new_w]
 
         return {'image': image, 'landmarks': label}
 
@@ -252,11 +289,8 @@ def load_numpy_from_h5py(file_name):
     """
     return hkl.load(str(file_name))
 
-
 # neurofinder_dataset = NeurofinderDataset('data/neurofinder.00.00')
 #
 # a = create_corr_data(neurofinder_dataset=neurofinder_dataset, corr_form='small_star', slicing=False, slice_size=1000)
 # print(a['correlations'].size())
 # print(a['labels'].size())
-
-

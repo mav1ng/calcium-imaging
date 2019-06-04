@@ -36,6 +36,11 @@ def cos_similarity(vec1, vec2):
 
 
 class UNet(nn.Module):
+    """
+    Implementation fo UNet Network
+    Expects tensor input of dimension B x C x W x H, where B is Batch size, C is number of Channels, W width of image
+    H height of image
+    """
 
     def __init__(self):
         super(UNet, self).__init__()
@@ -162,6 +167,8 @@ class UNet(nn.Module):
         x = self.conv_layer_end(x)
         x = F.softmax(x, dim=-1)
 
+        print('dimension after UNet(), ', x.size())
+
         return x
 
 
@@ -182,6 +189,7 @@ class MS(nn.Module):
         self.nb_pixels = None  # to be defined when forward is called
         self.pic_res = None
         self.device = c.cuda['device']
+        self.dtype = c.data['dtype']
 
     # x_in flattened image in D x N , N number of Pixels
 
@@ -209,7 +217,7 @@ class MS(nn.Module):
                                 self.nb_pixels).t(), x[t, :, :].view(self.embedding_dim, self.nb_pixels))))
             # diag_mat N x N
             diag_mat = torch.diag(
-                mm(kernel_mat.t(), torch.ones((self.nb_pixels, 1), device=self.device)).squeeze(dim=1), diagonal=0)
+                mm(kernel_mat.t(), torch.ones((self.nb_pixels, 1), device=self.device, dtype=self.dtype)).squeeze(dim=1), diagonal=0)
 
             x = torch.cat((x.view(-1, self.embedding_dim, self.pic_res, self.pic_res), mm(x[t, :, :],
                    torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))) +

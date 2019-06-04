@@ -29,9 +29,10 @@ device = c.cuda['device']
 
 torch.cuda.empty_cache()
 
-test = torch.rand(5, 10, 64, 64, dtype=dtype, device=device)
+test = torch.rand(1, 10, 64, 64, dtype=dtype, device=device)
 model = n.UNetMS()
 model.to(device)
 model.type(dtype)
 
+output = model(test)
 

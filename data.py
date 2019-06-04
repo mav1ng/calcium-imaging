@@ -32,7 +32,7 @@ def tomask(coords, dims):
 class CorrelationDataset(Dataset):
     """Correlation Dataset"""
 
-    def __init__(self, folder_path, transform=None, test=False, dtype=c.data['dtype']):
+    def __init__(self, folder_path, transform=None, test=False, dtype=c.data['dtype'], device=c.cuda['device']):
         """
         :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
         be used for training/testing
@@ -43,9 +43,11 @@ class CorrelationDataset(Dataset):
         self.transform = transform
         self.files = sorted(glob(folder_path + '*.hkl'))
         self.imgs = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f])
+            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f], dtype=dtype,
+            device=device)
         self.labels = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' in f and '16' not in f])
+            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' in f and '16' not in f], dtype=dtype,
+            device=device)
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
         self.test = test
@@ -144,7 +146,7 @@ class RandomCrop(object):
 
         label = label - [left, top]
 
-        return {'image': image, 'landmarks': label}
+        return {'image': image, 'label': label}
 
 
 class CorrRandomCrop(object):
@@ -186,7 +188,7 @@ class CorrRandomCrop(object):
 
         label = label[top: top + new_h, left: left + new_w]
 
-        return {'image': image, 'landmarks': label}
+        return {'image': image, 'label': label}
 
 
 def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['use_slicing'], slice_size=1):

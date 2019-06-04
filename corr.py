@@ -53,7 +53,6 @@ def get_corr(input_video, corr_form=c.corr['corr_form']):
     u_u_n = torch.sqrt(torch.sum(u_u_ ** 2, dim=0))
 
     for o, off in enumerate(corr_mask):
-        print(o)
         v = torch.zeros(input_video.size(), dtype=torch.double, device=c.cuda['device'])
 
         # both positive

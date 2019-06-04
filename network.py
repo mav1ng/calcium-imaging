@@ -185,7 +185,6 @@ class MS(nn.Module):
             self.kernel_bandwidth = 1 / (1 - c.embedding_loss['margin']) / 3
         self.step_size = c.mean_shift['step_size']
         self.nb_iterations = c.mean_shift['nb_iterations']
-        self.embeddings_list_tensor = torch.tensor([])
         self.nb_pixels = None  # to be defined when forward is called
         self.pic_res = None
         self.device = c.cuda['device']
@@ -195,14 +194,14 @@ class MS(nn.Module):
 
     def forward(self, x_in):
         """
-        :param x_in: flattened image in D x N , N number of Pixels
+        :param x_in: flattened image in D x N , D embedding Dimension, N number of Pixels
         :return: embeddings x_in mean shifted
         """
         with torch.no_grad():
             self.pic_res = x_in.size(3)
 
         x = x_in.view(self.embedding_dim, -1)
-        print(x.size())
+        print('size of x in:', x.size())
 
         with torch.no_grad():
             self.nb_pixels = x.size(1)
@@ -215,15 +214,23 @@ class MS(nn.Module):
             kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(
                 x[t, :, :].view(self.embedding_dim,
                                 self.nb_pixels).t(), x[t, :, :].view(self.embedding_dim, self.nb_pixels))))
+
             # diag_mat N x N
             diag_mat = torch.diag(
                 mm(kernel_mat.t(), torch.ones((self.nb_pixels, 1), device=self.device, dtype=self.dtype)).squeeze(dim=1), diagonal=0)
 
             x = torch.cat((x.view(-1, self.embedding_dim, self.pic_res, self.pic_res), mm(x[t, :, :],
-                   torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))) +
-                   torch.mul((1 - self.step_size), torch.eye(self.nb_pixels, self.nb_pixels, device=self.device))).view(
+                                                                                          torch.mul(self.step_size,
+                                                                                                    mm(kernel_mat,
+                                                                                                       torch.inverse(
+                                                                                                           diag_mat))) +
+                                                                                          torch.mul(
+                                                                                              (1 - self.step_size),
+                                                                                              torch.eye(self.nb_pixels,
+                                                                                                        self.nb_pixels,
+                                                                                                        device=self.device,
+                                                                                                        dtype=self.dtype))).view(
                 1, self.embedding_dim, self.pic_res, self.pic_res)))
-
 
 
             '''WORKING HERE AT THE MOMENT'''

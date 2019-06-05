@@ -25,7 +25,7 @@ def get_small_star_mask():
     return indices_list
 
 
-def get_corr(input_video, corr_form=c.corr['corr_form']):
+def get_corr(input_video, corr_form=c.corr['corr_form'], dtype=c.data['dtype'], device=c.cuda['device']):
     """
     With Tips of Elke: New Way of Calculating Corrs with two less for loops
     :param self:
@@ -36,7 +36,7 @@ def get_corr(input_video, corr_form=c.corr['corr_form']):
     X = input_video.size(1)
     Y = input_video.size(2)
 
-    corr_mask = torch.tensor([], dtype=torch.int, device=c.cuda['device'])
+    corr_mask = torch.tensor([], dtype=torch.int, device=device)
 
     # choosing correlation form here
     if corr_form == 'big_star':
@@ -45,7 +45,7 @@ def get_corr(input_video, corr_form=c.corr['corr_form']):
     if corr_form == 'small_star':
         corr_mask = get_small_star_mask()
 
-    correlation_pic = torch.zeros((corr_mask.size(0), X, Y), dtype=torch.double, device=c.cuda['device'])
+    correlation_pic = torch.zeros((corr_mask.size(0), X, Y), dtype=dtype, device=device)
 
     u = input_video
     u_ = torch.mean(u, dim=0)
@@ -53,7 +53,7 @@ def get_corr(input_video, corr_form=c.corr['corr_form']):
     u_u_n = torch.sqrt(torch.sum(u_u_ ** 2, dim=0))
 
     for o, off in enumerate(corr_mask):
-        v = torch.zeros(input_video.size(), dtype=torch.double, device=c.cuda['device'])
+        v = torch.zeros(input_video.size(), dtype=dtype, device=device)
 
         # both positive
         if off[0] >= 0 and off[1] >= 0:
@@ -78,8 +78,8 @@ def get_corr(input_video, corr_form=c.corr['corr_form']):
         zaehler = torch.sum(torch.mul(u_u_, v_v_), dim=0)
         nenner = torch.mul(u_u_n, v_v_n)
 
-        correlation_pic[o] = torch.where(nenner > 0., zaehler.div(nenner), torch.zeros((X, Y), dtype=torch.double,
-                                                                                       device=c.cuda['device']))
+        correlation_pic[o] = torch.where(nenner > 0., zaehler.div(nenner), torch.zeros((X, Y), dtype=dtype,
+                                                                                       device=device))
 
     return correlation_pic
 

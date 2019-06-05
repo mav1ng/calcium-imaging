@@ -49,6 +49,6 @@ import urllib.request as req
 # print(loss.size())
 # print(loss)
 
-for i in range(10):
-    print(i, i % 1)
 
+corr_data = data.CorrelationDataset(folder_path='data/corr/big_star/full/')
+print(corr_data[0]['image'].size())

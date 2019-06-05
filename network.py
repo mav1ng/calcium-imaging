@@ -258,7 +258,11 @@ class UNetMS(nn.Module):
     def forward(self, x):
         x = self.UNet(x)
         """Does the normalization really work that way?"""
+        # print('before normalization', x[0])
+        # print(x.size())
+        # bringing the embedding on the unit sphere
         x = F.normalize(x, p=2, dim=1)
+        # print('here we are', x[0])
         x = self.MS(x)
         return x
 
@@ -272,6 +276,7 @@ def embedding_loss(embedding_matrix, labels, dtype=c.data['dtype'], device=c.cud
     :param device: device which cuda uses
     :return: the total loss
     """
+
     pic_dim = embedding_matrix.size()[1:3]
 
     similarity_matrix = compute_similarity(embedding_matrix=embedding_matrix, dtype=dtype, device=device)
@@ -285,7 +290,7 @@ def embedding_loss(embedding_matrix, labels, dtype=c.data['dtype'], device=c.cud
                                                       similarity_matrix - c.embedding_loss['margin'], torch.tensor(
             0, device=device, dtype=dtype)), loss)
 
-    loss = torch.mul(1 / (pic_dim[0] * pic_dim[1]), torch.sum(torch.mul(weights, loss)))
+    loss = torch.mul(1. / (pic_dim[0] * pic_dim[1]), torch.sum(torch.mul(weights, loss)))
 
     return loss
 

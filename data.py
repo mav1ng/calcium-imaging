@@ -28,6 +28,9 @@ def tomask(coords, dims):
     mask[list(zip(*coords))] = 1.
     return mask
 
+def toCoords(mask):
+    pass
+
 
 class CorrelationDataset(Dataset):
     """Correlation Dataset"""
@@ -160,7 +163,7 @@ class CorrRandomCrop(object):
             is made.
     """
 
-    def __init__(self, output_size, corr_form=c.corr['corr_form']):
+    def __init__(self, output_size, corr_form=c.corr['corr_form'], device=c.cuda['device'], dtype=c.data['dtype']):
         assert isinstance(output_size, (int, tuple))
         if isinstance(output_size, int):
             self.output_size = (output_size, output_size)
@@ -168,6 +171,8 @@ class CorrRandomCrop(object):
             assert len(output_size) == 2
             self.output_size = output_size
         self.corr_form = corr_form
+        self.device = device
+        self.dtype = dtype
 
     def __call__(self, sample):
         image, label = sample['image'], sample['label']
@@ -182,8 +187,8 @@ class CorrRandomCrop(object):
 
         # deleting information about not available offset pixels, need 2 dimensions otherwise correlation always 0
         correction_image = corr.get_corr(
-            torch.rand(2, self.output_size[0], self.output_size[1], device=c.cuda['device'], dtype=c.data['dtype']),
-            self.corr_form)
+            torch.rand(2, self.output_size[0], self.output_size[1], device=self.device, dtype=self.dtype),
+            self.corr_form, device=self.device, dtype=self.dtype)
         image = torch.where(correction_image == 0., correction_image, image)
 
         del correction_image
@@ -193,7 +198,8 @@ class CorrRandomCrop(object):
         return {'image': image, 'label': label}
 
 
-def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['use_slicing'], slice_size=1):
+def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['use_slicing'], slice_size=1,
+                     dtype=c.data['dtype'], device=c.cuda['device']):
     """
     Method that creates the corresponding correlation data from the neurofinder videos and returns them
     :param neurofinder_path:
@@ -204,8 +210,8 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
     """
 
     files = sorted(glob(neurofinder_path + '/images/*.tiff'))
-    imgs = torch.tensor(array([imread(f) for f in files]).astype(np.float64), dtype=torch.double,
-                        device=c.cuda['device'])
+    imgs = torch.tensor(array([imread(f) for f in files]).astype(np.float64), dtype=dtype,
+                        device=device)
     dims = imgs.size()[1:]  # 512 x 512
     len = imgs.size(0)  # 3024
 
@@ -239,9 +245,9 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
     # if not using slicing correlations:
     if not slicing:
         print('yep we are stuck here')
-        corr_tensor = corr.get_corr(imgs, corr_form=corr_form)
+        corr_tensor = corr.get_corr(imgs, corr_form=corr_form, device=device, dtype=dtype)
     else:
-        corr_tensor = corr.get_sliced_corr(imgs, corr_form=corr_form, slice_size=slice_size)
+        corr_tensor = corr.get_sliced_corr(imgs, corr_form=corr_form, slice_size=slice_size, device=device, dtype=dtype)
     print('oh we are almost finished')
     corr_sample = {'correlations': corr_tensor, 'labels': mask}
 

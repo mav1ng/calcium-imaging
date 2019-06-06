@@ -25,6 +25,18 @@ def get_small_star_mask():
     return indices_list
 
 
+def get_starmy_mask():
+    """
+    :return: offsets correlation pixels in flattened image, 26 Correlations
+    """
+    indices_list = torch.tensor(
+        [(-1, 0), (0, -1), (1, 0), (0, 1), (2, 2), (2, -2), (-2, 2), (-2, -2), (-4, 0), (0, -4), (4, 0), (0, 4),
+         (5, -2), (5, 2), (-5, 2), (-5, -2), (10, 0), (0, 10), (-10, 0), (0, -10), (0, -18), (15, -6), (15, 6), (0, 18),
+         (-15, 6), (-15, -6)],
+        dtype=torch.int, device=c.cuda['device'])
+    return indices_list
+
+
 def get_corr(input_video, corr_form=c.corr['corr_form'], dtype=c.data['dtype'], device=c.cuda['device']):
     """
     With Tips of Elke: New Way of Calculating Corrs with two less for loops
@@ -44,6 +56,9 @@ def get_corr(input_video, corr_form=c.corr['corr_form'], dtype=c.data['dtype'], 
 
     if corr_form == 'small_star':
         corr_mask = get_small_star_mask()
+
+    if corr_form == 'starmy':
+        corr_mask = get_starmy_mask()
 
     correlation_pic = torch.zeros((corr_mask.size(0), X, Y), dtype=dtype, device=device)
 
@@ -84,15 +99,18 @@ def get_corr(input_video, corr_form=c.corr['corr_form'], dtype=c.data['dtype'], 
     return correlation_pic
 
 
-def get_sliced_corr(input_video, corr_form=c.corr['corr_form'], slice_size=100):
+def get_sliced_corr(input_video, corr_form=c.corr['corr_form'], slice_size=100, device=c.cuda['device'],
+                    dtype=c.data['dtype']):
     """
     Method that computes the correlations for a series of images with the slicing process
     :param input_video: T * N * N,  N number of pixels on one side, T number of Frames
     :param corr_form: form of the correlation mask that is used for calculating the correlations
     :param slice_size: number of frames in one slice
+    :param dtype:
+    :param device:
     :return: C * N * N, C number of correlations
     """
-    corr_array = torch.tensor([], dtype=torch.double, device=c.cuda['device'])
+    corr_array = torch.tensor([], dtype=dtype, device=device)
     startidx = np.random.randint(0, input_video.size()[0] - 1)
     number_iter = int(np.floor(input_video.size()[0] / slice_size))
 
@@ -101,11 +119,32 @@ def get_sliced_corr(input_video, corr_form=c.corr['corr_form'], slice_size=100):
     for i in range(number_iter):
         if i == 0:
             corr_array = torch.reshape(
-                get_corr(rolled_input_video[i * slice_size: (i + 1) * slice_size, :, :], corr_form),
+                get_corr(rolled_input_video[i * slice_size: (i + 1) * slice_size, :, :], corr_form, dtype=dtype,
+                         device=device),
                 (-1, input_video.size(1), input_video.size(2), 1))
         else:
             corr_array = torch.cat((corr_array, torch.reshape(
-                get_corr(rolled_input_video[i * slice_size: (i + 1) * slice_size, :, :], corr_form),
+                get_corr(rolled_input_video[i * slice_size: (i + 1) * slice_size, :, :], corr_form, dtype=dtype,
+                         device=device),
                 (-1, input_video.size(1), input_video.size(2), 1))), dim=3)
 
     return torch.max(corr_array, dim=3)[0]
+
+
+# for index, folder in enumerate(sorted(os.listdir('data/training_data'))):
+#     print(folder)
+#     corr = data.create_corr_data(neurofinder_path='data/training_data/' + str(folder), slicing=False, corr_form='big_star', dtype=dtype, device=device)
+#     data.save_numpy_to_h5py(data_array=corr['correlations'].numpy(), label_array=corr['labels'].numpy(),
+#                                 file_name='corr_nf_' + str(index), file_path='data/corr/big_star/full/')
+#
+# for index, folder in enumerate(sorted(os.listdir('data/training_data'))):
+#     print(folder)
+#     corr = data.create_corr_data(neurofinder_path='data/training_data/' + str(folder), slicing=True, slice_size=100, corr_form='big_star', dtype=dtype, device=device)
+#     data.save_numpy_to_h5py(data_array=corr['correlations'].numpy(), label_array=corr['labels'].numpy(),
+#                                 file_name='corr_nf_' + str(index), file_path='data/corr/big_star/sliced/slice_size_100/')
+#
+# for index, folder in enumerate(sorted(os.listdir('data/training_data'))):
+#     print(folder)
+#     corr = data.create_corr_data(neurofinder_path='data/training_data/' + str(folder), corr_form='small_star', slicing=True, slice_size=100, dtype=dtype, device=device)
+#     data.save_numpy_to_h5py(data_array=corr['correlations'].numpy(), label_array=corr['labels'].numpy(),
+#                                 file_name='corr_nf_' + str(index), file_path='data/corr/small_star/sliced/slice_size_100/')

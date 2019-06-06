@@ -1,16 +1,16 @@
 import torch
 
 UNet = dict(
-    input_channels=16,                       # specifies the number of channels of the input image
-    embedding_dim=32,                       # sets the base embedding dimension of UNet
+    input_channels=26,                       # specifies the number of channels of the input image
+    embedding_dim=20,                       # sets the base embedding dimension of UNet
     dropout_rate=0.25,                      # sets the dropout rate in UNet Model
 )
 
 mean_shift = dict(
-    embedding_dim=32,
+    embedding_dim=20,
     kernel_bandwidth=None,                  # set to float if should be used, margin is now used to calculate bandwidth
     step_size=1,                            # mean shift step size
-    nb_iterations=0,                       # number of iterations, if < 1 model UNet
+    nb_iterations=0,                       # number of iterations, if < 1 model UNet with Unit Sphere Normalization
 )
 
 embedding_loss = dict(
@@ -24,7 +24,7 @@ data = dict(
 )
 
 corr = dict(
-    corr_form='small_star',
+    corr_form='big_star',
     use_slicing=False,
 )
 

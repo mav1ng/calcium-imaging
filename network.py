@@ -409,6 +409,8 @@ def get_embedding_loss(embedding_list, labels, dtype=c.data['dtype'], device=c.c
     for i in range(0, embedding_list.size(0)):
         loss = torch.add(loss, embedding_loss(embedding_matrix=embedding_list[i, :, :, :], labels=labels, dtype=dtype,
                                               device=device))
+    # weighting the loss depending on how many neurons are in the picture
+    # loss = torch.mul(labels.size(0) * labels.size(1)/(labels.nonzero().size(0)), loss)
     return loss
 
 

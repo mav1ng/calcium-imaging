@@ -28,8 +28,61 @@ def tomask(coords, dims):
     mask[list(zip(*coords))] = 1.
     return mask
 
+
 def toCoords(mask):
     pass
+
+
+class CombinedDataset(Dataset):
+    """Combined Dataset with Correlations and Mean Summary image and Var Summary image"""
+
+    def __init__(self, corr_path, sum_folder, transform=None, test=False, dtype=c.data['dtype'],
+                 device=c.cuda['device']):
+        """
+        :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
+        be used for training/testing
+        :param transform: whether a transform should be used on a sample that is getting drawn
+        """
+
+        self.folder_path = corr_path
+        self.transform = transform
+        self.files = sorted(glob(corr_path + '*.hkl'))
+        self.sum_img = sorted(glob(sum_folder + '*.hkl'))
+        self.imgs = torch.tensor(
+            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f], dtype=dtype,
+            device=device)
+        self.labels = torch.tensor(
+            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' in f and '16' not in f], dtype=dtype,
+            device=device)
+        self.dims = self.imgs.shape[2:]  # 512 x 512
+        self.len = self.imgs.shape[0]
+        self.test = test
+        self.dtype = dtype
+        self.sum_mean = torch.tensor(
+            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'var' not in f and '03.00' not in f],
+            dtype=dtype,
+            device=device)
+        self.sum_var = torch.tensor(
+            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'mean' not in f and '03.00' not in f],
+            dtype=dtype,
+            device=device)
+
+    def __len__(self):
+        return self.len
+
+    def __getitem__(self, idx):
+        if not self.test:
+            sample = {'image': torch.cat((self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.imgs[idx]), dim=0),
+                      'label': self.labels[idx]}
+        else:
+            sample = {'image': torch.cat((self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.imgs[idx]), dim=0)}
+        if self.transform:
+            sample = self.transform(sample)
+        return sample
 
 
 class CorrelationDataset(Dataset):
@@ -163,7 +216,8 @@ class CorrRandomCrop(object):
             is made.
     """
 
-    def __init__(self, output_size, corr_form=c.corr['corr_form'], device=c.cuda['device'], dtype=c.data['dtype']):
+    def __init__(self, output_size, summary_included=True, corr_form=c.corr['corr_form'], device=c.cuda['device'],
+                 dtype=c.data['dtype']):
         assert isinstance(output_size, (int, tuple))
         if isinstance(output_size, int):
             self.output_size = (output_size, output_size)
@@ -173,6 +227,7 @@ class CorrRandomCrop(object):
         self.corr_form = corr_form
         self.device = device
         self.dtype = dtype
+        self.summary = summary_included
 
     def __call__(self, sample):
         image, label = sample['image'], sample['label']
@@ -189,7 +244,10 @@ class CorrRandomCrop(object):
         correction_image = corr.get_corr(
             torch.rand(2, self.output_size[0], self.output_size[1], device=self.device, dtype=self.dtype),
             self.corr_form, device=self.device, dtype=self.dtype)
-        image = torch.where(correction_image == 0., correction_image, image)
+        if self.summary:
+            image[2:] = torch.where(correction_image == 0., correction_image, image[2:])
+        else:
+            image = torch.where(correction_image == 0., correction_image, image)
 
         del correction_image
 
@@ -254,11 +312,83 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
     return corr_sample
 
 
+def get_mean_img(video):
+    """
+    Method that calculates the summary image of nf datasets with respect to the mean
+    :param video: tensor T x W x H
+    :return: summary image of the neurofinder video W x H
+    """
+    return torch.mean(video, dim=0)
+
+
+def get_var_img(video):
+    """
+    Method that calculates the summary image of nf datasets with respect to the variance
+    :param video: tensor T x W x H
+    :return: summary image of the neurofinder video W x H
+    """
+    return torch.var(video, dim=0)
+
+
+def normalize_summary_img(summary_img, device=c.cuda['device'], dtype=c.data['dtype']):
+    """
+    Method that normalizes the mean summary image
+    :param summary_img: tensor W x H
+    :param device:
+    :param dtype:
+    :return: Normalized Mean summary image W x H
+    """
+    dims = summary_img.size()
+    v = summary_img.view(-1)
+    v_ = torch.mean(summary_img, dim=0)
+    v_v_ = v - v_
+    v_v_n = torch.sqrt(torch.sum(v_v_ ** 2, dim=0))
+
+    return (v_v_ / v_v_n).view(dims[0], dims[1])
+
+
 # a = create_corr_data('data/neurofinder.00.00')
 # print(a['correlations'].size(), a['labels'].size())
 
 
-def save_numpy_to_h5py(data_array, label_array, file_name, file_path, use_compression=c.data['use_compression']):
+def create_summary_img(nf_folder, dtype=c.data['dtype'], device=c.cuda['device']):
+    """
+    Method that creates summary image of specified neurofinder folder
+    :param nf_folder:
+    :param dtype:
+    :param device:
+    :param test:
+    :return:
+    """
+    files = sorted(glob(nf_folder + '/images/*.tiff'))
+    imgs = torch.tensor(array([imread(f) for f in files]).astype(np.float64), dtype=dtype,
+                        device=device)
+    mean_summar = get_mean_img(imgs)
+    var_summar = get_var_img(imgs)
+    save_numpy_to_h5py(data_array=mean_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-5:] + '_mean',
+                       file_path='data/sum_img/')
+    save_numpy_to_h5py(data_array=var_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-5:] + '_var',
+                       file_path='data/sum_img/')
+    pass
+
+
+def get_summary_img(folder, dtype=c.data['dtype'], device=c.cuda['device']):
+    """
+    Method that creates summmary images of the Neurofinder Datasets
+    :param folder:
+    :param dtype:
+    :param device:
+    :return:
+    """
+    dic = os.listdir(folder)
+    print(dic)
+    for x in dic:
+        print('Summarizing ' + str(x) + ' ...')
+        create_summary_img(str(folder) + str(x), dtype=dtype, device=device)
+    pass
+
+
+def save_numpy_to_h5py(data_array, file_name, file_path, label_array=None, use_compression=c.data['use_compression']):
     """
     Method to save correlation data and label numpy arrays to disk either compressed or not
     :param use_compression: whether to use compression or not
@@ -273,19 +403,22 @@ def save_numpy_to_h5py(data_array, label_array, file_name, file_path, use_compre
         hkl.dump(data_array, str(file_path) + str(file_name) + '.hkl', mode='w')
         print('File ' + str(file_path) + str(file_name) + '.hkl' +
               ' saved uncompressed: %i bytes' % os.path.getsize(str(file_path) + str(file_name) + '.hkl'))
-        hkl.dump(label_array, str(file_path) + str(file_name) + '_labels.hkl', mode='w')
-        # Dump Labels to file
-        print('File ' + str(file_path) + str(file_name) + '_labels.hkl' +
-              ' saved uncompressed: %i bytes' % os.path.getsize(str(file_path) + str(file_name) + '_labels.hkl'))
+        if not label_array is None:
+            hkl.dump(label_array, str(file_path) + str(file_name) + '_labels.hkl', mode='w')
+            # Dump Labels to file
+            print('File ' + str(file_path) + str(file_name) + '_labels.hkl' +
+                  ' saved uncompressed: %i bytes' % os.path.getsize(str(file_path) + str(file_name) + '_labels.hkl'))
     else:
         # Dump data, with compression to file
         hkl.dump(data_array, str(file_path) + str(file_name) + '_gzip.hkl', mode='w', compression='gzip')
         print('File ' + str(file_path) + str(file_name) + '_gzip.hkl' +
               ' saved compressed:   %i bytes' % os.path.getsize(str(file_path) + str(file_name) + '_gzip.hkl'))
-        # Dump labels, with compression to file
-        hkl.dump(label_array, str(file_path) + str(file_name) + '_labels_gzip.hkl', mode='w', compression='gzip')
-        print('File ' + str(file_path) + str(file_name) + '_labels_gzip.hkl' +
-              ' saved compressed:   %i bytes' % os.path.getsize(str(file_path) + str(file_name) + '_labels_gzip.hkl'))
+        if not label_array is None:
+            # Dump labels, with compression to file
+            hkl.dump(label_array, str(file_path) + str(file_name) + '_labels_gzip.hkl', mode='w', compression='gzip')
+            print('File ' + str(file_path) + str(file_name) + '_labels_gzip.hkl' +
+                  ' saved compressed:   %i bytes' % os.path.getsize(
+                str(file_path) + str(file_name) + '_labels_gzip.hkl'))
     pass
 
 

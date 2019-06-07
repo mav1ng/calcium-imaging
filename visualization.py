@@ -28,13 +28,21 @@ def plot3Dembeddings(embeddings):
 
 
 def draw_umap(n_neighbors=15, min_dist=0.1, n_components=2, metric='euclidean', title='', data=None, color=None):
+
     fit = umap.UMAP(
         n_neighbors=n_neighbors,
         min_dist=min_dist,
         n_components=n_components,
         metric=metric
     )
-    u = fit.fit_transform(data);
+
+    v = data
+    v_ = np.mean(data.reshape(-1))
+    v_v_ = v - v_
+    v_v_n = np.std(data.reshape(-1))
+    v = v_v_ / v_v_n
+
+    u = fit.fit_transform(v)
     fig = plt.figure()
     if n_components == 1:
         ax = fig.add_subplot(111)

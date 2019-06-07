@@ -49,6 +49,7 @@ import urllib.request as req
 # print(loss.size())
 # print(loss)
 
-
-corr_data = data.CorrelationDataset(folder_path='data/corr/big_star/full/')
-print(corr_data[0]['image'].size())
+# test_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/')
+# print(test_dataset[0]['image'].size())
+# plt.imshow(test_dataset[0]['image'][0, :, :].detach().cpu().numpy())
+# plt.show()

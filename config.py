@@ -1,7 +1,7 @@
 import torch
 
 UNet = dict(
-    input_channels=26,                       # specifies the number of channels of the input image
+    input_channels=28,                       # specifies the number of channels of the input image
     embedding_dim=20,                       # sets the base embedding dimension of UNet
     dropout_rate=0.25,                      # sets the dropout rate in UNet Model
 )
@@ -24,13 +24,13 @@ data = dict(
 )
 
 corr = dict(
-    corr_form='big_star',
+    corr_form='starmy',
     use_slicing=False,
 )
 
 training = dict(
-    lr=0.00025,
-    nb_epochs=1000,
+    lr=0.002,
+    nb_epochs=10,
     img_size=64,
 
     min_neuron_pixels=0.1,

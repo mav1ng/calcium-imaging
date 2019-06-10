@@ -29,7 +29,8 @@ corr = dict(
 )
 
 training = dict(
-    lr=0.002,
+    train=False,
+    lr=0.0001,
     nb_epochs=10,
     img_size=64,
 
@@ -38,4 +39,10 @@ training = dict(
 
 cuda = dict(
     device=torch.device('cuda'),
+)
+
+debug = dict(
+    umap_img=False,
+    print_img=False,
+    print_img_steps=20,
 )

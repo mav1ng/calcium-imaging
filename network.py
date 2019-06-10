@@ -219,6 +219,7 @@ class MS(nn.Module):
             # looping over the number of iterations
             for t in range(self.nb_iterations):
                 x = x.view(-1, self.embedding_dim, self.nb_pixels)
+
                 # kernel_mat N x N , N number of pixels
                 kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(
                     x[t, :, :].view(self.embedding_dim,
@@ -230,17 +231,19 @@ class MS(nn.Module):
                         dim=1), diagonal=0)
 
                 x = torch.cat((x.view(-1, self.embedding_dim, self.pic_res_X, self.pic_res_Y), mm(x[t, :, :],
-                                                                                              torch.mul(self.step_size,
-                                                                                                        mm(kernel_mat,
-                                                                                                           torch.inverse(
-                                                                                                               diag_mat))) +
-                                                                                              torch.mul(
-                                                                                                  (1 - self.step_size),
-                                                                                                  torch.eye(
-                                                                                                      self.nb_pixels,
-                                                                                                      self.nb_pixels,
-                                                                                                      device=self.device,
-                                                                                                      dtype=self.dtype))).view(
+                                                                                                  torch.mul(
+                                                                                                      self.step_size,
+                                                                                                      mm(kernel_mat,
+                                                                                                         torch.inverse(
+                                                                                                             diag_mat))) +
+                                                                                                  torch.mul(
+                                                                                                      (
+                                                                                                                  1 - self.step_size),
+                                                                                                      torch.eye(
+                                                                                                          self.nb_pixels,
+                                                                                                          self.nb_pixels,
+                                                                                                          device=self.device,
+                                                                                                          dtype=self.dtype))).view(
                     1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)))
 
             out[b, :, :, :] = x.view(self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)

@@ -54,3 +54,4 @@ def draw_umap(n_neighbors=15, min_dist=0.1, n_components=2, metric='euclidean', 
         ax = fig.add_subplot(111, projection='3d')
         ax.scatter(u[:,0], u[:,1], u[:,2], c=color, s=100)
     plt.title(title, fontsize=18)
+    return fig

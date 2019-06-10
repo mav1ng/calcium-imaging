@@ -1,24 +1,53 @@
-# creating correlation data from neurofinder
+import sys
+import future        # pip install future
+import builtins      # pip install future
+import past          # pip install future
+import six           # pip install six
+
+
+if '/export/home/mvspreng/PycharmProjects' not in sys.path:
+    sys.path.append('/export/home/mvspreng/PycharmProjects')
+
+if '/export/home/mvspreng/PycharmProjects/calcium-imaging' not in sys.path:
+    sys.path.append('/export/home/mvspreng/PycharmProjects/calcium-imaging')
+
+if '/net/hcihome/storage/mvspreng/PycharmProjects/calcium-imaging' not in sys.path:
+    sys.path.append('/net/hcihome/storage/mvspreng/PycharmProjects/calcium-imaging')
+
+if '/export/home/mvspreng/anaconda3/lib/python37.zip' not in sys.path:
+    sys.path.append('/export/home/mvspreng/anaconda3/lib/python37.zip')
+
+if '/export/home/mvspreng/anaconda3/lib/python3.7' not in sys.path:
+    sys.path.append('/export/home/mvspreng/anaconda3/lib/python3.7')
+
+if '/export/home/mvspreng/anaconda3/lib/python3.7/lib-dynload' not in sys.path:
+    sys.path.append('/export/home/mvspreng/anaconda3/lib/python3.7/lib-dynload')
+
+if '/export/home/mvspreng/anaconda3/lib/python3.7/site-packages' not in sys.path:
+    sys.path.append('/export/home/mvspreng/anaconda3/lib/python3.7/site-packages')
+
+print(sys.path)
+
 from torch import optim
 import os
-
-import config as c
-import data
-import corr
-import network as n
 import torch
 from torchvision import transforms, utils
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-
-import visualization as v
-import training as t
 from torch.utils.tensorboard import SummaryWriter
 import umap
 
-# writer = SummaryWriter(log_dir='training_log/')
+import config as c
+import data
+import corr
+import network as n
+import visualization as v
+import training as t
 
+writer = SummaryWriter(log_dir='training_log/')
+
+train = c.training['train']
 dtype = c.data['dtype']
 device = c.cuda['device']
 lr = c.training['lr']
@@ -48,7 +77,7 @@ model.type(dtype)
 
 # loading old weights
 try:
-    model.load_state_dict(torch.load('model/model_weights.pt'))
+    model.load_state_dict(torch.load('model/model_weights_iter_0.pt'))
     model.eval()
     print('Loaded Model!')
 except FileNotFoundError:
@@ -57,70 +86,96 @@ except FileNotFoundError:
     model.apply(t.weight_init)
     print('Finished Initializing')
 
-optimizer = optim.Adam(model.parameters(), lr=lr)
+if train:
 
-# # Print model's state_dict
-# print("Model's state_dict:")
-# for param_tensor in model.state_dict():
-#     print(param_tensor, "\t", model.state_dict()[param_tensor].size())
-#
-# # Print optimizer's state_dict
-# print("Optimizer's state_dict:")
-# for var_name in optimizer.state_dict():
-#     print(var_name, "\t", optimizer.state_dict()[var_name])
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 
+    for epoch in range(nb_epochs):
+        # optimizer = optim.Adam(model.parameters(), lr=t.poly_lr(epoch, nb_epochs, base_lr=lr, exp=0.95))
+        running_loss = 0.0
+        for i in range(100):
+            for index, batch in enumerate(dataloader):
+                input = batch['image']
+                label = batch['label']
 
-for epoch in range(nb_epochs):
-    # optimizer = optim.Adam(model.parameters(), lr=t.poly_lr(epoch, nb_epochs, base_lr=lr, exp=0.95))
-    running_loss = 0.0
-    for i in range(100):
-        for index, batch in enumerate(dataloader):
-            input = batch['image']
-            label = batch['label']
+                '''Debugging'''
+                if c.debug['umap_img'] and i % c.debug['print_img_steps'] == 0:
+                    figure = v.draw_umap(15, 0.1, 2, 'cosine', 'Input Features Projection',
+                                         data=input[0].detach().view(c.UNet['input_channels'], -1).t().cpu().numpy(),
+                                         color=label[0].view(-1).detach().cpu().numpy().astype(int))
+                    writer.add_figure(figure=figure, tag='Input Features Projection')
+                    if c.debug['print_img']:
+                        plt.show()
 
-            # v.draw_umap(15, 0.1, 2, 'cosine', 'Embedding Projection',
-            #             data=input.detach().view(c.UNet['input_channels'], -1).t().cpu().numpy(),
-            #             color=label.view(-1).detach().cpu().numpy().astype(int))
-            # plt.show()
+                # ignoring samples where neuron density too low
+                # if (label.nonzero().size(0)) / (img_size ** 2) <= c.training['min_neuron_pixels']:
+                #     continue
 
-            # ignoring samples where neuron density too low
-            if (label.nonzero().size(0)) / (img_size ** 2) <= c.training['min_neuron_pixels']:
-                continue
+                # zero the parameter gradients
+                optimizer.zero_grad()
 
-            # zero the parameter gradients
-            optimizer.zero_grad()
+                output = model(input)
 
-            output = model(input)
+                '''Debugging'''
+                if c.debug['umap_img'] and i % c.debug['print_img_steps'] == 0:
+                    figure = v.draw_umap(15, 0.1, 2, 'cosine', 'Embedding Projection after Model',
+                                         data=output[0, -1, :, :, :].detach().view(c.UNet['embedding_dim'],
+                                                                                    -1).t().cpu().numpy(),
+                                         color=label[0].view(-1).detach().cpu().numpy().astype(int))
+                    writer.add_figure(figure=figure, tag='Predicted Embeddings')
+                    if c.debug['print_img']:
+                        plt.show()
 
-            loss = n.get_batch_embedding_loss(embedding_list=output, labels_list=label, device=device, dtype=dtype)
+                loss = n.get_batch_embedding_loss(embedding_list=output, labels_list=label, device=device, dtype=dtype)
 
-            # writer.add_scalar('Training Loss', loss)
+                writer.add_scalar('Training Loss', loss.detach().cpu().numpy())
 
-            loss.backward()
-            optimizer.step()
+                loss.backward()
+                optimizer.step()
 
-            # print statistics
-            running_loss += loss.item()
-            if (epoch * dataloader.__len__() + index) % 1 == 0:  # print every mini-batch
-                print('[%d, %5d] loss: %.5f' %
-                      (epoch + 1, i + 1, running_loss / 1))
-                running_loss = 0.0
-
-                # v.draw_umap(15, 0.1, 2, 'euclidean', 'Embedding Projection after Model',
-                #             data=output[-1, -1, :, :, :].detach().view(c.UNet['embedding_dim'], -1).t().cpu().numpy(),
-                #             color=label.view(-1).detach().cpu().numpy().astype(int))
-                # plt.show()
-
-                # tensorboard
-                # writer.add_embedding(tag='Embedding', mat=output[-1, -1, :, :, :].view(c.UNet['embedding_dim'], -1).t())
+                # print statistics
+                running_loss += loss.item()
+                if (epoch * dataloader.__len__() + index) % 1 == 0:  # print every mini-batch
+                    print('[%d, %5d] loss: %.5f' %
+                          (epoch + 1, i + 1, running_loss / 1))
+                    running_loss = 0.0
 
 
-# writer.close()
+        print('Saved Model After Epoch')
+        torch.save(model.state_dict(), 'model/model_weights_iter_0.pt')
 
-print('Saved Model')
-torch.save(model.state_dict(), 'model/model_weights.pt')
+    writer.close()
 
-print('Finished Training')
+    print('Saved Model')
+    torch.save(model.state_dict(), 'model/model_weights_iter_0.pt')
+
+    print('Finished Training')
+
+if not train:
+    dataloader = DataLoader(comb_dataset, batch_size=1, shuffle=True, num_workers=0)
+    print('Start Testing')
+    for index, batch in enumerate(dataloader):
+        input = batch['image']
+        label = batch['label']
+
+        if (label.nonzero().size(0)) / (img_size ** 2) <= c.training['min_neuron_pixels']:
+            continue
 
 
-
+        v.draw_umap(15, 0.1, 2, 'cosine', 'Input Features Projection',
+                    data=input[0].detach().view(input.size(1), -1).t().cpu().numpy(),
+                    color=label[0].view(-1).detach().cpu().numpy().astype(int))
+        plt.show()
+        output = model(input)
+        print('Loss: ' + str(
+            n.get_batch_embedding_loss(embedding_list=output, labels_list=label, device=device, dtype=dtype)))
+        v.draw_umap(15, 0.1, 2, 'cosine', 'Embedding Projection after Model',
+                    data=output[0, -1, :, :, :].detach().view(c.UNet['embedding_dim'],
+                                                              -1).t().unique(dim=0).cpu().numpy(),
+                    color=label[0].view(-1).detach().cpu().numpy().astype(int))
+        # v.draw_umap(15, 0.1, 2, 'cosine', 'Embedding Projection after Model',
+        #             data=output[0, -1, :, :, :].detach().view(c.UNet['embedding_dim'],
+        #                                                       -1).t().cpu().numpy(),
+        #             color=label[0].view(-1).detach().cpu().numpy().astype(int))
+        plt.show()
+    print('Finished Testing')

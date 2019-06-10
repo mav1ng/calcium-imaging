@@ -40,8 +40,12 @@ training = dict(
 cuda = dict(
     device=torch.device('cuda'),
     mult_device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-    use_devices=[0, 1, 2],
+    use_devices=[0, 1],
     use_mult=False,
+)
+
+tb = dict(
+    loss_name='iter_0_drevil'
 )
 
 debug = dict(

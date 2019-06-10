@@ -20,36 +20,13 @@ import config as c
 import network as n
 import data
 import corr
+import training as t
 
-import json
-import socket
-import urllib.request as req
+a = torch.rand((10, 1, 2, 2, 2), device=torch.device('cuda'))
+b = torch.randint(0, 10, (10, 2, 2), device=torch.device('cuda'), dtype=torch.float)
 
-# dtype = c.data['dtype']
-# device = c.cuda['device']
-#
-# torch.cuda.empty_cache()
-#
-# test = torch.rand(2, 10, 64, 64, dtype=dtype, device=device)
-# test_label = torch.randint(0, 10, (2, 64, 64), device=device, dtype=dtype)
-# model = n.UNetMS()
-# model.to(device)
-# model.type(dtype)
-#
-# optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-# optimizer.zero_grad()
-#
-# output = model(test)
-# loss = n.get_batch_embedding_loss(embedding_list=output, labels_list=test_label, dtype=dtype, device=device)
-#
-# loss.backward()
-# optimizer.step()
-#
-# print('output size', output.size())
-# print(loss.size())
-# print(loss)
+print(n.embedding_loss(a[0, 0], b[0]))
+print(n.embedding_loss_new(a[0, 0], b[0]))
 
-# test_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/')
-# print(test_dataset[0]['image'].size())
-# plt.imshow(test_dataset[0]['image'][0, :, :].detach().cpu().numpy())
-# plt.show()
+print(n.get_batch_embedding_loss(a, b))
+print(n.get_batch_embedding_loss_new(a, b))

@@ -38,7 +38,7 @@ import network as n
 import visualization as v
 import training as t
 
-writer = SummaryWriter(log_dir='training_log/')
+writer = SummaryWriter(log_dir='training_log/' + str(c.tb['loss_name']) + '/')
 
 train = c.training['train']
 dtype = c.data['dtype']
@@ -72,13 +72,12 @@ print('Initialized Dataloader')
 model = n.UNetMS()
 if c.cuda['use_mult']:
     model = nn.DataParallel(model, device_ids=c.cuda['use_devices'])
-print(torch.cuda.device_count())
 model.to(device)
 model.type(dtype)
 
 # loading old weights
 try:
-    model.load_state_dict(torch.load('model/model_weights_iter_2_heron.pt'))
+    model.load_state_dict(torch.load('model/model_weights_iter_1_heron.pt'))
     model.eval()
     print('Loaded Model!')
 except IOError:
@@ -90,7 +89,6 @@ except IOError:
 if train:
 
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    print(model.parameters())
 
     for epoch in range(nb_epochs):
         # optimizer = optim.Adam(model.parameters(), lr=t.poly_lr(epoch, nb_epochs, base_lr=lr, exp=0.95))
@@ -144,9 +142,9 @@ if train:
 
             loss.backward()
 
-            for param in model.parameters():
-                print(param.grad.data.sum())
-                # print(param)
+            # for param in model.parameters():
+            #     print(param.grad.data.sum())
+            #     # print(param)
 
             optimizer.step()
 
@@ -159,12 +157,12 @@ if train:
 
 
         print('Saved Model After Epoch')
-        torch.save(model.state_dict(), 'model/model_weights_iter_2_heron.pt')
+        torch.save(model.state_dict(), 'model/model_weights_iter_1_heron.pt')
 
     writer.close()
 
     print('Saved Model')
-    torch.save(model.state_dict(), 'model/model_weights_iter_2_heron.pt')
+    torch.save(model.state_dict(), 'model/model_weights_iter_1_heron.pt')
 
     print('Finished Training')
 

@@ -65,7 +65,7 @@ transform = transforms.Compose([data.CorrRandomCrop(img_size, summary_included=T
 comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/',
                                     transform=transform, device=device, dtype=dtype)
 print('Loaded the Dataset')
-random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=20000)
+random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=2000)
 dataloader = DataLoader(comb_dataset, batch_size=20, num_workers=0, sampler=random_sampler)
 print('Initialized Dataloader')
 
@@ -77,7 +77,7 @@ model.type(dtype)
 
 # loading old weights
 try:
-    model.load_state_dict(torch.load('model/model_weights_iter_1_heron.pt'))
+    model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['loss_name']) + '.pt'))
     model.eval()
     print('Loaded Model!')
 except IOError:
@@ -157,12 +157,12 @@ if train:
 
 
         print('Saved Model After Epoch')
-        torch.save(model.state_dict(), 'model/model_weights_iter_1_heron.pt')
+        torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
 
     writer.close()
 
     print('Saved Model')
-    torch.save(model.state_dict(), 'model/model_weights_iter_1_heron.pt')
+    torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
 
     print('Finished Training')
 

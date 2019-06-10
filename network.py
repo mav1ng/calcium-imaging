@@ -205,7 +205,7 @@ class MS(nn.Module):
             self.batch_size = x_in.size(0)
 
         x = x_in.view(self.batch_size, self.embedding_dim, -1)
-        y = x.clone()
+        y = x.clone().cpu()
 
         out = torch.empty(self.batch_size, self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y,
                           device=self.device, dtype=self.dtype)
@@ -215,7 +215,7 @@ class MS(nn.Module):
 
         # iterating over all samples in the batch
         for b in range(self.batch_size):
-            x = y[b, :, :]
+            x = y[b, :, :].cuda()
             # looping over the number of iterations
             for t in range(self.nb_iterations):
                 x = x.view(-1, self.embedding_dim, self.nb_pixels)
@@ -246,7 +246,7 @@ class MS(nn.Module):
                                                                                                           dtype=self.dtype))).view(
                     1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)))
 
-            out[b, :, :, :] = x.view(self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)
+            out[b, :, :, :] = x.view(self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y).cpu()
 
         return out
 

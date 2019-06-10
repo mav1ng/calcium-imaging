@@ -90,6 +90,7 @@ except IOError:
 if train:
 
     optimizer = optim.Adam(model.parameters(), lr=lr)
+    print(model.parameters())
 
     for epoch in range(nb_epochs):
         # optimizer = optim.Adam(model.parameters(), lr=t.poly_lr(epoch, nb_epochs, base_lr=lr, exp=0.95))
@@ -98,14 +99,20 @@ if train:
             input = batch['image']
             label = batch['label']
 
+            input.requires_grad = True
+
             '''Debugging'''
-            if c.debug['umap_img'] and index % c.debug['print_img_steps'] == 0:
-                figure = v.draw_umap(15, 0.1, 2, 'cosine', 'Input Features Projection',
-                                     data=input[0].detach().view(c.UNet['input_channels'], -1).t().cpu().numpy(),
-                                     color=label[0].view(-1).detach().cpu().numpy().astype(int))
-                writer.add_figure(figure=figure, tag='Input Features Projection')
-                if c.debug['print_img']:
-                    plt.show()
+            if c.debug['add_emb']:
+                writer.add_embedding(mat=input[0].detach().view(c.UNet['input_channels'], -1).t().cpu().numpy(),
+                                     tag='Before ' + str(epoch) + str(index),
+                                     metadata=label[0].view(-1).detach().cpu().numpy().astype(int), global_step=epoch)
+            # if c.debug['umap_img'] and index % c.debug['print_img_steps'] == 0:
+            #     figure = v.draw_umap(15, 0.1, 2, 'cosine', 'Input Features Projection',
+            #                          data=input[0].detach().view(c.UNet['input_channels'], -1).t().cpu().numpy(),
+            #                          color=label[0].view(-1).detach().cpu().numpy().astype(int))
+            #     writer.add_figure(figure=figure, tag='Input Features Projection')
+            #     if c.debug['print_img']:
+            #         plt.show()
 
             # ignoring samples where neuron density too low
             # if (label.nonzero().size(0)) / (img_size ** 2) <= c.training['min_neuron_pixels']:
@@ -117,20 +124,30 @@ if train:
             output = model(input)
 
             '''Debugging'''
-            if c.debug['umap_img'] and index % c.debug['print_img_steps'] == 0:
-                figure = v.draw_umap(15, 0.1, 2, 'cosine', 'Embedding Projection after Model',
-                                     data=output[0, -1, :, :, :].detach().view(c.UNet['embedding_dim'],
-                                                                               -1).t().cpu().numpy(),
-                                     color=label[0].view(-1).detach().cpu().numpy().astype(int))
-                writer.add_figure(figure=figure, tag='Predicted Embeddings')
-                if c.debug['print_img']:
-                    plt.show()
+            if c.debug['add_emb']:
+                writer.add_embedding(
+                    mat=output[0, -1, :, :, :].detach().view(c.UNet['embedding_dim'], -1).t().cpu().numpy(),
+                    tag='After ' + str(epoch) + str(index),
+                    metadata=label[0].view(-1).detach().cpu().numpy().astype(int), global_step=epoch)
+            # if c.debug['umap_img'] and index % c.debug['print_img_steps'] == 0:
+            #     figure = v.draw_umap(15, 0.1, 2, 'cosine', 'Embedding Projection after Model',
+            #                          data=output[0, -1, :, :, :].detach().view(c.UNet['embedding_dim'],
+            #                                                                    -1).t().cpu().numpy(),
+            #                          color=label[0].view(-1).detach().cpu().numpy().astype(int))
+            #     writer.add_figure(figure=figure, tag='Predicted Embeddings')
+            #     if c.debug['print_img']:
+            #         plt.show()
 
             loss = n.get_batch_embedding_loss(embedding_list=output, labels_list=label, device=device, dtype=dtype)
 
             writer.add_scalar('Training Loss', loss.detach().cpu().numpy())
 
             loss.backward()
+
+            for param in model.parameters():
+                print(param.grad.data.sum())
+                # print(param)
+
             optimizer.step()
 
             # print statistics

@@ -45,6 +45,7 @@ cuda = dict(
 )
 
 debug = dict(
+    add_emb=False,
     umap_img=False,
     print_img=True,
     print_img_steps=20,

@@ -238,6 +238,15 @@ class CorrRandomCrop(object):
         top = np.random.randint(0, h - new_h)
         left = np.random.randint(0, w - new_w)
 
+        label_ = label[top: top + new_h, left: left + new_w]
+
+        # ignoring samples where neuron density too low
+        while (label_.nonzero().size(0)) / (new_h * new_w) <= c.training['min_neuron_pixels']:
+            top = np.random.randint(0, h - new_h)
+            left = np.random.randint(0, w - new_w)
+            label_ = label[top: top + new_h, left: left + new_w]
+
+        label = label_
         image = image[:, top: top + new_h, left: left + new_w]
 
         # deleting information about not available offset pixels, need 2 dimensions otherwise correlation always 0
@@ -250,8 +259,6 @@ class CorrRandomCrop(object):
             image = torch.where(correction_image == 0., correction_image, image)
 
         del correction_image
-
-        label = label[top: top + new_h, left: left + new_w]
 
         return {'image': image, 'label': label}
 

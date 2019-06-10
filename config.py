@@ -29,8 +29,8 @@ corr = dict(
 )
 
 training = dict(
-    train=False,
-    lr=0.0001,
+    train=True,
+    lr=0.002,
     nb_epochs=10,
     img_size=64,
 
@@ -39,10 +39,13 @@ training = dict(
 
 cuda = dict(
     device=torch.device('cuda'),
+    mult_device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+    use_devices=[0, 1, 2],
+    use_mult=False,
 )
 
 debug = dict(
     umap_img=False,
-    print_img=False,
+    print_img=True,
     print_img_steps=20,
 )

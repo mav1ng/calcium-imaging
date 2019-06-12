@@ -24,12 +24,39 @@ import config as c
 
 
 def tomask(coords, dims):
+    """
+    Method that return the Mask of the given coordinates of the regions
+    :param coords:
+    :param dims:
+    :return:
+    """
     mask = zeros(dims)
     mask[list(zip(*coords))] = 1.
     return mask
 
 
 def toCoords(mask):
+    """
+    Method that returns the Coordinates of the Regions in the Mask
+    :param mask:
+    :return:
+    """
+    unique = torch.unique(mask)
+    coords = []
+    for _, label in enumerate(unique):
+        coords.append({'coordinates': (mask == label).nonzero().cpu().numpy().tolist()})
+    return coords
+
+
+def write_to_json(data, path):
+    """
+    Method ro write to json File
+    :param data:
+    :param path:
+    :return:
+    """
+    with open(path, 'w') as outfile:
+        json.dump(data, outfile)
     pass
 
 
@@ -66,23 +93,88 @@ class CombinedDataset(Dataset):
             [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'mean' not in f and '03.00' not in f],
             dtype=dtype,
             device=device)
+        self.train_val_ratio = 0.75
+        self.x_bound = int(round(self.train_val_ratio * self.dims[0]))
+        self.y_bound = int(round(self.train_val_ratio * self.dims[1]))
 
     def __len__(self):
         return self.len
 
     def __getitem__(self, idx):
         if not self.test:
-            sample = {'image': torch.cat((self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.imgs[idx]), dim=0),
-                      'label': self.labels[idx]}
+            sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.imgs[idx]], dim=0)[:, :self.x_bound, :self.y_bound],
+                      'label': self.labels[idx][:self.x_bound, :self.y_bound]}
+            print(sample['image'].size())
+            print(sample['label'].size())
         else:
-            sample = {'image': torch.cat((self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.imgs[idx]), dim=0)}
+            sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.imgs[idx]], dim=0)[:, self.x_bound:, self.y_bound:],
+                      'label': self.labels[idx][self.x_bound:, self.y_bound:]}
+            print(sample['image'].size())
+            print(sample['label'].size())
         if self.transform:
             sample = self.transform(sample)
         return sample
+
+
+# class SummaryDataset(Dataset): -- NOT WORKING RIGHT NOW RETURN WITH THE CONCATENATE IS WRONG
+#     """Summary Dataset"""
+#
+#     def __init__(self, corr_path, sum_folder, transform=None, test=False, dtype=c.data['dtype'], var=False,
+#                  device=c.cuda['device']):
+#         """
+#         :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
+#         be used for training/testing
+#         :param transform: whether a transform should be used on a sample that is getting drawn
+#         """
+#
+#         self.folder_path = corr_path
+#         self.transform = transform
+#         self.files = sorted(glob(corr_path + '*.hkl'))
+#         self.sum_img = sorted(glob(sum_folder + '*.hkl'))
+#         self.labels = torch.tensor(
+#             [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' in f and '16' not in f], dtype=dtype,
+#             device=device)
+#         self.dims = self.labels.shape[1:]  # 512 x 512
+#         self.len = self.labels.shape[0]
+#         self.test = test
+#         self.var = var
+#         self.dtype = dtype
+#         self.sum_mean = torch.tensor(
+#             [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'var' not in f and '03.00' not in f],
+#             dtype=dtype,
+#             device=device)
+#         self.sum_var = torch.tensor(
+#             [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'mean' not in f and '03.00' not in f],
+#             dtype=dtype,
+#             device=device)
+#
+#     def __len__(self):
+#         return self.len
+#
+#     def __getitem__(self, idx):
+#         if not self.test:
+#             if self.var:
+#                 sample = {'image': torch.cat((self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+#                                               self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx])),
+#                           'label': self.labels[idx]}
+#             else:
+#                 sample = {'image': self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+#                           'label': self.labels[idx]}
+#         else:
+#             if self.var:
+#                 sample = {'image': torch.cat((self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+#                                               self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx]))}
+#             else:
+#                 sample = {'image': self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx]}
+#         if self.transform:
+#             sample = self.transform(sample)
+#         return sample
+
+
 
 
 class CorrelationDataset(Dataset):
@@ -191,16 +283,22 @@ class RandomCrop(object):
     def __call__(self, sample):
         image, label = sample['image'], sample['label']
 
-        h, w = image.shape[:2]
+        h, w = image.shape[1:3]
         new_h, new_w = self.output_size
 
         top = np.random.randint(0, h - new_h)
         left = np.random.randint(0, w - new_w)
 
-        image = image[top: top + new_h,
-                left: left + new_w]
+        label_ = label[top: top + new_h, left: left + new_w]
 
-        label = label - [left, top]
+        # ignoring samples where neuron density too low
+        while (label_.nonzero().size(0)) / (new_h * new_w) <= c.training['min_neuron_pixels']:
+            top = np.random.randint(0, h - new_h)
+            left = np.random.randint(0, w - new_w)
+            label_ = label[top: top + new_h, left: left + new_w]
+
+        label = label_
+        image = image[:, top: top + new_h, left: left + new_w]
 
         return {'image': image, 'label': label}
 
@@ -261,6 +359,34 @@ class CorrRandomCrop(object):
         del correction_image
 
         return {'image': image, 'label': label}
+
+
+class CorrCorrect(object):
+    """Copied from Pytorch Documentation
+
+    Correlation Correction
+    """
+
+    def __init__(self, summary_included=True, corr_form=c.corr['corr_form'], device=c.cuda['device'],
+                 dtype=c.data['dtype']):
+        self.corr_form = corr_form
+        self.device = device
+        self.dtype = dtype
+        self.summary = summary_included
+
+    def __call__(self, sample):
+        image, label = sample['image'], sample['label']
+        # deleting information about not available offset pixels, need 2 dimensions otherwise correlation always 0
+        correction_image = corr.get_corr(
+            torch.rand(2, image.size(1), image.size(2), device=self.device, dtype=self.dtype),
+            self.corr_form, device=self.device, dtype=self.dtype)
+        if self.summary:
+            image[2:] = torch.where(correction_image == 0., correction_image, image[2:])
+        else:
+            image = torch.where(correction_image == 0., correction_image, image)
+
+        return {'image': image, 'label': label}
+
 
 
 def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['use_slicing'], slice_size=1,

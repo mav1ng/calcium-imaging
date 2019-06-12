@@ -1,32 +1,53 @@
+import numpy as np
 import torch
-import os
-import torch.nn as nn
 import torch.nn.functional as F
-import h5py
-import json
-import matplotlib.pyplot as plt
-from numpy import array, zeros
-import numpy as np
-from scipy.misc import imread
-from glob import glob
-from skimage import io, transform
-import numpy as np
-import matplotlib.pyplot as plt
-from torch import optim
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, utils
-
 import config as c
 import network as n
-import data
-import corr
-import training as t
+import json
+import neurofinder as nf
 
-a = torch.rand((10, 1, 2, 2, 2), device=torch.device('cuda'))
-b = torch.randint(0, 10, (10, 2, 2), device=torch.device('cuda'), dtype=torch.float)
+a = torch.rand(10, 5, 3, 3, device=torch.device('cuda'))
+l = torch.randint(0, 10, (10, 10), device=torch.device('cuda'))
+b = torch.randint(0, 10, (10, 10), device=torch.device('cuda'))
 
-print(n.embedding_loss(a[0, 0], b[0]))
-print(n.embedding_loss_new(a[0, 0], b[0]))
+print(l)
 
-print(n.get_batch_embedding_loss(a, b))
-print(n.get_batch_embedding_loss_new(a, b))
+def toCoords(mask):
+    """
+    Method that returns the Coordinates of the Regions in the Mask
+    :param mask:
+    :return:
+    """
+    unique = torch.unique(mask)
+    coords = []
+    for _, label in enumerate(unique):
+        coords.append({'coordinates': (mask == label).nonzero().cpu().numpy().tolist()})
+    return coords
+
+
+data = toCoords(l)
+data2 = toCoords(b)
+
+with open('data/val_mask/data.json', 'w') as outfile:
+    json.dump(data, outfile)
+
+with open('data/val_mask/data2.json', 'w') as outfile:
+    json.dump(data2, outfile)
+
+with open('data/val_mask/data.json', 'r') as json_file:
+    data1 = json.load(json_file)
+
+with open('data/val_mask/data2.json', 'r') as json_file:
+    data2 = json.load(json_file)
+
+# print(data)
+# print(data2)
+
+a = nf.load('data/val_mask/data.json')
+b = nf.load('data/val_mask/data2.json')
+
+# print(a)
+# print(b)
+
+print(nf.match(a, b, threshold=np.inf))
+print(nf.centers(a, b, threshold=0.2))

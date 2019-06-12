@@ -106,15 +106,15 @@ class CombinedDataset(Dataset):
                                           self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.imgs[idx]], dim=0)[:, :self.x_bound, :self.y_bound],
                       'label': self.labels[idx][:self.x_bound, :self.y_bound]}
-            print(sample['image'].size())
-            print(sample['label'].size())
+            # print(sample['image'].size())
+            # print(sample['label'].size())
         else:
             sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.imgs[idx]], dim=0)[:, self.x_bound:, self.y_bound:],
                       'label': self.labels[idx][self.x_bound:, self.y_bound:]}
-            print(sample['image'].size())
-            print(sample['label'].size())
+            # print(sample['image'].size())
+            # print(sample['label'].size())
         if self.transform:
             sample = self.transform(sample)
         return sample

@@ -66,10 +66,11 @@ dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, samp
 print('Initialized Dataloader')
 
 model = n.UNetMS()
-if c.cuda['use_mult']:
-    model = nn.DataParallel(model, device_ids=c.cuda['use_devices'])
 model.cuda(device)
 model.type(dtype)
+if c.cuda['use_mult']:
+    model = nn.DataParallel(model, device_ids=c.cuda['use_devices'])
+
 
 
 # loading old weights

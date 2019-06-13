@@ -18,7 +18,7 @@ for path in ['/net/hcihome/storage/mvspreng/PycharmProjects/calcium-imaging',
     if path not in sys.path:
         sys.path.append(path)
 
-print(sys.path)
+# print(sys.path)
 
 from torch import optim
 import os
@@ -43,6 +43,7 @@ writer = SummaryWriter(log_dir='training_log/' + str(c.tb['loss_name']) + '/')
 train = c.training['train']
 dtype = c.data['dtype']
 batch_size = c.training['batch_size']
+
 if c.cuda['use_mult']:
     device = c.cuda['mult_device']
 else:
@@ -66,11 +67,10 @@ dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, samp
 print('Initialized Dataloader')
 
 model = n.UNetMS()
-model.cuda(device)
-model.type(dtype)
 if c.cuda['use_mult']:
     model = nn.DataParallel(model, device_ids=c.cuda['use_devices'])
-
+model.to(device)
+model.type(dtype)
 
 
 # loading old weights
@@ -96,6 +96,9 @@ if train:
             label = batch['label']
 
             input.requires_grad = True
+            label.requires_grad = True
+
+            torch.autograd.set_detect_anomaly(True)
 
             '''Debugging'''
             if c.debug['add_emb']:

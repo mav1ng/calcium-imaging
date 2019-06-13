@@ -92,6 +92,8 @@ class UNet(nn.Module):
         self.conv_layer_18 = get_conv_layer(self.embedding_dim, self.embedding_dim)
         self.conv_layer_end = nn.Conv2d(self.embedding_dim, self.embedding_dim, 1)
 
+        self.Softmax2d = nn.Softmax2d()
+
     def forward(self, x):
         x = self.conv_layer_1(x)
         x = F.relu(x)
@@ -165,7 +167,8 @@ class UNet(nn.Module):
         x = self.conv_layer_18(x)
         x = F.relu(x)
         x = self.conv_layer_end(x)
-        x = F.softmax(x, dim=-1)
+        'should really use softmax here?'
+        x = self.Softmax2d(x).clone()
 
         return x
 
@@ -175,18 +178,17 @@ class MS(nn.Module):
     def __init__(self):
         super(MS, self).__init__()
 
-        self.embedding_dim = c.mean_shift['embedding_dim']
+        self.emb = c.mean_shift['embedding_dim']
         # setting kernel bandwidth
         if c.mean_shift['kernel_bandwidth'] is not None:
             self.kernel_bandwidth = c.mean_shift['kernel_bandwidth']
         else:
-            self.kernel_bandwidth = 1 / (1 - c.embedding_loss['margin']) / 3
+            self.kernel_bandwidth = 1. / (1. - c.embedding_loss['margin']) / 3.
         self.step_size = c.mean_shift['step_size']
-        self.nb_iterations = c.mean_shift['nb_iterations']
-        self.batch_size = None
-        self.nb_pixels = None  # to be defined when forward is called
-        self.pic_res_X = None
-        self.pic_res_Y = None
+        self.iter = c.mean_shift['nb_iterations']
+        self.bs = None
+        self.w = None
+        self.h = None
         self.device = c.cuda['device']
         self.dtype = c.data['dtype']
 
@@ -200,55 +202,29 @@ class MS(nn.Module):
         """
 
         with torch.no_grad():
-            self.pic_res_X = x_in.size(2)
-            self.pic_res_Y = x_in.size(3)
-            self.batch_size = x_in.size(0)
+            self.bs = x_in.size(0)
+            self.emb = x_in.size(1)
+            self.w = x_in.size(2)
+            self.h = x_in.size(3)
 
-        x = x_in.view(self.batch_size, self.embedding_dim, -1)
-        # y = x.clone().cpu()
-        y = x.clone()
+        x = x_in.view(self.bs, self.emb, -1)
 
-        out = torch.empty(self.batch_size, self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y,
-                          device=self.device, dtype=self.dtype)
-
-        with torch.no_grad():
-            self.nb_pixels = x.size(2)
+        y = torch.zeros(self.iter + 1, self.emb, self.w * self.h)
+        out = torch.zeros(self.bs, self.iter + 1, self.emb, self.w, self.h)
 
         # iterating over all samples in the batch
-        for b in range(self.batch_size):
-            x = y[b, :, :].cuda()
-            # looping over the number of iterations
-            for t in range(self.nb_iterations):
-                x = x.view(-1, self.embedding_dim, self.nb_pixels)
+        for b in range(self.bs):
+            y[0, :, :] = x[b, :, :]
+            for t in range(1, self.iter + 1):
+                kernel_mat = torch.exp(
+                    torch.mul(self.kernel_bandwidth, mm(y[t - 1, :, :].clone().t(), y[t - 1, :, :].clone())))
+                diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones((self.w * self.h, 1)))[:, 0], diagonal=0)
 
-                # kernel_mat N x N , N number of pixels
-                kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(
-                    x[t, :, :].view(self.embedding_dim,
-                                    self.nb_pixels).t(), x[t, :, :].view(self.embedding_dim, self.nb_pixels))))
+                y[t, :, :] = mm(y[t - 1, :, :].clone(),
+                                torch.add(torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))),
+                                          torch.mul(1. - self.step_size, torch.eye(self.w * self.h))))
 
-                # diag_mat N x N
-                diag_mat = torch.diag(
-                    mm(kernel_mat.t(), torch.ones((self.nb_pixels, 1), device=self.device, dtype=self.dtype)).squeeze(
-                        dim=1), diagonal=0)
-
-                x = torch.cat((x.view(-1, self.embedding_dim, self.pic_res_X, self.pic_res_Y), mm(x[t, :, :],
-                                                                                                  torch.mul(
-                                                                                                      self.step_size,
-                                                                                                      mm(kernel_mat,
-                                                                                                         torch.inverse(
-                                                                                                             diag_mat))) +
-                                                                                                  torch.mul(
-                                                                                                      (
-                                                                                                                  1 - self.step_size),
-                                                                                                      torch.eye(
-                                                                                                          self.nb_pixels,
-                                                                                                          self.nb_pixels,
-                                                                                                          device=self.device,
-                                                                                                          dtype=self.dtype))).view(
-                    1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)))
-
-            # out[b, :, :, :] = x.view(self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y).cpu()
-            out[b, :, :, :] = x.view(self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)
+            out[b, :, :, :, :] = y.view(self.iter + 1, self.emb, self.w, self.h)
 
         return out
 
@@ -259,16 +235,30 @@ class UNetMS(nn.Module):
 
         self.UNet = UNet()
         self.MS = MS()
+        self.L2Norm = L2Norm()
 
     def forward(self, x):
         x = self.UNet(x)
-        """Does the normalization really work that way?"""
-        # print('before normalization', x[0])
-        # print(x.size())
-        # bringing the embedding on the unit sphere
-        x = F.normalize(x, p=2, dim=1)
-        # print('here we are', x[0])
+        x = self.L2Norm(x)
         x = self.MS(x)
+        return x
+
+
+class L2Norm(nn.Module):
+    def __init__(self):
+        super(L2Norm, self).__init__()
+
+        self.w = c.training['img_size']
+        self.h = c.training['img_size']
+        self.emb = c.UNet['embedding_dim']
+        self.bs = c.training['batch_size']
+
+    def forward(self, x):
+        # L2 Normalization
+        """Does the normalization really work that way?"""
+        # bringing the embedding on the unit sphere
+        for b in range(x.size(0)):
+            x[b] = F.normalize(x[b].clone().view(self.emb, -1), p=2, dim=0).view(self.emb, self.w, self.h)
         return x
 
 

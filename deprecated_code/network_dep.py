@@ -7,6 +7,76 @@ import numpy as np
 import config as c
 
 
+# old mean shift forward:
+
+def forward(self, x_in):
+        """
+        :param x_in: flattened image in D x N , D embedding Dimension, N number of Pixels
+        :return: tensor with dimension B x I x D x W x H, B batch size, I number of iterations, D embedding dimension,
+        W width of the image, H height of the image, embeddings x_in mean shifted
+        """
+
+        with torch.no_grad():
+            self.pic_res_X = x_in.size(2)
+            self.pic_res_Y = x_in.size(3)
+            self.batch_size = x_in.size(0)
+
+        x = x_in.view(self.batch_size, self.embedding_dim, -1)
+        # y = x.clone().cpu()
+        y = x.clone()
+
+        out = torch.empty(self.batch_size, self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y,
+                          device=self.device, dtype=self.dtype)
+
+        print(out.device)
+
+        with torch.no_grad():
+            self.nb_pixels = x.size(2)
+
+        # iterating over all samples in the batch
+        for b in range(self.batch_size):
+            x = y[b, :, :]
+            # looping over the number of iterations
+            for t in range(self.nb_iterations):
+                x = x.view(-1, self.embedding_dim, self.nb_pixels)
+                print('x', x.device)
+                # kernel_mat N x N , N number of pixels
+                kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(
+                    x[t, :, :].view(self.embedding_dim,
+                                    self.nb_pixels).t(), x[t, :, :].view(self.embedding_dim, self.nb_pixels))))
+                print('kernel mat', kernel_mat.device)
+                # diag_mat N x N
+                diag_mat = torch.diag(
+                    mm(kernel_mat.t(), torch.ones((self.nb_pixels, 1), device=self.device, dtype=self.dtype)).squeeze(
+                        dim=1), diagonal=0)
+                print(kernel_mat.t().size())
+                print(torch.ones((self.nb_pixels, 1), device=self.device, dtype=self.dtype).size())
+                print(diag_mat.size())
+                print('diag_mat', diag_mat.device)
+                print('x', x.device)
+
+                x = torch.cat((x.view(-1, self.embedding_dim, self.pic_res_X, self.pic_res_Y), mm(x[t, :, :],
+                                                                                                  torch.mul(
+                                                                                                      self.step_size,
+                                                                                                      mm(kernel_mat,
+                                                                                                         torch.inverse(
+                                                                                                             diag_mat))) +
+                                                                                                  torch.mul(
+                                                                                                      (
+                                                                                                                  1 - self.step_size),
+                                                                                                      torch.eye(
+                                                                                                          self.nb_pixels,
+                                                                                                          self.nb_pixels,
+                                                                                                          device=self.device,
+                                                                                                          dtype=self.dtype))).view(
+                    1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)))
+            # out[b, :, :, :] = x.view(self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y).cpu()
+            out[b, :, :, :] = x.view(self.nb_iterations + 1, self.embedding_dim, self.pic_res_X, self.pic_res_Y)
+
+        return out
+
+
+
 def embedding_loss(embedding_matrix, labels, dtype=c.data['dtype'], device=c.cuda['device']):
     """
     Method that exhaustively calculates the embedding loss of an embedding when given the labels

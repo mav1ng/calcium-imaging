@@ -284,7 +284,18 @@ def comp_similarity_matrix(input):
     out = torch.zeros((h * w, h * w, 1, bs)).cuda()
 
     for i in range(bs):
-        sim = F.normalize(F.normalize(input[i].view(ch, w * h).t(), dim=1), dim=0)
+        sim = input[i].view(ch, w * h)
+
+        sim_ = torch.mean(sim, dim=0)
+        sim_n = sim - sim_
+        sim__ = torch.sqrt(torch.sum(sim_n ** 2, dim=0))
+        sim = (sim_n / sim__).t()
+
+        # sim_ = torch.mean(sim, dim=0)
+        # sim_n = sim - sim_
+        # sim__ = torch.sqrt(torch.sum(sim_n ** 2, dim=0))
+        # sim = (sim_n / sim__)
+
         out[:, :, 0, i] = torch.mm(sim, sim.t()) * 0.5 + 0.5
 
     return out
@@ -381,6 +392,7 @@ def embedding_loss(emb, lab):
 
     for i in range(iter):
         sim_mat = comp_similarity_matrix(emb[:, i])
+        print(torch.sum(torch.where(sim_mat > 1., torch.tensor(1.).cuda(), torch.tensor(0.).cuda())))
         for b in range(bs):
             loss[b, i] = torch.where(label_pairs[:, :, 0, b] == 1., torch.sub(1., sim_mat[:, :, 0, b]), loss[b, i])
             loss[b, i] = torch.where(label_pairs[:, :, 0, b] == -1.,

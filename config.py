@@ -31,7 +31,7 @@ corr = dict(
 
 training = dict(
     train=True,
-    lr=0.0001,
+    lr=0.002,
     nb_epochs=10,
     img_size=64,
     batch_size=20,

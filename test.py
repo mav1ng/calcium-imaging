@@ -1,22 +1,26 @@
-import sys
-for i in ['/net/hcihome/storage/mvspreng/PycharmProjects/calcium-imaging',
-          '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python27.zip',
-          '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7',
-          '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/plat-linux2',
-          '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-tk',
-          '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-old',
-          '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-dynload',
-          '/export/home/mvspreng/.local/lib/python2.7/site-packages',
-          '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/site-packages']:
-    if i not in sys.path:
-        sys.path.append(i)
-import numpy as np
 import torch
-import torch.nn.functional as F
-import config as c
-import network as n
-import json
-import neurofinder as nf
+import corr as c
+
+a = torch.randint(0, 10, (5, 5), dtype=torch.float)
+
+print(a)
+
+a_ = torch.mean(a, dim=0)
+a_n = a - a_
+a_n_ = torch.sqrt(torch.sum(a_n ** 2, dim=0))
+af = a_n / a_n_
+
+b = a.clone().t()
+b_ = torch.mean(b, dim=0)
+b_n = b - b_
+b_n_ = torch.sqrt(torch.sum(b_n ** 2, dim=0))
+bf = (b_n / b_n_).t()
+
+print(af)
+
+print(b)
+print(bf)
 
 
-
+corrtest = torch.randint(0, 10, (3, 10, 10), dtype=torch.float)
+print(c.get_corr(corrtest, corr_form='small_star', device=torch.device('cpu')))

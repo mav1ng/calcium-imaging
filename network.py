@@ -255,8 +255,14 @@ class L2Norm(nn.Module):
         # L2 Normalization
         """Does the normalization really work that way?"""
         # bringing the embedding on the unit sphere
+        # for b in range(x.size(0)):
+        #     x[b] = F.normalize(x[b].clone().view(self.emb, -1), p=2, dim=0).view(self.emb, self.w, self.h)
         for b in range(x.size(0)):
-            x[b] = F.normalize(x[b].clone().view(self.emb, -1), p=2, dim=0).view(self.emb, self.w, self.h)
+            y = x[b].view(self.emb, -1)
+            y_ = torch.mean(y, dim=0)
+            y_n = y - y_
+            y_n_ = torch.sqrt(torch.sum(y_n ** 2, dim=0))
+            x[b] = (y_n / y_n_).view(self.emb, self.w, self.h)
         return x
 
 

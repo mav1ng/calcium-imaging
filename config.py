@@ -10,7 +10,7 @@ mean_shift = dict(
     embedding_dim=20,
     kernel_bandwidth=None,                  # set to float if should be used, margin is now used to calculate bandwidth
     step_size=1.,                            # mean shift step size
-    nb_iterations=5,                       # number of iterations, if < 1 model UNet with Unit Sphere Normalization
+    nb_iterations=0,                       # number of iterations, if < 1 model UNet with Unit Sphere Normalization
 )
 
 embedding_loss = dict(
@@ -21,6 +21,7 @@ data = dict(
     different_labels=True,
     use_compression=True,
     dtype=torch.float,
+    snapshots='models/'
 )
 
 corr = dict(
@@ -30,23 +31,23 @@ corr = dict(
 
 training = dict(
     train=True,
-    lr=0.002,
+    lr=0.0001,
     nb_epochs=10,
     img_size=64,
-    batch_size=10,
+    batch_size=20,
 
     min_neuron_pixels=0.1,
 )
 
 cuda = dict(
-    use_mult=True,
+    use_mult=False,
     device=torch.device('cuda:0'),
     mult_device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-    use_devices=[0, 1, 2, 3],
+    use_devices=[0, 1],
 )
 
 tb = dict(
-    loss_name='iter_5'
+    loss_name='iter_0'
 )
 
 debug = dict(

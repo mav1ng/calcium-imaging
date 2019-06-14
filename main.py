@@ -60,7 +60,7 @@ torch.cuda.empty_cache()
 
 transform = transforms.Compose([data.CorrRandomCrop(img_size, summary_included=True)])
 comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/',
-                                    transform=transform, device=device, dtype=dtype)
+                                    transform=None, device=device, dtype=dtype)
 
 
 print('Loaded the Dataset')
@@ -101,6 +101,9 @@ if train:
             input = batch['image'].cuda()
             label = batch['label'].cuda()
 
+            input = comb_dataset[0]['image'][:, :64, :64].view(1, 28, 64, 64).cuda()
+            label = comb_dataset[0]['label'][:64, :64].view(1, 64, 64).cuda()
+
             input.requires_grad = True
             label.requires_grad = True
 
@@ -124,9 +127,11 @@ if train:
 
 
             loss = criterion(output, label)
-            loss = n.scaling_loss(loss, batch_size, c.cuda['use_devices'].__len__())
-
-            writer.add_scalar('Training Loss', loss.detach())
+            if c.cuda['use_mult']:
+                loss = n.scaling_loss(loss, batch_size, c.cuda['use_devices'].__len__())
+                writer.add_scalar('Training Loss', loss.detach())
+            else:
+                writer.add_scalar('Training Loss', loss.item())
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -203,19 +208,30 @@ if not train:
 #     num_samples = c.data['num_samples']
 #     nb_epochs = c.training['nb_epochs']
 #     val_freq = c.val['val_freq']
-#     snapshots = c.data['snapshots']
 #
-#     model = n.UNetMS()
 #
 #     if c.cuda['use_mult']:
-#         model = torch.nn.DataParallel(model, device_ids=[0, 1, 2, 3])
 #         device = c.cuda['mult_device']
+#     else:
+#         device = c.cuda['device']
 #
-#     model.cuda()
+#         model = n.UNetMS()
+#
+#
+#     if c.cuda['use_mult']:
+#         model = nn.DataParallel(model, device_ids=c.cuda['use_devices']).cuda()
+#     else:
+#         model.to(device)
+#     model.type(dtype)
+#
 #
 #     # define loss function (criterion) and optimizer
 #     # perhaps add additional loss functions if this one does not work
 #     emb_loss = n.EmbeddingLoss().cuda()
+#
+#     if c.cuda['use_mult']:
+#         emb_loss = nn.DataParallel(emb_loss, device_ids=c.cuda['use_devices']).cuda()
+#
 #     criterion = [emb_loss]
 #
 #     # # creating different parameter groups
@@ -242,7 +258,7 @@ if not train:
 #         best_f1 = 0.
 #
 #     # models are save only when their loss obtains the best value in the validation
-#     valtrack = 0
+#     f1track = 0
 #
 #     print 'There are %d parameter groups' % len(optimizer.param_group)
 #     print 'Initial base params lr: %f' % optimizer.param_group[0]['lr']
@@ -281,9 +297,9 @@ if not train:
 #
 #             # check patience
 #             if f1_metric <= best_f1:
-#                 valtrack += 1
+#                 f1track += 1
 #             else:
-#                 valtrack = 0
+#                 f1track = 0
 #
 #             # save the best model
 #             is_best = f1_metric < best_f1
@@ -293,11 +309,11 @@ if not train:
 #                 'state_dict': model.state_dict(),
 #                 'best_val': best_f1,
 #                 'optimizer': optimizer.state_dict(),
-#                 'valtrack': valtrack,
+#                 'valtrack': f1track,
 #                 'curr_val': f1_metric,
 #             }, is_best)
 #
-#             print '** Validation: %f (best) - %d (valtrack)' % (best_f1, valtrack)
+#             print '** Validation: %f (best) - %d (f1track)' % (best_f1, f1track)
 #
 #
 # def train(train_loader, model, criterion, optimizer, epoch):
@@ -413,6 +429,7 @@ if not train:
 #
 #
 # def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+#     snapshots = c.data['snapshots']
 #     filename = snapshots + 'model_e%03d_v-%.3f.pth.tar' % (state['epoch'], state['best_val'])
 #     if is_best:
 #         torch.save(state, filename)

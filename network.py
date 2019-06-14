@@ -284,8 +284,8 @@ def comp_similarity_matrix(input):
     out = torch.zeros((h * w, h * w, 1, bs)).cuda()
 
     for i in range(bs):
-        sim = input[i].view(h * w, ch)
-        out[:, :, 0, i] = torch.mm(sim, sim.t())
+        sim = F.normalize(F.normalize(input[i].view(ch, w * h).t(), dim=1), dim=0)
+        out[:, :, 0, i] = torch.mm(sim, sim.t()) * 0.5 + 0.5
 
     return out
 
@@ -402,9 +402,11 @@ def scaling_loss(loss_vec, bs, nb_gpus):
     """
     assert bs >= nb_gpus, 'Batch Size should be bigger than the number of working gpus'
     rem = bs % nb_gpus
-    b = (bs - rem) / float((nb_gpus - 1))
+    if rem != 0:
+        nb_gpus = nb_gpus - 1
+    b = (bs - rem) / float(nb_gpus)
     out = 0.
-    for g in range(nb_gpus - 1):
+    for g in range(nb_gpus):
         out = out + loss_vec[g] / b
     if rem != 0:
         out = out + loss_vec[-1] / rem

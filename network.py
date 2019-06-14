@@ -189,8 +189,6 @@ class MS(nn.Module):
         self.bs = None
         self.w = None
         self.h = None
-        self.device = c.cuda['device']
-        self.dtype = c.data['dtype']
 
     # x_in flattened image in D x N , N number of Pixels
 
@@ -209,8 +207,8 @@ class MS(nn.Module):
 
         x = x_in.view(self.bs, self.emb, -1)
 
-        y = torch.zeros(self.iter + 1, self.emb, self.w * self.h)
-        out = torch.zeros(self.bs, self.iter + 1, self.emb, self.w, self.h)
+        y = torch.zeros(self.iter + 1, self.emb, self.w * self.h).cuda()
+        out = torch.zeros(self.bs, self.iter + 1, self.emb, self.w, self.h).cuda()
 
         # iterating over all samples in the batch
         for b in range(self.bs):
@@ -218,11 +216,11 @@ class MS(nn.Module):
             for t in range(1, self.iter + 1):
                 kernel_mat = torch.exp(
                     torch.mul(self.kernel_bandwidth, mm(y[t - 1, :, :].clone().t(), y[t - 1, :, :].clone())))
-                diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones((self.w * self.h, 1)))[:, 0], diagonal=0)
+                diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(self.w * self.h, 1).cuda())[:, 0], diagonal=0)
 
                 y[t, :, :] = mm(y[t - 1, :, :].clone(),
                                 torch.add(torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))),
-                                          torch.mul(1. - self.step_size, torch.eye(self.w * self.h))))
+                                          torch.mul(1. - self.step_size, torch.eye(self.w * self.h).cuda())))
 
             out[b, :, :, :, :] = y.view(self.iter + 1, self.emb, self.w, self.h)
 

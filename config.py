@@ -39,7 +39,7 @@ training = dict(
 )
 
 cuda = dict(
-    use_mult=False,
+    use_mult=True,
     device=torch.device('cuda:0'),
     mult_device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
     use_devices=[0, 1, 2],

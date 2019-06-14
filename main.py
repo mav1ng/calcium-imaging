@@ -38,6 +38,8 @@ import network as n
 import visualization as v
 import training as t
 
+from torchsummary import summary
+
 writer = SummaryWriter(log_dir='training_log/' + str(c.tb['loss_name']) + '/')
 
 train = c.training['train']
@@ -92,8 +94,11 @@ if train:
         # optimizer = optim.Adam(model.parameters(), lr=t.poly_lr(epoch, nb_epochs, base_lr=lr, exp=0.95))
         running_loss = 0.0
         for index, batch in enumerate(dataloader):
-            input = batch['image']
-            label = batch['label']
+            input = batch['image'].to(device)
+            label = batch['label'].to(device)
+
+            print('input', input.device)
+            print('label', label.device)
 
             input.requires_grad = True
             label.requires_grad = True

@@ -273,7 +273,7 @@ class EmbeddingLoss(nn.Module):
         return embedding_loss(emb, lab)
 
 
-def comp_similarity_matrix(input, dtype=c.data['dtype'], device=c.cuda['device']):
+def comp_similarity_matrix(input):
     """
     Method that computest the cosine similarity matrix
     input has dimensions Bs x Channels x Width x Height
@@ -281,7 +281,7 @@ def comp_similarity_matrix(input, dtype=c.data['dtype'], device=c.cuda['device']
     :return: N x N x 1 x Bs
     """
     (bs, ch, w, h) = input.size()
-    out = torch.zeros((h * w, h * w, 1, bs), device=device)
+    out = torch.zeros((h * w, h * w, 1, bs)).cuda()
 
     for i in range(bs):
         sim = input[i].view(h * w, ch)
@@ -290,7 +290,7 @@ def comp_similarity_matrix(input, dtype=c.data['dtype'], device=c.cuda['device']
     return out
 
 
-def compute_pre_weight_matrix(input, dtype=c.data['dtype'], device=c.cuda['device']):
+def compute_pre_weight_matrix(input):
     """
     Method to compute the pre_weight_matrix used for the computation of the weight matrix
     :param input: tensor matrix with the ground truth labels BatchSize x PixelX x PixelY
@@ -300,7 +300,7 @@ def compute_pre_weight_matrix(input, dtype=c.data['dtype'], device=c.cuda['devic
     """
 
     (bs, w, h) = input.size()
-    out = torch.zeros_like(input, dtype=dtype)
+    out = torch.zeros_like(input).cuda()
 
     for i in range(bs):
         with torch.no_grad():
@@ -309,11 +309,11 @@ def compute_pre_weight_matrix(input, dtype=c.data['dtype'], device=c.cuda['devic
             unique_labels = torch.unique(input[i], sorted=False)
             for _, l in enumerate(unique_labels):
                 out[i] = torch.where(out[i] == l.float(), torch.div(torch.tensor(
-                    1., dtype=dtype, device=device), torch.tensor(((input[i] == l).nonzero().size(0)), dtype=dtype)), out[i])
+                    1.).cuda(), torch.tensor(((input[i] == l).nonzero().size(0)))), out[i])
     return out
 
 
-def compute_weight_matrix(input, dtype=c.data['dtype'], device=c.cuda['device']):
+def compute_weight_matrix(input):
     """
     Method to compute the weight_matrix for the loss function
     :param input: tensor BatchSize x PixelX x PixelY with weighted pixels for every label (1/number of pixels with the
@@ -327,7 +327,7 @@ def compute_weight_matrix(input, dtype=c.data['dtype'], device=c.cuda['device'])
 
     (bs, w, h) = input.size()
 
-    out = torch.zeros((h * w, h * w, 1, bs), device=device)
+    out = torch.zeros((h * w, h * w, 1, bs)).cuda()
 
     for i in range(bs):
         sim = input[i].view(h * w, 1)
@@ -336,7 +336,7 @@ def compute_weight_matrix(input, dtype=c.data['dtype'], device=c.cuda['device'])
     return out
 
 
-def compute_label_pair(input, dtype=c.data['dtype'], device=c.cuda['device']):
+def compute_label_pair(input):
     """
     Method that computes whether a pixel pair is of the same label or not
     :param input: tensor matrix with the ground truth labels Bs x PixelX x PixelY
@@ -349,49 +349,67 @@ def compute_label_pair(input, dtype=c.data['dtype'], device=c.cuda['device']):
 
     (bs, w, h) = input.size()
     # +1 such that background has label != 0 such that following computation works
-    y = torch.add(input.to(dtype), 1.)
+    y = torch.add(input.to(torch.float), 1.)
 
-    out = torch.zeros((h * w, h * w, 1, bs), device=device)
+    out = torch.zeros((h * w, h * w, 1, bs)).cuda()
 
     # 1 if positive pair, -1 if negative pair, 0 if repeating information
     for i in range(bs):
         sim = y[i].view(h * w, 1)
         out[:, :, 0, i] = torch.mm(sim, sim.t())
         out[:, :, 0, i] = torch.where(torch.sqrt(out[:, :, 0, i]) == torch.mm(sim, torch.ones_like(sim.t())),
-                                      torch.tensor(1., device=device), torch.tensor(-1., device=device))
+                                      torch.tensor(1.).cuda(), torch.tensor(-1.).cuda())
 
     return out
 
 
-def embedding_loss(emb, lab, dtype=c.data['dtype'], device=c.cuda['device']):
+def embedding_loss(emb, lab):
     """
     Method that exhaustively calculates the embedding loss of an embedding when given the labels
-    :param embedding_matrix: matrix with the predicted embeddings Bs x C x PixelX x PixelY
+    :param embedding_matrix: matrix with the predicted embeddings Bs x Iter + 1 x C x PixelX x PixelY
     :param labels: torch tensor with the ground truth Bs x w x h
     :param dtype: dtype of the tensors
     :param device: device which cuda uses
     :return: the total loss
     """
 
-    (bs, ch, w, h) = emb.size()
+    (bs, iter, ch, w, h) = emb.size()
 
-    sim_mat = comp_similarity_matrix(emb, device=device)
-    weights = compute_weight_matrix(compute_pre_weight_matrix(lab, dtype=dtype, device=device),
-                                    dtype=dtype, device=device)
-    label_pairs = compute_label_pair(lab, dtype=dtype, device=device)
+    loss = torch.zeros(bs, iter, w * h, w * h).cuda()
+    weights = compute_weight_matrix(compute_pre_weight_matrix(lab))
+    label_pairs = compute_label_pair(lab)
 
-    loss = torch.zeros(bs, w * h, w * h, dtype=dtype, device=device)
-
-    for i in range(bs):
-        loss[i] = torch.where(label_pairs[:, :, 0, i] == 1., torch.sub(1., sim_mat[:, :, 0, i]), loss[i])
-        loss[i] = torch.where(label_pairs[:, :, 0, i] == -1.,
-                              torch.where(sim_mat[:, :, 0, i] - c.embedding_loss['margin'] >= 0,
-                                          sim_mat[:, :, 0, i] - c.embedding_loss['margin'], torch.tensor(
-                                      0, device=device, dtype=dtype)), loss[i])
-        loss[i] = torch.mul(1. / (w * h), torch.sum(torch.mul(weights[:, :, 0, i], loss[i])))
+    for i in range(iter):
+        sim_mat = comp_similarity_matrix(emb[:, i])
+        for b in range(bs):
+            loss[b, i] = torch.where(label_pairs[:, :, 0, b] == 1., torch.sub(1., sim_mat[:, :, 0, b]), loss[b, i])
+            loss[b, i] = torch.where(label_pairs[:, :, 0, b] == -1.,
+                                     torch.where(sim_mat[:, :, 0, b] - c.embedding_loss['margin'] >= 0,
+                                                 sim_mat[:, :, 0, b] - c.embedding_loss['margin'], torch.tensor(
+                                             0.).cuda()), loss[b, i])
+            loss[b, i] = torch.mul(1. / (w * h), torch.sum(torch.mul(weights[:, :, 0, b], loss[b, i])))
 
     return torch.sum(loss)
 
+
+def scaling_loss(loss_vec, bs, nb_gpus):
+    """
+    method that scales the loss correctly when useing multiple gpus
+    :param loss_vec: vector of the loss outputs
+    :param bs: used batch size
+    :param nb_gpus: number of used gpus
+    :return: scaled scalar loss
+    """
+    assert bs >= nb_gpus, 'Batch Size should be bigger than the number of working gpus'
+    rem = bs % nb_gpus
+    b = (bs - rem) / float((nb_gpus - 1))
+    out = 0.
+    for g in range(nb_gpus - 1):
+        out = out + loss_vec[g] / b
+    if rem != 0:
+        out = out + loss_vec[-1] / rem
+
+    return out.mean()
 
 # model_UNet = UNet()
 # print(model_UNet)

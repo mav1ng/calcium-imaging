@@ -70,8 +70,9 @@ print('Initialized Dataloader')
 
 model = n.UNetMS()
 if c.cuda['use_mult']:
-    model = nn.DataParallel(model, device_ids=c.cuda['use_devices'])
-model.to(device)
+    model = nn.DataParallel(model, device_ids=c.cuda['use_devices']).cuda()
+else:
+    model.to(device)
 model.type(dtype)
 
 
@@ -89,16 +90,16 @@ except IOError:
 if train:
 
     optimizer = optim.Adam(model.parameters(), lr=lr)
+    criterion = n.EmbeddingLoss().cuda()
+    if c.cuda['use_mult']:
+        criterion = nn.DataParallel(criterion, device_ids=c.cuda['use_devices']).cuda()
 
     for epoch in range(nb_epochs):
         # optimizer = optim.Adam(model.parameters(), lr=t.poly_lr(epoch, nb_epochs, base_lr=lr, exp=0.95))
         running_loss = 0.0
         for index, batch in enumerate(dataloader):
-            input = batch['image'].to(device)
-            label = batch['label'].to(device)
-
-            print('input', input.device)
-            print('label', label.device)
+            input = batch['image'].cuda()
+            label = batch['label'].cuda()
 
             input.requires_grad = True
             label.requires_grad = True
@@ -111,10 +112,6 @@ if train:
                                      tag='Before ' + str(epoch) + str(index),
                                      metadata=label[0].view(-1).detach().cpu().numpy().astype(int), global_step=epoch)
 
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
             output = model(input)
 
             '''Debugging'''
@@ -125,20 +122,21 @@ if train:
                     metadata=label[0].view(-1).detach().cpu().numpy().astype(int), global_step=epoch)
 
 
-            loss = n.embedding_loss(output[:, 0], label, device=device, dtype=dtype)
-            for i in range(1, output.size(1)):
-                loss = loss + n.embedding_loss(output[:, i], label, device=device, dtype=dtype)
 
-            writer.add_scalar('Training Loss', loss.item())
+            loss = criterion(output, label)
+            loss = n.scaling_loss(loss, batch_size, c.cuda['use_devices'].__len__())
 
-            print(loss.device)
+            writer.add_scalar('Training Loss', loss.detach())
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
             loss.backward()
+            optimizer.step()
 
             # for param in model.parameters():
             #     print(param.grad.data.sum())
             #     # print(param)
 
-            optimizer.step()
 
             # print statistics
             running_loss += loss.item()

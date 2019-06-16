@@ -400,7 +400,9 @@ def embedding_loss(emb, lab):
         sim_mat = comp_similarity_matrix(emb[:, i])
         print(torch.sum(torch.where(sim_mat > 1., torch.tensor(1.).cuda(), torch.tensor(0.).cuda())))
         for b in range(bs):
-            loss[b, i] = torch.where(label_pairs[:, :, 0, b] == 1., torch.sub(1., sim_mat[:, :, 0, b]), loss[b, i])
+            # taking the abs there to prevent loss form going negative (not necessarily correct)
+            loss[b, i] = torch.where(label_pairs[:, :, 0, b] == 1., torch.abs(torch.sub(1., sim_mat[:, :, 0, b])),
+                                     loss[b, i])
             loss[b, i] = torch.where(label_pairs[:, :, 0, b] == -1.,
                                      torch.where(sim_mat[:, :, 0, b] - c.embedding_loss['margin'] >= 0,
                                                  sim_mat[:, :, 0, b] - c.embedding_loss['margin'], torch.tensor(
@@ -419,17 +421,22 @@ def scaling_loss(loss_vec, bs, nb_gpus):
     :return: scaled scalar loss
     """
     assert bs >= nb_gpus, 'Batch Size should be bigger than the number of working gpus'
+    out = 0.
     rem = bs % nb_gpus
+
+    # weighing the single gpus regarding their batches
     if rem != 0:
         nb_gpus = nb_gpus - 1
+        out = out + loss_vec[-1] / rem
     b = (bs - rem) / float(nb_gpus)
-    out = 0.
     for g in range(nb_gpus):
         out = out + loss_vec[g] / b
-    if rem != 0:
-        out = out + loss_vec[-1] / rem
 
-    return out.mean()
+    # weighing the loss depending on the total number of gpus
+    if rem != 0:
+        nb_gpus = nb_gpus + 1
+
+    return out / nb_gpus
 
 # model_UNet = UNet()
 # print(model_UNet)

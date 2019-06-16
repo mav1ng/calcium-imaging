@@ -400,9 +400,10 @@ def embedding_loss(emb, lab):
         sim_mat = comp_similarity_matrix(emb[:, i])
         print(torch.sum(torch.where(sim_mat > 1., torch.tensor(1.).cuda(), torch.tensor(0.).cuda())))
         for b in range(bs):
-            # taking the abs there to prevent loss form going negative (not necessarily correct)
-            loss[b, i] = torch.where(label_pairs[:, :, 0, b] == 1., torch.abs(torch.sub(1., sim_mat[:, :, 0, b])),
+            loss[b, i] = torch.where(label_pairs[:, :, 0, b] == 1., torch.sub(1., sim_mat[:, :, 0, b]),
                                      loss[b, i])
+            # correcting machine inaccuracies
+            loss[b, i] = torch.where(loss[b, i] < 0., torch.tensor(0.).cuda(), loss[b, i])
             loss[b, i] = torch.where(label_pairs[:, :, 0, b] == -1.,
                                      torch.where(sim_mat[:, :, 0, b] - c.embedding_loss['margin'] >= 0,
                                                  sim_mat[:, :, 0, b] - c.embedding_loss['margin'], torch.tensor(

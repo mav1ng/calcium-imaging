@@ -37,6 +37,7 @@ import corr
 import network as n
 import visualization as v
 import training as t
+import clustering as cl
 
 from torchsummary import summary
 
@@ -89,7 +90,8 @@ except IOError:
 
 if train:
 
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.SGD(model.parameters(), lr=lr)
+    # optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = n.EmbeddingLoss().cuda()
     if c.cuda['use_mult']:
         criterion = nn.DataParallel(criterion, device_ids=c.cuda['use_devices']).cuda()
@@ -117,6 +119,11 @@ if train:
 
             output = model(input)
 
+            # test = output[0, 0].detach().view(20, -1).t()
+            # ind, mean = cl.cluster_kmean(test)
+            # print(mean.shape)
+            # v.plot_kmean(test, ind, mean)
+
             '''Debugging'''
             if c.debug['add_emb']:
                 writer.add_embedding(
@@ -138,9 +145,9 @@ if train:
             loss.backward()
             optimizer.step()
 
-            # for param in model.parameters():
-            #     print(param.grad.data.sum())
-            #     # print(param)
+            for param in model.parameters():
+                print(param.grad.data.sum())
+                # print(param)
 
 
             # print statistics

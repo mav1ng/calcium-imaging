@@ -8,6 +8,20 @@ import matplotlib.pyplot as plt
 import torch
 
 
+def plot_kmean(data, clusters_index, cluster_means):
+    data = data.cpu().numpy()
+
+    # Create plot
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    ax.scatter(x=data[:, 0], y=data[:, 1], alpha=0.8, c=clusters_index, edgecolors='none', s=30)
+    ax.scatter(x=cluster_means[:, 0], y=cluster_means[:, 1], alpha=0.8, c='black', edgecolors='none', s=30)
+
+    plt.title('Clustered Embeddings')
+    plt.legend(loc=2)
+    plt.show()
+
 def plot3Dembeddings(embeddings):
     xlist = []
     ylist = []

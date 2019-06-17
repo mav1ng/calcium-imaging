@@ -398,7 +398,6 @@ def embedding_loss(emb, lab):
 
     for i in range(iter):
         sim_mat = comp_similarity_matrix(emb[:, i])
-        print(torch.sum(torch.where(sim_mat > 1., torch.tensor(1.).cuda(), torch.tensor(0.).cuda())))
         for b in range(bs):
             loss[b, i] = torch.where(label_pairs[:, :, 0, b] == 1., torch.sub(1., sim_mat[:, :, 0, b]),
                                      loss[b, i])
@@ -410,7 +409,7 @@ def embedding_loss(emb, lab):
                                              0.).cuda()), loss[b, i])
             loss[b, i] = torch.mul(1. / (w * h), torch.sum(torch.mul(weights[:, :, 0, b], loss[b, i])))
 
-    return torch.sum(loss)
+    return torch.sum(loss) / iter
 
 
 def scaling_loss(loss_vec, bs, nb_gpus):

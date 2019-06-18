@@ -1,5 +1,30 @@
 import torch
 import numpy as np
+from sklearn.neighbors import NearestNeighbors
+
+
+def label_embeddings(data, th):
+    """
+    Method that labels the clustered embeddings based on sklearn
+    :param data: numpy array N x D, N number of pixels, D embedding dim
+    :param th: threshold radius of the sk learn nearest neighbour ball
+    :return: N x 1 labelled pixels
+    """
+    d = data.cpu().numpy()
+    out = np.zeros((data.shape[0], 1))
+    label = 0
+    neigh = NearestNeighbors(radius=th)
+    neigh.fit(d)
+    while d.shape[0] > 0:
+        seed = np.random.randint(0, d.shape[0])
+        rng = neigh.radius_neighbors(d[seed].reshape(1, -1))
+        ind = np.asarray(rng[1][0])
+        out[ind] = label
+        out[seed] = label
+        ind = np.append(ind, seed)
+        d = np.delete(d, ind, axis=0)
+        label = label + 1
+    return out
 
 
 def cluster_kmean(data, tol=0.001, max_iter=10000):

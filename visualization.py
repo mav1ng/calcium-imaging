@@ -8,6 +8,20 @@ import matplotlib.pyplot as plt
 import torch
 
 
+def plot_sk_nn(data, labels):
+    data = data.cpu().numpy()
+    for i in range(data.shape[1] - 1):
+        # Create plot
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+
+        ax.scatter(x=data[:, i], y=data[:, i + 1], alpha=0.8, c=labels[:, 0], edgecolors='none', s=30)
+
+        plt.title('Clustered Embeddings')
+        plt.legend(loc=2)
+        plt.show()
+
+
 def plot_kmean(data, clusters_index, cluster_means):
     data = data.cpu().numpy()
 

@@ -38,6 +38,15 @@ import network as n
 import visualization as v
 import training as t
 import clustering as cl
+import argparse
+
+# parser = argparse.ArgumentParser(description='Set Hyperparameters')
+# parser.add_argument('model_name', metavar='name', type=str, nargs='+',
+#                     help='Name of the Model when saved')
+#
+#
+# args = parser.parse_args()
+
 
 from torchsummary import summary
 
@@ -59,9 +68,11 @@ img_size = c.training['img_size']
 torch.cuda.empty_cache()
 
 
-transform = transforms.Compose([data.CorrRandomCrop(img_size, summary_included=True)])
-comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/',
-                                    transform=None, device=device, dtype=dtype)
+transform = transforms.Compose([data.CorrRandomCrop(img_size, summary_included=True, corr_form='small_star')])
+# comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/',
+#                                     transform=None, device=device, dtype=dtype)
+comb_dataset = data.CombinedDataset(corr_path='data/corr/small_star/sliced/slice_size_100/', sum_folder='data/sum_img/',
+                                    transform=transform, device=device, dtype=dtype)
 
 
 print('Loaded the Dataset')
@@ -90,8 +101,8 @@ except IOError:
 
 if train:
 
-    optimizer = optim.SGD(model.parameters(), lr=lr)
-    # optimizer = optim.Adam(model.parameters(), lr=lr)
+    # optimizer = optim.SGD(model.parameters(), lr=lr)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = n.EmbeddingLoss().cuda()
     if c.cuda['use_mult']:
         criterion = nn.DataParallel(criterion, device_ids=c.cuda['use_devices']).cuda()
@@ -103,8 +114,8 @@ if train:
             input = batch['image'].cuda()
             label = batch['label'].cuda()
 
-            input = comb_dataset[0]['image'][:, :64, :64].view(1, 28, 64, 64).cuda()
-            label = comb_dataset[0]['label'][:64, :64].view(1, 64, 64).cuda()
+            # input = comb_dataset[0]['image'][:, :64, :64].view(1, 12, 64, 64).cuda()
+            # label = comb_dataset[0]['label'][:64, :64].view(1, 64, 64).cuda()
 
             input.requires_grad = True
             label.requires_grad = True
@@ -120,9 +131,8 @@ if train:
             output = model(input)
 
             # test = output[0, 0].detach().view(20, -1).t()
-            # ind, mean = cl.cluster_kmean(test)
-            # print(mean.shape)
-            # v.plot_kmean(test, ind, mean)
+            # lab = cl.label_embeddings(test, th=1.)
+            # v.plot_sk_nn(test, lab)
 
             '''Debugging'''
             if c.debug['add_emb']:
@@ -138,6 +148,7 @@ if train:
                 loss = n.scaling_loss(loss, batch_size, c.cuda['use_devices'].__len__())
                 writer.add_scalar('Training Loss', loss.detach())
             else:
+                loss = loss / batch_size
                 writer.add_scalar('Training Loss', loss.item())
 
             # zero the parameter gradients
@@ -145,9 +156,9 @@ if train:
             loss.backward()
             optimizer.step()
 
-            for param in model.parameters():
-                print(param.grad.data.sum())
-                # print(param)
+            # for param in model.parameters():
+            #     print(param.grad.data.sum())
+            #     # print(param)
 
 
             # print statistics

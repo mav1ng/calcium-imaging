@@ -210,6 +210,7 @@ class MS(nn.Module):
         y = torch.zeros(self.iter + 1, self.emb, self.w * self.h).cuda()
         out = torch.zeros(self.bs, self.iter + 1, self.emb, self.w, self.h).cuda()
 
+
         # iterating over all samples in the batch
         for b in range(self.bs):
             y[0, :, :] = x[b, :, :]
@@ -221,7 +222,6 @@ class MS(nn.Module):
                 y[t, :, :] = mm(y[t - 1, :, :].clone(),
                                 torch.add(torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))),
                                           torch.mul(1. - self.step_size, torch.eye(self.w * self.h).cuda())))
-
             out[b, :, :, :, :] = y.view(self.iter + 1, self.emb, self.w, self.h)
 
         return out
@@ -409,7 +409,7 @@ def embedding_loss(emb, lab):
                                              0.).cuda()), loss[b, i])
             loss[b, i] = torch.mul(1. / (w * h), torch.sum(torch.mul(weights[:, :, 0, b], loss[b, i])))
 
-    return torch.sum(loss) / iter
+    return torch.sum(loss)
 
 
 def scaling_loss(loss_vec, bs, nb_gpus):

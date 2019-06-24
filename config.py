@@ -2,7 +2,7 @@ import torch
 
 UNet = dict(
     input_channels=12,                       # specifies the number of channels of the input image
-    embedding_dim=64,                       # sets the base embedding dimension of UNet
+    embedding_dim=10,                       # sets the base embedding dimension of UNet
     dropout_rate=0.25,                      # sets the dropout rate in UNet Model
 )
 
@@ -34,20 +34,20 @@ training = dict(
     lr=0.002,
     nb_epochs=10,
     img_size=64,
-    batch_size=12,
+    batch_size=5,
 
     min_neuron_pixels=0.1,
 )
 
 cuda = dict(
-    use_mult=True,
+    use_mult=False,
     device=torch.device('cuda:0'),
     mult_device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
     use_devices=[0, 1, 2, 3],
 )
 
 tb = dict(
-    loss_name='small_star_test_2'
+    loss_name='new_ms_test'
 )
 
 debug = dict(

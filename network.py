@@ -190,12 +190,50 @@ class MS(nn.Module):
         self.w = None
         self.h = None
 
+        self.criterion = EmbeddingLoss().cuda()
+        if c.cuda['use_mult']:
+            self.criterion = nn.DataParallel(self.criterion, device_ids=c.cuda['use_devices']).cuda()
+
     # x_in flattened image in D x N , N number of Pixels
 
-    def forward(self, x_in):
+    # def forward(self, x_in):
+    #     """
+    #     :param x_in: flattened image in D x N , D embedding Dimension, N number of Pixels
+    #     :return: tensor with dimension B x I x D x W x H, B batch size, I number of iterations, D embedding dimension,
+    #     W width of the image, H height of the image, embeddings x_in mean shifted
+    #     """
+    #
+    #     with torch.no_grad():
+    #         self.bs = x_in.size(0)
+    #         self.emb = x_in.size(1)
+    #         self.w = x_in.size(2)
+    #         self.h = x_in.size(3)
+    #
+    #     x = x_in.view(self.bs, self.emb, -1)
+    #
+    #     y = torch.zeros(self.iter + 1, self.emb, self.w * self.h).cuda()
+    #     out = torch.zeros(self.bs, self.iter + 1, self.emb, self.w, self.h).cuda()
+    #
+    #
+    #     # iterating over all samples in the batch
+    #     for b in range(self.bs):
+    #         y[0, :, :] = x[b, :, :]
+    #         for t in range(1, self.iter + 1):
+    #             kernel_mat = torch.exp(
+    #                 torch.mul(self.kernel_bandwidth, mm(y[t - 1, :, :].clone().t(), y[t - 1, :, :].clone())))
+    #             diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(self.w * self.h, 1).cuda())[:, 0], diagonal=0)
+    #
+    #             y[t, :, :] = mm(y[t - 1, :, :].clone(),
+    #                             torch.add(torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))),
+    #                                       torch.mul(1. - self.step_size, torch.eye(self.w * self.h).cuda())))
+    #         out[b, :, :, :, :] = y.view(self.iter + 1, self.emb, self.w, self.h)
+    #
+    #     return out
+
+    def forward(self, x_in, lab_in):
         """
         :param x_in: flattened image in D x N , D embedding Dimension, N number of Pixels
-        :return: tensor with dimension B x I x D x W x H, B batch size, I number of iterations, D embedding dimension,
+        :return: tensor with dimension B x D x W x H, B batch size, D embedding dimension, loss
         W width of the image, H height of the image, embeddings x_in mean shifted
         """
 
@@ -207,24 +245,44 @@ class MS(nn.Module):
 
         x = x_in.view(self.bs, self.emb, -1)
 
-        y = torch.zeros(self.iter + 1, self.emb, self.w * self.h).cuda()
-        out = torch.zeros(self.bs, self.iter + 1, self.emb, self.w, self.h).cuda()
+        y = torch.zeros(self.emb, self.w * self.h).cuda()
+        out = torch.zeros(self.bs, self.emb, self.w, self.h).cuda()
 
+        ret_loss = 0.
 
-        # iterating over all samples in the batch
-        for b in range(self.bs):
-            y[0, :, :] = x[b, :, :]
-            for t in range(1, self.iter + 1):
-                kernel_mat = torch.exp(
-                    torch.mul(self.kernel_bandwidth, mm(y[t - 1, :, :].clone().t(), y[t - 1, :, :].clone())))
-                diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(self.w * self.h, 1).cuda())[:, 0], diagonal=0)
+        for t in range(self.iter + 1):
+            # iterating over all samples in the batch
+            for b in range(self.bs):
+                y = x[b, :, :]
 
-                y[t, :, :] = mm(y[t - 1, :, :].clone(),
-                                torch.add(torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))),
-                                          torch.mul(1. - self.step_size, torch.eye(self.w * self.h).cuda())))
-            out[b, :, :, :, :] = y.view(self.iter + 1, self.emb, self.w, self.h)
+                if t == 0:
+                    kernel_mat = torch.exp(
+                        torch.mul(self.kernel_bandwidth, mm(y.clone().t(), y.clone())))
+                    diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(self.w * self.h, 1).cuda())[:, 0], diagonal=0)
 
-        return out
+                    y = mm(y.clone(),
+                                    torch.add(torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))),
+                                              torch.mul(1. - self.step_size, torch.eye(self.w * self.h).cuda())))
+
+                out[b, :, :, :] = y.view(self.emb, self.w, self.h)
+
+            x = out.view(self.bs, self.emb, -1)
+            loss = self.criterion(out, lab_in)
+
+            if c.cuda['use_mult']:
+                loss = scaling_loss(loss, self.bs, c.cuda['use_devices'].__len__())
+            else:
+                loss = loss / self.bs
+
+            with torch.no_grad():
+                ret_loss = ret_loss + loss
+
+            if t == self.iter:
+                loss.backward()
+            else:
+                loss.backward(retain_graph=True)
+
+        return out, ret_loss
 
 
 class UNetMS(nn.Module):
@@ -235,11 +293,11 @@ class UNetMS(nn.Module):
         self.MS = MS()
         self.L2Norm = L2Norm()
 
-    def forward(self, x):
+    def forward(self, x, lab):
         x = self.UNet(x)
         x = self.L2Norm(x)
-        x = self.MS(x)
-        return x
+        x, ret_loss = self.MS(x, lab)
+        return x, ret_loss
 
 
 class L2Norm(nn.Module):
@@ -390,24 +448,23 @@ def embedding_loss(emb, lab):
     :return: the total loss
     """
 
-    (bs, iter, ch, w, h) = emb.size()
+    (bs, ch, w, h) = emb.size()
 
-    loss = torch.zeros(bs, iter, w * h, w * h).cuda()
+    loss = torch.zeros(bs, w * h, w * h).cuda()
     weights = compute_weight_matrix(compute_pre_weight_matrix(lab))
     label_pairs = compute_label_pair(lab)
 
-    for i in range(iter):
-        sim_mat = comp_similarity_matrix(emb[:, i])
-        for b in range(bs):
-            loss[b, i] = torch.where(label_pairs[:, :, 0, b] == 1., torch.sub(1., sim_mat[:, :, 0, b]),
-                                     loss[b, i])
-            # correcting machine inaccuracies
-            loss[b, i] = torch.where(loss[b, i] < 0., torch.tensor(0.).cuda(), loss[b, i])
-            loss[b, i] = torch.where(label_pairs[:, :, 0, b] == -1.,
-                                     torch.where(sim_mat[:, :, 0, b] - c.embedding_loss['margin'] >= 0,
-                                                 sim_mat[:, :, 0, b] - c.embedding_loss['margin'], torch.tensor(
-                                             0.).cuda()), loss[b, i])
-            loss[b, i] = torch.mul(1. / (w * h), torch.sum(torch.mul(weights[:, :, 0, b], loss[b, i])))
+    sim_mat = comp_similarity_matrix(emb)
+    for b in range(bs):
+        loss[b] = torch.where(label_pairs[:, :, 0, b] == 1., torch.sub(1., sim_mat[:, :, 0, b]),
+                                 loss[b])
+        # correcting machine inaccuracies
+        loss[b] = torch.where(loss[b] < 0., torch.tensor(0.).cuda(), loss[b])
+        loss[b] = torch.where(label_pairs[:, :, 0, b] == -1.,
+                                 torch.where(sim_mat[:, :, 0, b] - c.embedding_loss['margin'] >= 0,
+                                             sim_mat[:, :, 0, b] - c.embedding_loss['margin'], torch.tensor(
+                                         0.).cuda()), loss[b])
+        loss[b] = torch.mul(1. / (w * h), torch.sum(torch.mul(weights[:, :, 0, b], loss[b])))
 
     return torch.sum(loss)
 

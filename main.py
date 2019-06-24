@@ -72,7 +72,7 @@ transform = transforms.Compose([data.CorrRandomCrop(img_size, summary_included=T
 # comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/',
 #                                     transform=None, device=device, dtype=dtype)
 comb_dataset = data.CombinedDataset(corr_path='data/corr/small_star/sliced/slice_size_100/', sum_folder='data/sum_img/',
-                                    transform=transform, device=device, dtype=dtype)
+                                    transform=None, device=device, dtype=dtype)
 
 
 print('Loaded the Dataset')
@@ -108,61 +108,38 @@ if train:
         criterion = nn.DataParallel(criterion, device_ids=c.cuda['use_devices']).cuda()
 
     for epoch in range(nb_epochs):
-        # optimizer = optim.Adam(model.parameters(), lr=t.poly_lr(epoch, nb_epochs, base_lr=lr, exp=0.95))
         running_loss = 0.0
+
         for index, batch in enumerate(dataloader):
             input = batch['image'].cuda()
             label = batch['label'].cuda()
 
-            # input = comb_dataset[0]['image'][:, :64, :64].view(1, 12, 64, 64).cuda()
-            # label = comb_dataset[0]['label'][:64, :64].view(1, 64, 64).cuda()
+            input = comb_dataset[0]['image'][:, :64, :64].view(1, 12, 64, 64).cuda()
+            label = comb_dataset[0]['label'][:64, :64].view(1, 64, 64).cuda()
 
             input.requires_grad = True
             label.requires_grad = True
 
             torch.autograd.set_detect_anomaly(True)
+            # zero the parameter gradients
+            optimizer.zero_grad()
 
-            '''Debugging'''
-            if c.debug['add_emb']:
-                writer.add_embedding(mat=input[0].detach().view(c.UNet['input_channels'], -1).t().cpu().numpy(),
-                                     tag='Before ' + str(epoch) + str(index),
-                                     metadata=label[0].view(-1).detach().cpu().numpy().astype(int), global_step=epoch)
-
-            output = model(input)
+            output, ret_loss = model(input, label)
 
             # test = output[0, 0].detach().view(20, -1).t()
             # lab = cl.label_embeddings(test, th=1.)
             # v.plot_sk_nn(test, lab)
 
-            '''Debugging'''
-            if c.debug['add_emb']:
-                writer.add_embedding(
-                    mat=output[0, -1, :, :, :].detach().view(c.UNet['embedding_dim'], -1).t().cpu().numpy(),
-                    tag='After ' + str(epoch) + str(index),
-                    metadata=label[0].view(-1).detach().cpu().numpy().astype(int), global_step=epoch)
+            writer.add_scalar('Training Loss', ret_loss)
 
-
-
-            loss = criterion(output, label)
-            if c.cuda['use_mult']:
-                loss = n.scaling_loss(loss, batch_size, c.cuda['use_devices'].__len__())
-                writer.add_scalar('Training Loss', loss.detach())
-            else:
-                loss = loss / batch_size
-                writer.add_scalar('Training Loss', loss.item())
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-            loss.backward()
             optimizer.step()
 
             # for param in model.parameters():
             #     print(param.grad.data.sum())
             #     # print(param)
 
-
             # print statistics
-            running_loss += loss.item()
+            running_loss += ret_loss
             if (epoch * dataloader.__len__() + index) % 1 == 0:  # print every mini-batch
                 print('[%d, %5d] loss: %.5f' %
                       (epoch + 1, index + 1, running_loss / 1))

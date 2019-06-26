@@ -5,20 +5,34 @@ import past          # pip install future
 import six           # pip install six
 
 
+# for path in ['/net/hcihome/storage/mvspreng/PycharmProjects/calcium-imaging',
+#              '/export/home/mvspreng/PycharmProjects/calcium-imaging',
+#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python27.zip',
+#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7',
+#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/plat-linux2',
+#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-tk',
+#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-old',
+#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-dynload',
+#              '/export/home/mvspreng/.local/lib/python2.7/site-packages',
+#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/site-packages']:
+#     if path not in sys.path:
+#         sys.path.append(path)
+
+for i, path in enumerate(sys.path):
+    sys.path.pop(i)
+
+print('here', sys.path)
+
 for path in ['/net/hcihome/storage/mvspreng/PycharmProjects/calcium-imaging',
-             '/export/home/mvspreng/PycharmProjects/calcium-imaging',
-             '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python27.zip',
-             '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7',
-             '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/plat-linux2',
-             '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-tk',
-             '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-old',
-             '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-dynload',
-             '/export/home/mvspreng/.local/lib/python2.7/site-packages',
-             '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/site-packages']:
+             '/export/home/mvspreng/anaconda3/envs/pytorch/lib/python37.zip',
+             '/export/home/mvspreng/anaconda3/envs/pytorch/lib/python3.7',
+             '/export/home/mvspreng/anaconda3/envs/pytorch/lib/python3.7/lib-dynload',
+             '/export/home/mvspreng/anaconda3/envs/pytorch/lib/python3.7/site-packages']:
     if path not in sys.path:
         sys.path.append(path)
 
-# print(sys.path)
+
+print(sys.path)
 
 from torch import optim
 import os
@@ -72,7 +86,7 @@ transform = transforms.Compose([data.CorrRandomCrop(img_size, summary_included=T
 # comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/',
 #                                     transform=None, device=device, dtype=dtype)
 comb_dataset = data.CombinedDataset(corr_path='data/corr/small_star/sliced/slice_size_100/', sum_folder='data/sum_img/',
-                                    transform=None, device=device, dtype=dtype)
+                                    transform=transform, device=device, dtype=dtype)
 
 
 print('Loaded the Dataset')
@@ -91,7 +105,6 @@ model.type(dtype)
 # loading old weights
 try:
     model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['loss_name']) + '.pt'))
-    model.eval()
     print('Loaded Model!')
 except IOError:
     print('No Model to load from!')
@@ -100,6 +113,82 @@ except IOError:
     print('Finished Initializing')
 
 if train:
+
+    # optimizer = optim.SGD(model.parameters(), lr=lr)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    criterion = n.EmbeddingLoss().cuda()
+    if c.cuda['use_mult']:
+        criterion = nn.DataParallel(criterion, device_ids=c.cuda['use_devices']).cuda()
+
+    for epoch in range(nb_epochs):
+        running_loss = 0.0
+
+        for index, batch in enumerate(dataloader):
+            input = batch['image'].cuda()
+            label = batch['label'].cuda()
+
+            # tn = 1
+            # input = comb_dataset[0]['image'][:, tn*64:(tn+1)*64, tn*64:(tn+1)*64].view(1, 12, 64, 64).cuda()
+            # label = comb_dataset[0]['label'][tn*64:(tn+1)*64, tn*64:(tn+1)*64].view(1, 64, 64).cuda()
+
+            input.requires_grad = True
+            label.requires_grad = True
+
+            torch.autograd.set_detect_anomaly(True)
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            output, ret_loss = model(input, label)
+
+            # test = output[0, 0].detach().view(20, -1).t()
+            # lab = cl.label_embeddings(test, th=1.)
+            # v.plot_sk_nn(test, lab)
+
+            # fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1), color=label.detach().flatten())
+            # plt.show()
+            #
+            # v.plot_sk_nn(data=output[0].view(c.UNet['embedding_dim'], -1).t().detach(),
+            #              labels=cl.label_embeddings(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.75))
+
+            print('returned ret loss', ret_loss)
+            n.scaling_loss(ret_loss, c.training['batch_size'], c.cuda['use_devices'].__len__())
+
+            if c.cuda['use_mult']:
+                writer.add_scalar('Training Loss', n.scaling_loss(ret_loss, c.training['batch_size'], c.cuda['use_devices'].__len__()))
+            else:
+                writer.add_scalar('Training Loss', ret_loss)
+
+            optimizer.step()
+
+            # for param in model.parameters():
+            #     print(param.grad.data.sum())
+            #     # print(param)
+
+            # print statistics
+            if c.cuda['use_mult']:
+                running_loss += n.scaling_loss(ret_loss, c.training['batch_size'], c.cuda['use_devices'].__len__())
+            else:
+                running_loss += ret_loss
+            if (epoch * dataloader.__len__() + index) % 1 == 0:  # print every mini-batch
+                print('[%d, %5d] loss: %.5f' %
+                      (epoch + 1, index + 1, running_loss / 1))
+                running_loss = 0.0
+
+
+        print('Saved Model After Epoch')
+        torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
+
+    writer.close()
+
+    print('Saved Model')
+    torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
+
+    print('Finished Training')
+
+if not train:
+    model.eval()
+    random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=20)
+    dataloader = DataLoader(comb_dataset, batch_size=1, shuffle=True, num_workers=0)
 
     # optimizer = optim.SGD(model.parameters(), lr=lr)
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -132,8 +221,6 @@ if train:
 
             writer.add_scalar('Training Loss', ret_loss)
 
-            optimizer.step()
-
             # for param in model.parameters():
             #     print(param.grad.data.sum())
             #     # print(param)
@@ -145,41 +232,10 @@ if train:
                       (epoch + 1, index + 1, running_loss / 1))
                 running_loss = 0.0
 
+            fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1), color=label.detach().flatten())
+            plt.show()
 
-        print('Saved Model After Epoch')
-        torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
-
-    writer.close()
-
-    print('Saved Model')
-    torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
-
-    print('Finished Training')
-
-if not train:
-    random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=20)
-    dataloader = DataLoader(comb_dataset, batch_size=1, shuffle=True, num_workers=0)
-    print('Start Testing')
-    for index, batch in enumerate(dataloader):
-        input = batch['image']
-        label = batch['label']
-
-        '''Debugging'''
-        if c.debug['add_emb']:
-            writer.add_embedding(mat=input[0].detach().view(c.UNet['input_channels'], -1).t().cpu().numpy(),
-                                 tag='Before ' + str(index),
-                                 metadata=label[0].view(-1).detach().cpu().numpy().astype(int), global_step=0)
-
-        output = model(input)
-
-        if c.debug['add_emb']:
-            writer.add_embedding(
-                mat=output[0, -1, :, :, :].detach().view(c.UNet['embedding_dim'], -1).t().cpu().numpy(),
-                tag='After ' + str(index),
-                metadata=label[0].view(-1).detach().cpu().numpy().astype(int), global_step=0)
-
-        print('Loss: ' + str(
-            n.get_batch_embedding_loss(embedding_list=output, labels_list=label, device=device, dtype=dtype)))
+        print('loss: \t', ret_loss)
 
     print('Finished Testing')
 

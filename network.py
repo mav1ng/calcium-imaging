@@ -275,7 +275,7 @@ class MS(nn.Module):
                 loss = loss / self.bs
 
             with torch.no_grad():
-                ret_loss = ret_loss + loss
+                ret_loss = ret_loss + loss.detach()
 
             if t == self.iter:
                 loss.backward()

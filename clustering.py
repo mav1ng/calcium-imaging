@@ -11,6 +11,7 @@ def label_embeddings(data, th):
     :return: N x 1 labelled pixels
     """
     d = data.cpu().numpy()
+    print(d.shape)
     out = np.zeros((data.shape[0], 1))
     label = 0
     neigh = NearestNeighbors(radius=th)

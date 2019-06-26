@@ -55,7 +55,7 @@ def plot3Dembeddings(embeddings):
     plt.show()
 
 
-def draw_umap(n_neighbors=15, min_dist=0.1, n_components=2, metric='euclidean', title='', data=None, color=None):
+def draw_umap(n_neighbors=10, min_dist=0.1, n_components=2, metric='cosine', title='Embeddings', data=None, color=None):
 
     fit = umap.UMAP(
         n_neighbors=n_neighbors,
@@ -64,22 +64,25 @@ def draw_umap(n_neighbors=15, min_dist=0.1, n_components=2, metric='euclidean', 
         metric=metric
     )
 
-    v = data
-    v_ = np.mean(data.reshape(-1))
+    v = data.cpu().numpy()
+    v_ = np.mean(v, axis=0)
     v_v_ = v - v_
-    v_v_n = np.std(data.reshape(-1))
+    v_v_n = np.std(v, axis=0)
     v = v_v_ / v_v_n
+    v = v.T
+
+    lab = color.cpu().numpy()
 
     u = fit.fit_transform(v)
     fig = plt.figure()
     if n_components == 1:
         ax = fig.add_subplot(111)
-        ax.scatter(u[:,0], range(len(u)), c=color)
+        ax.scatter(u[:,0], range(len(u)), c=lab)
     if n_components == 2:
         ax = fig.add_subplot(111)
-        ax.scatter(u[:,0], u[:,1], c=color)
+        ax.scatter(u[:,0], u[:,1], c=lab)
     if n_components == 3:
         ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(u[:,0], u[:,1], u[:,2], c=color, s=100)
+        ax.scatter(u[:,0], u[:,1], u[:,2], c=lab, s=100)
     plt.title(title, fontsize=18)
     return fig

@@ -52,6 +52,7 @@ import network as n
 import visualization as v
 import training as t
 import clustering as cl
+import helpers as h
 import argparse
 
 # parser = argparse.ArgumentParser(description='Set Hyperparameters')
@@ -90,8 +91,10 @@ comb_dataset = data.CombinedDataset(corr_path='data/corr/small_star/sliced/slice
 
 
 print('Loaded the Dataset')
-random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=2000)
-dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, sampler=random_sampler)
+random_sampler = torch.utils.data.RandomSampler(comb_dataset[0], replacement=True, num_samples=(100*batch_size))
+dataloader = DataLoader(comb_dataset[0], batch_size=batch_size, num_workers=0, sampler=random_sampler)
+# random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=(100*batch_size))
+# dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, sampler=random_sampler)
 print('Initialized Dataloader')
 
 model = n.UNetMS()
@@ -104,7 +107,10 @@ model.type(dtype)
 
 # loading old weights
 try:
-    model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['loss_name']) + '.pt'))
+    if c.tb['pre_train']:
+        model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['pre_train_name']) + '.pt'))
+    else:
+        model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['loss_name']) + '.pt'))
     print('Loaded Model!')
 except IOError:
     print('No Model to load from!')
@@ -127,9 +133,7 @@ if train:
             input = batch['image'].cuda()
             label = batch['label'].cuda()
 
-            # tn = 1
-            # input = comb_dataset[0]['image'][:, tn*64:(tn+1)*64, tn*64:(tn+1)*64].view(1, 12, 64, 64).cuda()
-            # label = comb_dataset[0]['label'][tn*64:(tn+1)*64, tn*64:(tn+1)*64].view(1, 64, 64).cuda()
+            # input, label = h.get_input_diag(part_nb=1, dataset=comb_dataset)
 
             input.requires_grad = True
             label.requires_grad = True
@@ -140,29 +144,38 @@ if train:
 
             output, ret_loss = model(input, label)
 
-            # test = output[0, 0].detach().view(20, -1).t()
-            # lab = cl.label_embeddings(test, th=1.)
-            # v.plot_sk_nn(test, lab)
+            if c.debug['print_img']:
+                fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1),
+                                  color=label[0].detach().flatten())
+                plt.show()
 
-            # fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1), color=label.detach().flatten())
-            # plt.show()
-            #
-            # v.plot_sk_nn(data=output[0].view(c.UNet['embedding_dim'], -1).t().detach(),
-            #              labels=cl.label_embeddings(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.75))
+                pred_labels = cl.label_embeddings(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.75)
+                pred_labels2 = cl.label_emb_sl(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.5)
 
-            print('returned ret loss', ret_loss)
-            n.scaling_loss(ret_loss, c.training['batch_size'], c.cuda['use_devices'].__len__())
+                print('There are ' + str(torch.unique(label).size(0)) + ' clusters.')
+
+                v.plot_sk_img(pred_labels, label.detach())
+                v.plot_sk_img(pred_labels2, label.detach())
+
+                v.plot_emb_pca(output[0].detach(), label.detach())
+
+                # plt.imshow(label[0].detach().cpu().numpy())
+                # plt.show()
+                # plt.imshow(output[0].detach().view(3, -1).t().view(64, 64, 3).cpu().numpy())
+                # plt.show()
 
             if c.cuda['use_mult']:
-                writer.add_scalar('Training Loss', n.scaling_loss(ret_loss, c.training['batch_size'], c.cuda['use_devices'].__len__()))
+                writer.add_scalar('Training Loss',
+                                  n.scaling_loss(ret_loss, c.training['batch_size'], c.cuda['use_devices'].__len__()))
             else:
                 writer.add_scalar('Training Loss', ret_loss)
 
             optimizer.step()
 
-            # for param in model.parameters():
-            #     print(param.grad.data.sum())
-            #     # print(param)
+            if c.debug['print_grad_upd']:
+                for param in model.parameters():
+                    print(param.grad.data.sum())
+                    # print(param)
 
             # print statistics
             if c.cuda['use_mult']:

@@ -1,6 +1,20 @@
 import torch
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
+from sklearn.cluster import AgglomerativeClustering
+
+
+def label_emb_sl(data, th):
+    """
+    Method that labels the clustered embeddings based on sklearn AgglomerativeClustering
+    :param data: numpy array N x D, N number of pixels, D embedding dim
+    :param th: threshold radius of the sk learn nearest neighbour ball
+    :return: N x 1 labelled pixels
+    """
+    d = data.cpu().numpy()
+    clustering = AgglomerativeClustering(linkage='single', n_clusters=None, distance_threshold=th).fit(d)
+    print('Found ' + str(clustering.n_clusters_) + ' clusters.')
+    return clustering.labels_
 
 
 def label_embeddings(data, th):
@@ -11,7 +25,6 @@ def label_embeddings(data, th):
     :return: N x 1 labelled pixels
     """
     d = data.cpu().numpy()
-    print(d.shape)
     out = np.zeros((data.shape[0], 1))
     label = 0
     neigh = NearestNeighbors(radius=th)

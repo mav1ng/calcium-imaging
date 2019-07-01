@@ -6,6 +6,43 @@ import umap
 # %matplotlib inline
 import matplotlib.pyplot as plt
 import torch
+from sklearn.decomposition import PCA
+import pandas as pd
+
+
+def plot_emb_pca(data, labels):
+    """
+    Visualizes The embeddings with dimesnsion reduction via PCA
+    :param data: tensor C x w x h
+    :param labels: tensor w x h
+    """
+
+    pca = PCA(n_components=3)
+
+    (c, w, h) = data.size()
+
+    l = labels.squeeze(0).cpu().numpy()
+
+    d_ = torch.mean(data, dim=0)
+    d_n = data - d_
+    d_n_ = torch.sqrt(torch.sum(d_n ** 2, dim=0))
+    d = d_n / d_n_
+
+    d = d.view(c, -1).t().cpu().numpy()
+    principalComponents = pca.fit_transform(d)
+
+    principalDf = pd.DataFrame(data=principalComponents
+                               , columns=['pc 1', 'pc 2', 'pc 3'])
+
+    pDf = principalComponents.reshape(w, h, 3)
+
+    f, axarr = plt.subplots(2)
+    axarr[0].imshow(pDf)
+    axarr[1].imshow(l)
+
+    plt.title('PCA Actual (upper) vs Ground Truth (lower)')
+
+    plt.show()
 
 
 def plot_sk_nn(data, labels):
@@ -20,6 +57,21 @@ def plot_sk_nn(data, labels):
         plt.title('Clustered Embeddings')
         plt.legend(loc=2)
         plt.show()
+
+
+def plot_sk_img(labels, ground_truth):
+    """
+    :param labels: N x 1, N number of pixels
+    :return: predicted labels on image
+    """
+    l = ground_truth.squeeze(0).cpu().numpy()
+    n = labels.shape[0]
+    f, axarr = plt.subplots(2)
+    axarr[0].imshow(labels.reshape(int(np.sqrt(n)), int(np.sqrt(n))))
+    axarr[1].imshow(l)
+
+    plt.title('Predicted Embeddings (upper) vs Ground Truth (lower)')
+    plt.show()
 
 
 def plot_kmean(data, clusters_index, cluster_means):
@@ -55,7 +107,7 @@ def plot3Dembeddings(embeddings):
     plt.show()
 
 
-def draw_umap(n_neighbors=10, min_dist=0.1, n_components=2, metric='cosine', title='Embeddings', data=None, color=None):
+def draw_umap(n_neighbors=10, min_dist=0.1, n_components=2, metric='euclidean', title='Embeddings', data=None, color=None):
 
     fit = umap.UMAP(
         n_neighbors=n_neighbors,

@@ -183,7 +183,8 @@ class MS(nn.Module):
         if c.mean_shift['kernel_bandwidth'] is not None:
             self.kernel_bandwidth = c.mean_shift['kernel_bandwidth']
         else:
-            self.kernel_bandwidth = 1. / (1. - c.embedding_loss['margin']) / 3.
+            #self.kernel_bandwidth = 1. / (1. - c.embedding_loss['margin']) / 3.
+            self.kernel_bandwidth = 3. / (1. - c.embedding_loss['margin'])
         self.step_size = c.mean_shift['step_size']
         self.iter = c.mean_shift['nb_iterations']
         self.bs = None
@@ -255,7 +256,7 @@ class MS(nn.Module):
             for b in range(self.bs):
                 y = x[b, :, :]
 
-                if t == 0:
+                if t != 0:
                     kernel_mat = torch.exp(
                         torch.mul(self.kernel_bandwidth, mm(y.clone().t(), y.clone())))
                     diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(self.w * self.h, 1).cuda())[:, 0], diagonal=0)
@@ -477,6 +478,8 @@ def scaling_loss(loss_vec, bs, nb_gpus):
     :param nb_gpus: number of used gpus
     :return: scaled scalar loss
     """
+    print('number of gpus', nb_gpus)
+    print('batch size', bs)
     assert bs >= nb_gpus, 'Batch Size should be bigger than the number of working gpus'
     out = 0.
     rem = bs % nb_gpus

@@ -83,16 +83,20 @@ img_size = c.training['img_size']
 torch.cuda.empty_cache()
 
 
-transform = transforms.Compose([data.CorrRandomCrop(img_size, summary_included=True, corr_form='small_star')])
+transform = transforms.Compose([data.CorrRandomCrop(img_size, nb_excluded=2, corr_form='small_star')])
 # comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/',
 #                                     transform=None, device=device, dtype=dtype)
 comb_dataset = data.CombinedDataset(corr_path='data/corr/small_star/sliced/slice_size_100/', sum_folder='data/sum_img/',
                                     transform=transform, device=device, dtype=dtype)
 
+# transform = transforms.Compose([data.RandomCrop(img_size)])
+# comb_dataset = data.LabelledDataset(corr_path='data/corr/small_star/sliced/slice_size_100/', sum_folder='data/sum_img/',
+#                                     transform=transform, device=device, dtype=dtype)
+
 
 print('Loaded the Dataset')
-random_sampler = torch.utils.data.RandomSampler(comb_dataset[0], replacement=True, num_samples=(100*batch_size))
-dataloader = DataLoader(comb_dataset[0], batch_size=batch_size, num_workers=0, sampler=random_sampler)
+random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=(100*batch_size))
+dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, sampler=random_sampler)
 # random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=(100*batch_size))
 # dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, sampler=random_sampler)
 print('Initialized Dataloader')

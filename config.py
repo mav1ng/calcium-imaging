@@ -31,10 +31,10 @@ corr = dict(
 
 training = dict(
     train=True,
-    lr=0.01,
+    lr=0.002,
     nb_epochs=10,
     img_size=64,
-    batch_size=20,
+    batch_size=10,
 
     min_neuron_pixels=0.1,
 )
@@ -47,9 +47,9 @@ cuda = dict(
 )
 
 tb = dict(
-    loss_name='r_one_dataset',
+    loss_name='r_6',
     pre_train=False,
-    pre_train_name='4',
+    pre_train_name='r_5',
 )
 
 debug = dict(

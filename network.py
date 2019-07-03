@@ -99,7 +99,7 @@ class UNet(nn.Module):
         x = F.relu(x)
         x = self.conv_layer_2(x)
         x = F.relu(x)
-        conc_in_1 = x  # used later when filters are concatenated
+        conc_in_1 = x.clone()  # used later when filters are concatenated
 
         x = self.max_pool_2D_1(x)
         x = self.conv_layer_3(x)
@@ -107,7 +107,7 @@ class UNet(nn.Module):
         x = self.conv_layer_4(x)
         x = F.relu(x)
         x = self.dropout_1(x)
-        conc_in_2 = x
+        conc_in_2 = x.clone()
 
         x = self.max_pool_2D_2(x)
         x = self.conv_layer_5(x)
@@ -115,7 +115,7 @@ class UNet(nn.Module):
         x = self.conv_layer_6(x)
         x = F.relu(x)
         x = self.dropout_2(x)
-        conc_in_3 = x
+        conc_in_3 = x.clone()
 
         x = self.max_pool_2D_3(x)
         x = self.conv_layer_7(x)
@@ -123,7 +123,7 @@ class UNet(nn.Module):
         x = self.conv_layer_8(x)
         x = F.relu(x)
         x = self.dropout_3(x)
-        conc_in_4 = x
+        conc_in_4 = x.clone()
 
         x = self.max_pool_2D_4(x)
         x = self.conv_layer_9(x)
@@ -134,7 +134,7 @@ class UNet(nn.Module):
         x = F.relu(x)
         x = self.dropout_4(x)
 
-        x = torch.cat((x, conc_in_4), dim=1)
+        x = torch.cat((x.clone(), conc_in_4), dim=1)
         x = self.conv_layer_11(x)
         x = F.relu(x)
         x = self.conv_layer_12(x)
@@ -143,7 +143,7 @@ class UNet(nn.Module):
         x = F.relu(x)
         x = self.dropout_5(x)
 
-        x = torch.cat((x, conc_in_3), dim=1)
+        x = torch.cat((x.clone(), conc_in_3), dim=1)
         x = self.conv_layer_13(x)
         x = F.relu(x)
         x = self.conv_layer_14(x)
@@ -152,7 +152,7 @@ class UNet(nn.Module):
         x = F.relu(x)
         x = self.dropout_6(x)
 
-        x = torch.cat((x, conc_in_2), dim=1)
+        x = torch.cat((x.clone(), conc_in_2), dim=1)
         x = self.conv_layer_15(x)
         x = F.relu(x)
         x = self.conv_layer_16(x)
@@ -161,7 +161,7 @@ class UNet(nn.Module):
         x = F.relu(x)
         x = self.dropout_7(x)
 
-        x = torch.cat((x, conc_in_1), dim=1)
+        x = torch.cat((x.clone(), conc_in_1), dim=1)
         x = self.conv_layer_17(x)
         x = F.relu(x)
         x = self.conv_layer_18(x)

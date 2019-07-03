@@ -95,6 +95,8 @@ comb_dataset = data.CombinedDataset(corr_path='data/corr/small_star/sliced/slice
 
 
 print('Loaded the Dataset')
+# random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=(100*batch_size))
+# dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, sampler=random_sampler)
 random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=(100*batch_size))
 dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, sampler=random_sampler)
 # random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=(100*batch_size))

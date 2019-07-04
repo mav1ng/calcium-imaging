@@ -8,7 +8,32 @@ import matplotlib.pyplot as plt
 import torch
 from sklearn.decomposition import PCA
 import pandas as pd
+from PIL import Image
+import numpy as np
 
+
+
+def plot_input(data, labels):
+    """
+        Visualizes The embeddings with dimesnsion reduction via PCA
+        :param data: tensor C x w x h
+        :param labels: tensor w x h
+        """
+
+    (c, w, h) = data.size()
+
+    l = labels.squeeze(0).cpu().numpy()
+
+    for i in range(c):
+        d = data[i].cpu().numpy()
+
+        f, axarr = plt.subplots(2)
+        axarr[0].imshow(d)
+        axarr[1].imshow(l)
+
+        plt.title('Actual Mean (upper) vs Ground Truth (lower)')
+
+        plt.show()
 
 def plot_emb_pca(data, labels):
     """
@@ -31,10 +56,10 @@ def plot_emb_pca(data, labels):
     d = d.view(c, -1).t().cpu().numpy()
     principalComponents = pca.fit_transform(d)
 
-    principalDf = pd.DataFrame(data=principalComponents
-                               , columns=['pc 1', 'pc 2', 'pc 3'])
-
     pDf = principalComponents.reshape(w, h, 3)
+
+    print(pDf)
+    print(np.max(pDf), np.min(pDf))
 
     f, axarr = plt.subplots(2)
     axarr[0].imshow(pDf)

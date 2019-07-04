@@ -1,13 +1,14 @@
 import torch
 
 UNet = dict(
-    input_channels=12,                       # specifies the number of channels of the input image
-    embedding_dim=64,                       # sets the base embedding dimension of UNet
+    input_channels=10,                       # specifies the number of channels of the input image
+    embedding_dim=32,                       # sets the base embedding dimension of UNet
     dropout_rate=0.25,                      # sets the dropout rate in UNet Model
+    background_pred=False,
 )
 
 mean_shift = dict(
-    embedding_dim=64,
+    embedding_dim=32,
     kernel_bandwidth=None,                  # set to float if should be used, margin is now used to calculate bandwidth
     step_size=0.1,                            # mean shift step size
     nb_iterations=0,                       # number of iterations, if < 1 model UNet with Unit Sphere Normalization
@@ -25,7 +26,7 @@ data = dict(
 )
 
 corr = dict(
-    corr_form='small_star',
+    corr_form='suit',
     use_slicing=False,
 )
 
@@ -34,7 +35,7 @@ training = dict(
     lr=0.002,
     nb_epochs=10,
     img_size=64,
-    batch_size=10,
+    batch_size=1,
 
     min_neuron_pixels=0.1,
 )
@@ -47,15 +48,16 @@ cuda = dict(
 )
 
 tb = dict(
-    loss_name='test64',
+    loss_name='new_loss3',
     pre_train=False,
-    pre_train_name='r_s2',
+    pre_train_name='r_suit',
 )
 
 debug = dict(
     add_emb=False,
     umap_img=False,
     print_img=False,
+    print_input=False,
     print_img_steps=20,
-    print_grad_upd=False,
+    print_grad_upd=True,
 )

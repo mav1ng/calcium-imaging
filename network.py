@@ -42,7 +42,7 @@ class UNet(nn.Module):
     H height of image
     """
 
-    def __init__(self):
+    def __init__(self, background_pred=False):
         super(UNet, self).__init__()
 
         self.input_channels = c.UNet['input_channels']
@@ -90,7 +90,10 @@ class UNet(nn.Module):
 
         self.conv_layer_17 = get_conv_layer(self.embedding_dim * 2, self.embedding_dim)
         self.conv_layer_18 = get_conv_layer(self.embedding_dim, self.embedding_dim)
-        self.conv_layer_end = nn.Conv2d(self.embedding_dim, self.embedding_dim, 1)
+        if background_pred:
+            self.conv_layer_end = nn.Conv2d(self.embedding_dim, self.embedding_dim + 2, 1)
+        else:
+            self.conv_layer_end = nn.Conv2d(self.embedding_dim, self.embedding_dim, 1)
 
         self.Softmax2d = nn.Softmax2d()
 
@@ -273,7 +276,7 @@ class MS(nn.Module):
             if c.cuda['use_mult']:
                 loss = scaling_loss(loss, self.bs, c.cuda['use_devices'].__len__())
             else:
-                loss = loss / self.bs
+                loss = loss / (self.bs * 1000000)
 
             with torch.no_grad():
                 ret_loss = ret_loss + loss.detach()
@@ -283,22 +286,38 @@ class MS(nn.Module):
             else:
                 loss.backward(retain_graph=True)
 
+            # if t == self.iter:
+            #     loss.backward()
+            # else:
+            #     loss.backward(retain_graph=True)
+
         return out, ret_loss
 
 
 class UNetMS(nn.Module):
-    def __init__(self):
+    def __init__(self, background_pred=False):
         super(UNetMS, self).__init__()
 
-        self.UNet = UNet()
+        self.UNet = UNet(background_pred=background_pred)
         self.MS = MS()
         self.L2Norm = L2Norm()
+        self.background_pred = background_pred
 
     def forward(self, x, lab):
-        x = self.UNet(x)
-        x = self.L2Norm(x)
-        x, ret_loss = self.MS(x, lab)
-        return x, ret_loss
+        print(x.size())
+        if self.background_pred:
+            x = self.UNet(x)
+            x = x.clone()[:, :-2]
+            y = x[:, -2:]
+            x = self.L2Norm(x)
+            x, ret_loss = self.MS(x, lab)
+            return x, ret_loss, y
+        else:
+            x = self.UNet(x)
+            print(x.size())
+            x = self.L2Norm(x)
+            x, ret_loss = self.MS(x, lab)
+            return x, ret_loss
 
 
 class L2Norm(nn.Module):

@@ -83,11 +83,11 @@ img_size = c.training['img_size']
 torch.cuda.empty_cache()
 
 
-transform = transforms.Compose([data.CorrRandomCrop(img_size, nb_excluded=2, corr_form='small_star')])
+transform = transforms.Compose([data.CorrRandomCrop(img_size, nb_excluded=2, corr_form='suit')])
 # comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/',
 #                                     transform=None, device=device, dtype=dtype)
-comb_dataset = data.CombinedDataset(corr_path='data/corr/small_star/sliced/slice_size_100/', sum_folder='data/sum_img/',
-                                    transform=transform, device=device, dtype=dtype)
+comb_dataset = data.CombinedDataset(corr_path='data/corr/suit/sliced/slice_size_100/', sum_folder='data/sum_img/',
+                                    transform=None, device=device, dtype=dtype)
 
 # transform = transforms.Compose([data.RandomCrop(img_size)])
 # comb_dataset = data.LabelledDataset(corr_path='data/corr/small_star/sliced/slice_size_100/', sum_folder='data/sum_img/',
@@ -103,7 +103,7 @@ dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, samp
 # dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, sampler=random_sampler)
 print('Initialized Dataloader')
 
-model = n.UNetMS()
+model = n.UNetMS(background_pred=c.UNet['background_pred'])
 if c.cuda['use_mult']:
     model = nn.DataParallel(model, device_ids=c.cuda['use_devices']).cuda()
 else:
@@ -129,31 +129,57 @@ if train:
     # optimizer = optim.SGD(model.parameters(), lr=lr)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = n.EmbeddingLoss().cuda()
+    criterionCEL = nn.CrossEntropyLoss().cuda()
     if c.cuda['use_mult']:
         criterion = nn.DataParallel(criterion, device_ids=c.cuda['use_devices']).cuda()
 
     for epoch in range(nb_epochs):
         running_loss = 0.0
+        running_cel_loss = 0.0
 
         for index, batch in enumerate(dataloader):
             input = batch['image'].cuda()
             label = batch['label'].cuda()
 
-            # input, label = h.get_input_diag(part_nb=1, dataset=comb_dataset)
+            input, label = h.get_input_diag(part_nb=3, dataset=comb_dataset)
+
+            if c.debug['print_input']:
+                v.plot_emb_pca(input[0], label.detach())
+                v.plot_input(input[0], label.detach())
 
             input.requires_grad = True
             label.requires_grad = True
 
             torch.autograd.set_detect_anomaly(True)
+
+            if c.UNet['background_pred']:
+                output, ret_loss, y = model(input, label)
+
+                '''Cross Entropy Loss on Background Prediction'''
+                cel_loss = torch.tensor(0.).cuda()
+                for b in range(y.size(0)):
+                    lab = torch.where(label[b].flatten().long() > 0, torch.tensor(1, dtype=torch.long).cuda(),
+                                      torch.tensor(0, dtype=torch.long).cuda())
+                    cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
+                cel_loss = cel_loss / y.size(0)
+
+                writer.add_scalar('Cross Entropy Loss', cel_loss.detach())
+
+                cel_loss.backward(retain_graph=True)
+
+                if c.debug['print_img']:
+                    v.plot_input(y[0].detach(), label.detach())
+
+            else:
+                output, ret_loss = model(input, label)
+
             # zero the parameter gradients
             optimizer.zero_grad()
 
-            output, ret_loss = model(input, label)
-
             if c.debug['print_img']:
-                fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1),
-                                  color=label[0].detach().flatten())
-                plt.show()
+                # fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1),
+                #                   color=label[0].detach().flatten())
+                # plt.show()
 
                 pred_labels = cl.label_embeddings(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.75)
                 pred_labels2 = cl.label_emb_sl(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.5)
@@ -165,16 +191,12 @@ if train:
 
                 v.plot_emb_pca(output[0].detach(), label.detach())
 
-                # plt.imshow(label[0].detach().cpu().numpy())
-                # plt.show()
-                # plt.imshow(output[0].detach().view(3, -1).t().view(64, 64, 3).cpu().numpy())
-                # plt.show()
 
             if c.cuda['use_mult']:
-                writer.add_scalar('Training Loss',
+                writer.add_scalar('Embedding Loss',
                                   n.scaling_loss(ret_loss, c.training['batch_size'], c.cuda['use_devices'].__len__()))
             else:
-                writer.add_scalar('Training Loss', ret_loss)
+                writer.add_scalar('Embedding Loss', ret_loss)
 
             optimizer.step()
 
@@ -188,10 +210,13 @@ if train:
                 running_loss += n.scaling_loss(ret_loss, c.training['batch_size'], c.cuda['use_devices'].__len__())
             else:
                 running_loss += ret_loss
+                if c.UNet['background_pred']:
+                    running_cel_loss += cel_loss
             if (epoch * dataloader.__len__() + index) % 1 == 0:  # print every mini-batch
-                print('[%d, %5d] loss: %.5f' %
-                      (epoch + 1, index + 1, running_loss / 1))
+                print('[%d, %5d] emb loss: %.5f cel loss: %.5f' %
+                      (epoch + 1, index + 1, running_loss / 1, running_cel_loss / 1))
                 running_loss = 0.0
+                running_cel_loss = 0.0
 
 
         print('Saved Model After Epoch')

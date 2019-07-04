@@ -594,7 +594,7 @@ def normalize_summary_img(summary_img, device=c.cuda['device'], dtype=c.data['dt
     """
     dims = summary_img.size()
     v = summary_img.view(-1)
-    v_ = torch.mean(summary_img, dim=0)
+    v_ = torch.mean(v, dim=0)
     v_v_ = v - v_
     v_v_n = torch.sqrt(torch.sum(v_v_ ** 2, dim=0))
 
@@ -618,7 +618,9 @@ def create_summary_img(nf_folder, dtype=c.data['dtype'], device=c.cuda['device']
     imgs = torch.tensor(array([imread(f) for f in files]).astype(np.float64), dtype=dtype,
                         device=device)
     mean_summar = get_mean_img(imgs)
+    mean_summar = normalize_summary_img(mean_summar)
     var_summar = get_var_img(imgs)
+    var_summar = normalize_summary_img(var_summar)
     save_numpy_to_h5py(data_array=mean_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-5:] + '_mean',
                        file_path='data/sum_img/')
     save_numpy_to_h5py(data_array=var_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-5:] + '_var',

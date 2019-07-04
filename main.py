@@ -87,7 +87,7 @@ transform = transforms.Compose([data.CorrRandomCrop(img_size, nb_excluded=2, cor
 # comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/',
 #                                     transform=None, device=device, dtype=dtype)
 comb_dataset = data.CombinedDataset(corr_path='data/corr/suit/sliced/slice_size_100/', sum_folder='data/sum_img/',
-                                    transform=None, device=device, dtype=dtype)
+                                    transform=transform, device=device, dtype=dtype)
 
 # transform = transforms.Compose([data.RandomCrop(img_size)])
 # comb_dataset = data.LabelledDataset(corr_path='data/corr/small_star/sliced/slice_size_100/', sum_folder='data/sum_img/',
@@ -141,7 +141,7 @@ if train:
             input = batch['image'].cuda()
             label = batch['label'].cuda()
 
-            input, label = h.get_input_diag(part_nb=3, dataset=comb_dataset)
+            # input, label = h.get_input_diag(part_nb=2, dataset=comb_dataset)
 
             if c.debug['print_input']:
                 v.plot_emb_pca(input[0], label.detach())
@@ -151,6 +151,9 @@ if train:
             label.requires_grad = True
 
             torch.autograd.set_detect_anomaly(True)
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
 
             if c.UNet['background_pred']:
                 output, ret_loss, y = model(input, label)
@@ -168,13 +171,10 @@ if train:
                 cel_loss.backward(retain_graph=True)
 
                 if c.debug['print_img']:
-                    v.plot_input(y[0].detach(), label.detach())
+                    v.plot_pred_back(y[0].detach(), label.detach())
 
             else:
                 output, ret_loss = model(input, label)
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
 
             if c.debug['print_img']:
                 # fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1),

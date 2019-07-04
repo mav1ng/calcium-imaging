@@ -12,6 +12,28 @@ from PIL import Image
 import numpy as np
 
 
+def plot_pred_back(data, labels):
+    """
+        Visualizes The embeddings with dimesnsion reduction via PCA
+        :param data: tensor C x w x h
+        :param labels: tensor w x h
+        """
+
+    (c, w, h) = data.size()
+
+    l = labels.squeeze(0).cpu().numpy()
+
+    for i in range(c):
+        d = data[i].cpu().numpy()
+
+        f, axarr = plt.subplots(2)
+        axarr[0].imshow(d)
+        axarr[1].imshow(l)
+
+        plt.title('Predicted Background (upper) vs Ground Truth (lower)')
+
+        plt.show()
+
 
 def plot_input(data, labels):
     """
@@ -58,8 +80,7 @@ def plot_emb_pca(data, labels):
 
     pDf = principalComponents.reshape(w, h, 3)
 
-    print(pDf)
-    print(np.max(pDf), np.min(pDf))
+    print('PCA max and min', np.max(pDf), np.min(pDf))
 
     f, axarr = plt.subplots(2)
     axarr[0].imshow(pDf)

@@ -4,7 +4,7 @@ UNet = dict(
     input_channels=10,                       # specifies the number of channels of the input image
     embedding_dim=32,                       # sets the base embedding dimension of UNet
     dropout_rate=0.25,                      # sets the dropout rate in UNet Model
-    background_pred=False,
+    background_pred=True,
 )
 
 mean_shift = dict(
@@ -35,7 +35,7 @@ training = dict(
     lr=0.002,
     nb_epochs=10,
     img_size=64,
-    batch_size=1,
+    batch_size=10,
 
     min_neuron_pixels=0.1,
 )
@@ -48,7 +48,7 @@ cuda = dict(
 )
 
 tb = dict(
-    loss_name='new_loss3',
+    loss_name='r_newloss',
     pre_train=False,
     pre_train_name='r_suit',
 )
@@ -59,5 +59,5 @@ debug = dict(
     print_img=False,
     print_input=False,
     print_img_steps=20,
-    print_grad_upd=True,
+    print_grad_upd=False,
 )

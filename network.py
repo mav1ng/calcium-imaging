@@ -276,20 +276,15 @@ class MS(nn.Module):
             if c.cuda['use_mult']:
                 loss = scaling_loss(loss, self.bs, c.cuda['use_devices'].__len__())
             else:
-                loss = loss / (self.bs * 1000000)
+                loss = loss / (self.bs * 100000)
 
             with torch.no_grad():
                 ret_loss = ret_loss + loss.detach()
 
-            if t == self.iter:
+            if t == self.iter and not c.UNet['background_pred']:
                 loss.backward()
             else:
                 loss.backward(retain_graph=True)
-
-            # if t == self.iter:
-            #     loss.backward()
-            # else:
-            #     loss.backward(retain_graph=True)
 
         return out, ret_loss
 
@@ -304,7 +299,6 @@ class UNetMS(nn.Module):
         self.background_pred = background_pred
 
     def forward(self, x, lab):
-        print(x.size())
         if self.background_pred:
             x = self.UNet(x)
             x = x.clone()[:, :-2]
@@ -314,7 +308,6 @@ class UNetMS(nn.Module):
             return x, ret_loss, y
         else:
             x = self.UNet(x)
-            print(x.size())
             x = self.L2Norm(x)
             x, ret_loss = self.MS(x, lab)
             return x, ret_loss

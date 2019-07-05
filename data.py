@@ -617,10 +617,18 @@ def create_summary_img(nf_folder, dtype=c.data['dtype'], device=c.cuda['device']
     files = sorted(glob(nf_folder + '/images/*.tiff'))
     imgs = torch.tensor(array([imread(f) for f in files]).astype(np.float64), dtype=dtype,
                         device=device)
+
     mean_summar = get_mean_img(imgs)
-    mean_summar = normalize_summary_img(mean_summar)
+    h = imgs - mean_summar
+    h_ = get_mean_img(torch.where(h < 0., torch.tensor(0.), h))
+    mean_summar = normalize_summary_img(h_)
+
     var_summar = get_var_img(imgs)
-    var_summar = normalize_summary_img(var_summar)
+    g = var_summar
+    g_ = get_var_img(torch.where(g < 0., torch.tensor(0.), g))
+    g_ = torch.sqrt(g)
+    var_summar = normalize_summary_img(g_)
+
     save_numpy_to_h5py(data_array=mean_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-5:] + '_mean',
                        file_path='data/sum_img/')
     save_numpy_to_h5py(data_array=var_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-5:] + '_var',

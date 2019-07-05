@@ -49,9 +49,9 @@ cuda = dict(
 )
 
 tb = dict(
-    loss_name='rm_b_2',
+    loss_name='m_e_b',
     pre_train=True,
-    pre_train_name='back_pred_3',
+    pre_train_name='r_b',
 )
 
 debug = dict(

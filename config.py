@@ -11,11 +11,12 @@ mean_shift = dict(
     embedding_dim=32,
     kernel_bandwidth=None,                  # set to float if should be used, margin is now used to calculate bandwidth
     step_size=0.1,                            # mean shift step size
-    nb_iterations=0,                       # number of iterations, if < 1 model UNet with Unit Sphere Normalization
+    nb_iterations=5,                       # number of iterations, if < 1 model UNet with Unit Sphere Normalization
 )
 
 embedding_loss = dict(
     margin=0.5,
+    on=True,
 )
 
 data = dict(
@@ -32,10 +33,10 @@ corr = dict(
 
 training = dict(
     train=True,
-    lr=0.002,
+    lr=0.001,
     nb_epochs=10,
     img_size=64,
-    batch_size=10,
+    batch_size=3,
 
     min_neuron_pixels=0.1,
 )
@@ -48,9 +49,9 @@ cuda = dict(
 )
 
 tb = dict(
-    loss_name='r_newloss',
-    pre_train=False,
-    pre_train_name='r_suit',
+    loss_name='rm_b_2',
+    pre_train=True,
+    pre_train_name='back_pred_3',
 )
 
 debug = dict(

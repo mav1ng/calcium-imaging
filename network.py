@@ -271,20 +271,22 @@ class MS(nn.Module):
                 out[b, :, :, :] = y.view(self.emb, self.w, self.h)
 
             x = out.view(self.bs, self.emb, -1)
-            loss = self.criterion(out, lab_in)
 
-            if c.cuda['use_mult']:
-                loss = scaling_loss(loss, self.bs, c.cuda['use_devices'].__len__())
-            else:
-                loss = loss / (self.bs * 100000)
+            if c.embedding_loss['on']:
+                loss = self.criterion(out, lab_in)
 
-            with torch.no_grad():
-                ret_loss = ret_loss + loss.detach()
+                if c.cuda['use_mult']:
+                    loss = scaling_loss(loss, self.bs, c.cuda['use_devices'].__len__())
+                else:
+                    loss = loss / (self.bs * 1000000)
 
-            if t == self.iter and not c.UNet['background_pred']:
-                loss.backward()
-            else:
-                loss.backward(retain_graph=True)
+                with torch.no_grad():
+                    ret_loss = ret_loss + loss.detach()
+
+                if t == self.iter and not c.UNet['background_pred']:
+                    loss.backward()
+                else:
+                    loss.backward(retain_graph=True)
 
         return out, ret_loss
 
@@ -301,9 +303,9 @@ class UNetMS(nn.Module):
     def forward(self, x, lab):
         if self.background_pred:
             x = self.UNet(x)
+            x = self.L2Norm(x)
             x = x.clone()[:, :-2]
             y = x[:, -2:]
-            x = self.L2Norm(x)
             x, ret_loss = self.MS(x, lab)
             return x, ret_loss, y
         else:
@@ -317,23 +319,15 @@ class L2Norm(nn.Module):
     def __init__(self):
         super(L2Norm, self).__init__()
 
-        self.w = c.training['img_size']
-        self.h = c.training['img_size']
-        self.emb = c.UNet['embedding_dim']
-        self.bs = c.training['batch_size']
-
     def forward(self, x):
         # L2 Normalization
-        """Does the normalization really work that way?"""
-        # bringing the embedding on the unit sphere
-        # for b in range(x.size(0)):
-        #     x[b] = F.normalize(x[b].clone().view(self.emb, -1), p=2, dim=0).view(self.emb, self.w, self.h)
-        for b in range(x.size(0)):
-            y = x[b].view(self.emb, -1)
+        (bs, c, w, h) = x.size()
+        for b in range(bs):
+            y = x[b].view(c, -1)
             y_ = torch.mean(y, dim=0)
             y_n = y - y_
             y_n_ = torch.sqrt(torch.sum(y_n ** 2, dim=0))
-            x[b] = (y_n / y_n_).view(self.emb, self.w, self.h)
+            x[b] = (y_n / y_n_).view(c, w, h)
         return x
 
 

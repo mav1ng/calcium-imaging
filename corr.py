@@ -6,6 +6,15 @@ import torch.nn.functional as F
 import config as c
 
 
+def get_right_mask():
+    """
+    :return: offsets of correlation pixels
+    """
+    indices_list = torch.tensor([(1, 0)], dtype=torch.int,
+                                device=c.cuda['device'])
+    return indices_list
+
+
 def get_suit_mask():
     """
     :return: offsets of correlation pixels
@@ -63,14 +72,17 @@ def get_corr(input_video, corr_form=c.corr['corr_form'], dtype=c.data['dtype'], 
     if corr_form == 'big_star':
         corr_mask = get_big_star_mask()
 
-    if corr_form == 'small_star':
+    elif corr_form == 'small_star':
         corr_mask = get_small_star_mask()
 
-    if corr_form == 'starmy':
+    elif corr_form == 'starmy':
         corr_mask = get_starmy_mask()
 
-    if corr_form == 'suit':
+    elif corr_form == 'suit':
         corr_mask = get_suit_mask()
+
+    elif corr_form == 'right':
+        corr_mask = get_right_mask()
 
     correlation_pic = torch.zeros((corr_mask.size(0), X, Y), dtype=dtype, device=device)
 

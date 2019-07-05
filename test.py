@@ -24,17 +24,17 @@ device = torch.device('cpu')
 
 for index, folder in enumerate(sorted(os.listdir('data/training_data'))):
     print(folder)
-    corr = data.create_corr_data(neurofinder_path='data/training_data/' + str(folder), slicing=False, corr_form='suit',
+    corr = data.create_corr_data(neurofinder_path='data/training_data/' + str(folder), slicing=False, corr_form='right',
                                  dtype=dtype, device=device)
     data.save_numpy_to_h5py(data_array=corr['correlations'].numpy(), label_array=corr['labels'].numpy(),
-                            file_name='corr_nf_' + str(index), file_path='data/corr/suit/full/')
+                            file_name='corr_nf_' + str(index), file_path='data/corr/right/full/')
 
 for index, folder in enumerate(sorted(os.listdir('data/training_data'))):
     print(folder)
     corr = data.create_corr_data(neurofinder_path='data/training_data/' + str(folder), slicing=True, slice_size=100,
-                                 corr_form='suit', dtype=dtype, device=device)
+                                 corr_form='right', dtype=dtype, device=device)
     data.save_numpy_to_h5py(data_array=corr['correlations'].numpy(), label_array=corr['labels'].numpy(),
-                            file_name='corr_nf_' + str(index), file_path='data/corr/suit/sliced/slice_size_100/')
+                            file_name='corr_nf_' + str(index), file_path='data/corr/right/sliced/slice_size_100/')
 
 # pre = make_blobs(n_samples=1000, n_features=2, centers=None, cluster_std=1.0, center_box=(-10.0, 10.0),
 #                  shuffle=True, random_state=None)[0]

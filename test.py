@@ -106,8 +106,8 @@ transform = transforms.Compose([data.CorrRandomCrop(img_size, nb_excluded=2, cor
 comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/', sum_folder='data/sum_img/',
                                     transform=None, device=device, dtype=dtype)
 
-input = comb_dataset[4]['image']
-label = comb_dataset[4]['label']
+input = comb_dataset[9]['image']
+label = comb_dataset[9]['label']
 
 dat = input
 l = label.cpu().numpy()
@@ -128,7 +128,7 @@ l = label.cpu().numpy()
 
 
 corr_mean = torch.mean(input, dim=0)
-corrected_img = input[3] - corr_mean
+corrected_img = torch.mean(input[2:7], dim=0) - corr_mean
 corrected_img_2 = torch.where(corrected_img < 0., torch.tensor(0.).cpu(), corrected_img)
 print(corrected_img_2.cpu().numpy().astype('uint8'))
 

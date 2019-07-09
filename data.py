@@ -21,6 +21,7 @@ import corr
 import hickle as hkl
 
 import config as c
+import helpers as h
 
 
 def tomask(coords, dims):
@@ -58,6 +59,79 @@ def write_to_json(data, path):
     with open(path, 'w') as outfile:
         json.dump(data, outfile)
     pass
+
+
+def get_summarized_masks(masks_path):
+    """Default summary function for a mask. Flattens the stack of neuron masks
+    into a (height x width) combined mask. Eliminates overlapping and neighboring
+    pixels that belong to different neurons to preserve the original number of
+    independent neurons.
+    # Arguments
+        dspath: Path to HDF5 dataset where the mask is stored.
+    # Returns
+        summ: (height x width) mask summary.
+        """
+
+    for index, folder in enumerate(sorted(os.listdir(masks_path))):
+        print('Summarizing file ' + str(folder))
+
+        # fp = h5py.File(folder)
+        # msks = fp.get('masks/raw')[...]
+        # fp.close()
+
+        msks = load_numpy_from_h5py(str(masks_path) + '/' + str(folder))
+
+        # Coordinates of all 1s in the stack of masks.
+        zyx = list(zip(*np.where(msks == 1)))
+
+        # Mapping (y,x) -> z.
+        yx_z = {(y, x): [] for z, y, x in zyx}
+        for z, y, x in zyx:
+            yx_z[(y, x)].append(z)
+
+        # Remove all elements with > 1 z.
+        for k in list(yx_z.keys()):
+            if len(yx_z[k]) > 1:
+                del yx_z[k]
+        assert np.max([len(v) for v in yx_z.values()]) == 1.
+
+        # For (y,x), take the union of its z-values with its immediate neighbors' z-values.
+        # Delete the (y,x) and its neighbors if |union| > 1.
+        for y, x in list(yx_z.keys()):
+            nbrs = [(y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1), (y + 1, x + 1),
+                    (y - 1, x - 1), (y + 1, x - 1), (y - 1, x + 1)] + [(y, x)]
+            nbrs = [k for k in nbrs if k in yx_z]
+            allz = [yx_z[k][0] for k in nbrs]
+            if len(np.unique(allz)) > 1:
+                for k in nbrs:
+                    del yx_z[k]
+
+        # The mask consists of the remaining (y,x) keys.
+        yy, xx = [y for y, x in yx_z.keys()], [x for y, x in yx_z.keys()]
+        summ = np.zeros(msks.shape[1:])
+        summ[yy, xx] = 1.
+
+        save_numpy_to_h5py(data_array=summ, file_name=folder[:8], file_path='data/sum_masks/')
+
+
+
+def get_masks(nf_path):
+
+    for index, folder in enumerate(sorted(os.listdir(nf_path))):
+
+        path = str(nf_path) + '/' + str(folder)
+
+        files = sorted(glob(path + '/images/*.tiff'))
+        imgs = array([imread(f) for f in files])
+        dims = imgs.shape[1:]  # 512 x 512
+
+        with open(path + '/regions/regions.json') as f:
+            regions = json.load(f)
+
+        mask = array([tomask(s['coordinates'], dims) for s in regions])
+
+        save_numpy_to_h5py(data_array=mask, file_name='nf_' + str(path[-5:]), file_path='data/masks/')
+
 
 
 class LabelledDataset(Dataset):
@@ -509,6 +583,47 @@ class CorrCorrect(object):
         return {'image': image, 'label': label}
 
 
+def preprocess_corr(corr_path, nb_corr_to_preserve=0, use_denoiser=False):
+    """
+    Method to preprocess correlation input data
+    :param corr_path:
+    :param nb_corr_to_preserve:
+    :return:
+    """
+    files = sorted(glob(corr_path + '*.hkl'))
+    imgs = torch.tensor(
+        [load_numpy_from_h5py(file_name=f) for f in files if 'labels' not in f and '16' not in f])
+    labels = torch.tensor(
+        [load_numpy_from_h5py(file_name=f) for f in files if 'labels' in f and '16' not in f])
+    dims = imgs.size()[2:]  # 512 x 512
+
+    print(imgs.size())
+    print(dims)
+
+    for i in range(imgs.size(0)):
+
+        ret = np.empty((nb_corr_to_preserve, dims[0], dims[1]))
+        print('transforming ' + str(i) + 'th correlation image')
+        corr_mean = torch.mean(imgs[i][nb_corr_to_preserve:], dim=0)
+
+        for j in range(nb_corr_to_preserve):
+
+            corrected_img = torch.mean(imgs[j], dim=0) - corr_mean
+            corrected_img = torch.where(corrected_img < 0., torch.tensor(0., dtype=torch.double).cpu(), corrected_img)
+            if use_denoiser:
+                corrected_img = h.denoise(corrected_img.cpu().numpy(), weight=0.05, eps=0.00001)
+            else:
+                corrected_img = corrected_img.cpu().numpy()
+            ret[j] = corrected_img
+
+        save_numpy_to_h5py(data_array=ret, file_name='corr_nf_' + str(i),
+                               file_path=str(corr_path) + 'transformed/')
+        save_numpy_to_h5py(data_array=labels[i].detach().cpu().numpy(), file_name='corr_nf_' + str(i) + '_labels',
+                               file_path=str(corr_path) + 'transformed/')
+
+    pass
+
+
 
 def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['use_slicing'], slice_size=1,
                      dtype=c.data['dtype'], device=c.cuda['device']):
@@ -531,18 +646,12 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
 
     different_labels = c.data['different_labels']
 
-    print('hello')
-
     # load the regions (training data only)
     with open(neurofinder_path + '/regions/regions.json') as f:
         regions = json.load(f)
 
-    print('hi')
-
     mask = array([tomask(s['coordinates'], dims) for s in regions])
     counter = 0
-
-    print('help')
 
     if different_labels:
         for s in mask:
@@ -551,16 +660,12 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
 
     mask = torch.tensor(np.amax(mask, axis=0))
 
-    print(imgs.size())
-    print(mask.size())
-
     # if not using slicing correlations:
     if not slicing:
-        print('yep we are stuck here')
         corr_tensor = corr.get_corr(imgs, corr_form=corr_form, device=device, dtype=dtype)
     else:
         corr_tensor = corr.get_sliced_corr(imgs, corr_form=corr_form, slice_size=slice_size, device=device, dtype=dtype)
-    print('oh we are almost finished')
+
     corr_sample = {'correlations': corr_tensor, 'labels': mask}
 
     return corr_sample

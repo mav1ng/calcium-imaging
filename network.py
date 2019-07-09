@@ -98,6 +98,7 @@ class UNet(nn.Module):
         self.Softmax2d = nn.Softmax2d()
 
     def forward(self, x):
+        print(x.size())
         x = self.conv_layer_1(x)
         x = F.relu(x)
         x = self.conv_layer_2(x)

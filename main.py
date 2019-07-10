@@ -83,8 +83,9 @@ img_size = c.training['img_size']
 torch.cuda.empty_cache()
 
 
-transform = transforms.Compose([data.CorrRandomCrop(img_size, nb_excluded=2, corr_form='suit')])
-comb_dataset = data.CombinedDataset(corr_path='data/corr/suit/sliced/slice_size_100/', sum_folder='data/sum_img/',
+# transform = transforms.Compose([data.CorrRandomCrop(img_size, nb_excluded=2, corr_form='starmy')])
+transform = transforms.Compose([data.RandomCrop(img_size)])
+comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
                                     transform=transform, device=device, dtype=dtype)
 
 

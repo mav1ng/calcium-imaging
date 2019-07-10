@@ -98,7 +98,6 @@ class UNet(nn.Module):
         self.Softmax2d = nn.Softmax2d()
 
     def forward(self, x):
-        print(x.size())
         x = self.conv_layer_1(x)
         x = F.relu(x)
         x = self.conv_layer_2(x)
@@ -279,7 +278,7 @@ class MS(nn.Module):
                 if c.cuda['use_mult']:
                     loss = scaling_loss(loss, self.bs, c.cuda['use_devices'].__len__())
                 else:
-                    loss = loss / (self.bs * 1000000)
+                    loss = (loss / self.bs) * c.embedding_loss['scaling']
 
                 with torch.no_grad():
                     ret_loss = ret_loss + loss.detach()

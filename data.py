@@ -133,11 +133,11 @@ def get_masks(nf_path):
         save_numpy_to_h5py(data_array=mask, file_name='nf_' + str(path[-5:]), file_path='data/masks/')
 
 
-
 class LabelledDataset(Dataset):
     """Labelled Dataset with Correlations and Mean Summary image and Var Summary image"""
 
-    def __init__(self, corr_path, sum_folder, transform=None, test=False, dtype=c.data['dtype'],
+    def __init__(self, corr_path, sum_folder='data/sum_img/', mask_folder='data/sum_masks/', transform=None, test=False,
+                 dtype=c.data['dtype'],
                  device=c.cuda['device']):
         """
         :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
@@ -148,12 +148,13 @@ class LabelledDataset(Dataset):
         self.folder_path = corr_path
         self.transform = transform
         self.files = sorted(glob(corr_path + '*.hkl'))
+        self.masks = sorted(glob(mask_folder + '*.hkl'))
         self.sum_img = sorted(glob(sum_folder + '*.hkl'))
         self.imgs = torch.tensor(
             [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f], dtype=dtype,
             device=device)
         self.labels = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' in f and '16' not in f], dtype=dtype,
+            [load_numpy_from_h5py(file_name=f) for f in self.masks if '03.00' not in f], dtype=dtype,
             device=device)
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
@@ -198,7 +199,8 @@ class LabelledDataset(Dataset):
 class SingleCombinedDataset(Dataset):
     """Combined Dataset with Correlations and Mean Summary image and Var Summary image"""
 
-    def __init__(self, corr_path, sum_folder, nb_dataset, transform=None, test=False, dtype=c.data['dtype'],
+    def __init__(self, corr_path, nb_dataset, sum_folder='data/sum_img/', mask_folder='data/sum_masks/', transform=None,
+                 test=False, dtype=c.data['dtype'],
                  device=c.cuda['device']):
         """
         :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
@@ -209,12 +211,13 @@ class SingleCombinedDataset(Dataset):
         self.folder_path = corr_path
         self.transform = transform
         self.files = sorted(glob(corr_path + '*.hkl'))
+        self.masks = sorted(glob(mask_folder + '*.hkl'))
         self.sum_img = sorted(glob(sum_folder + '*.hkl'))
         self.imgs = torch.tensor(
             [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f], dtype=dtype,
             device=device)
         self.labels = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' in f and '16' not in f], dtype=dtype,
+            [load_numpy_from_h5py(file_name=f) for f in self.masks if '03.00' not in f], dtype=dtype,
             device=device)
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
@@ -262,7 +265,8 @@ class SingleCombinedDataset(Dataset):
 class CombinedDataset(Dataset):
     """Combined Dataset with Correlations and Mean Summary image and Var Summary image"""
 
-    def __init__(self, corr_path, sum_folder, transform=None, test=False, dtype=c.data['dtype'],
+    def __init__(self, corr_path, sum_folder='data/sum_img/', mask_folder='data/sum_masks/', transform=None, test=False,
+                 dtype=c.data['dtype'],
                  device=c.cuda['device']):
         """
         :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
@@ -273,12 +277,14 @@ class CombinedDataset(Dataset):
         self.folder_path = corr_path
         self.transform = transform
         self.files = sorted(glob(corr_path + '*.hkl'))
+        self.masks = sorted(glob(mask_folder + '*.hkl'))
         self.sum_img = sorted(glob(sum_folder + '*.hkl'))
+
         self.imgs = torch.tensor(
             [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f], dtype=dtype,
             device=device)
         self.labels = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' in f and '16' not in f], dtype=dtype,
+            [load_numpy_from_h5py(file_name=f) for f in self.masks if '03.00' not in f], dtype=dtype,
             device=device)
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
@@ -378,7 +384,7 @@ class CombinedDataset(Dataset):
 class CorrelationDataset(Dataset):
     """Correlation Dataset"""
 
-    def __init__(self, folder_path, transform=None, test=False, dtype=c.data['dtype'], device=c.cuda['device']):
+    def __init__(self, folder_path, mask_folder='data/sum_masks/', transform=None, test=False, dtype=c.data['dtype'], device=c.cuda['device']):
         """
         :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
         be used for training/testing
@@ -388,11 +394,12 @@ class CorrelationDataset(Dataset):
         self.folder_path = folder_path
         self.transform = transform
         self.files = sorted(glob(folder_path + '*.hkl'))
+        self.masks = sorted(glob(mask_folder + '*.hkl'))
         self.imgs = torch.tensor(
             [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f], dtype=dtype,
             device=device)
         self.labels = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' in f and '16' not in f], dtype=dtype,
+            [load_numpy_from_h5py(file_name=f) for f in self.masks if '03.00' not in f], dtype=dtype,
             device=device)
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
@@ -528,7 +535,7 @@ class CorrRandomCrop(object):
     def __call__(self, sample):
         image, label = sample['image'], sample['label']
 
-        h, w = image.shape[1:3]
+        ch, h, w = image.shape[:3]
         new_h, new_w = self.output_size
 
         top = np.random.randint(0, h - new_h)
@@ -549,8 +556,7 @@ class CorrRandomCrop(object):
         correction_image = corr.get_corr(
             torch.rand(2, self.output_size[0], self.output_size[1], device=self.device, dtype=self.dtype),
             self.corr_form, device=self.device, dtype=self.dtype)
-        image[self.exlude:] = torch.where(correction_image == 0., correction_image, image[self.exlude:])
-
+        image[self.exlude:] = torch.where(correction_image[:ch-2] == 0., correction_image[:ch-2], image[self.exlude:])
         del correction_image
 
         return {'image': image, 'label': label}
@@ -597,9 +603,6 @@ def preprocess_corr(corr_path, nb_corr_to_preserve=0, use_denoiser=False):
         [load_numpy_from_h5py(file_name=f) for f in files if 'labels' in f and '16' not in f])
     dims = imgs.size()[2:]  # 512 x 512
 
-    print(imgs.size())
-    print(dims)
-
     for i in range(imgs.size(0)):
 
         ret = np.empty((nb_corr_to_preserve, dims[0], dims[1]))
@@ -614,12 +617,12 @@ def preprocess_corr(corr_path, nb_corr_to_preserve=0, use_denoiser=False):
                 corrected_img = h.denoise(corrected_img.cpu().numpy(), weight=0.05, eps=0.00001)
             else:
                 corrected_img = corrected_img.cpu().numpy()
-            ret[j] = corrected_img
+            ret[j] = normalize_summary_img(torch.tensor(corrected_img)).cpu().numpy()
 
         save_numpy_to_h5py(data_array=ret, file_name='corr_nf_' + str(i),
-                               file_path=str(corr_path) + 'transformed/')
+                               file_path=str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/')
         save_numpy_to_h5py(data_array=labels[i].detach().cpu().numpy(), file_name='corr_nf_' + str(i) + '_labels',
-                               file_path=str(corr_path) + 'transformed/')
+                               file_path=str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/')
 
     pass
 

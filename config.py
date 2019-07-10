@@ -1,7 +1,7 @@
 import torch
 
 UNet = dict(
-    input_channels=10,                       # specifies the number of channels of the input image
+    input_channels=6,                       # specifies the number of channels of the input image
     embedding_dim=32,                       # sets the base embedding dimension of UNet
     dropout_rate=0.25,                      # sets the dropout rate in UNet Model
     background_pred=True,
@@ -11,12 +11,13 @@ mean_shift = dict(
     embedding_dim=32,
     kernel_bandwidth=None,                  # set to float if should be used, margin is now used to calculate bandwidth
     step_size=0.1,                            # mean shift step size
-    nb_iterations=5,                       # number of iterations, if < 1 model UNet with Unit Sphere Normalization
+    nb_iterations=0,                       # number of iterations, if < 1 model UNet with Unit Sphere Normalization
 )
 
 embedding_loss = dict(
     margin=0.5,
     on=True,
+    scaling=0.00001
 )
 
 data = dict(
@@ -36,7 +37,7 @@ training = dict(
     lr=0.001,
     nb_epochs=10,
     img_size=64,
-    batch_size=3,
+    batch_size=20,
 
     min_neuron_pixels=0.1,
 )
@@ -49,9 +50,9 @@ cuda = dict(
 )
 
 tb = dict(
-    loss_name='m_e_b',
+    loss_name='e_bp_s4',
     pre_train=True,
-    pre_train_name='r_b',
+    pre_train_name='bp',
 )
 
 debug = dict(

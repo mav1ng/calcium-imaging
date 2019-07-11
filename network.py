@@ -3,8 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import matmul as mm
 import numpy as np
+import matplotlib.pyplot as plt
 
 import config as c
+import helpers as h
 
 
 def get_conv_layer(num_input, num_output):
@@ -273,12 +275,13 @@ class MS(nn.Module):
             x = out.view(self.bs, self.emb, -1)
 
             if c.embedding_loss['on']:
-                loss = self.criterion(out, lab_in)
+                lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy())).cuda()
+                loss = self.criterion(out, lab_in_)
 
                 if c.cuda['use_mult']:
                     loss = scaling_loss(loss, self.bs, c.cuda['use_devices'].__len__())
                 else:
-                    loss = (loss / self.bs) * c.embedding_loss['scaling']
+                    loss = (loss / self.bs) * c.embedding_loss['scaling'] * (1/(c.mean_shift['nb_iterations'] + 1))
 
                 with torch.no_grad():
                     ret_loss = ret_loss + loss.detach()

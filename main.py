@@ -21,7 +21,7 @@ import six           # pip install six
 for i, path in enumerate(sys.path):
     sys.path.pop(i)
 
-print('here', sys.path)
+# print('here', sys.path)
 
 for path in ['/net/hcihome/storage/mvspreng/PycharmProjects/calcium-imaging',
              '/export/home/mvspreng/anaconda3/envs/pytorch/lib/python37.zip',
@@ -32,7 +32,7 @@ for path in ['/net/hcihome/storage/mvspreng/PycharmProjects/calcium-imaging',
         sys.path.append(path)
 
 
-print(sys.path)
+# print(sys.path)
 
 from torch import optim
 import os

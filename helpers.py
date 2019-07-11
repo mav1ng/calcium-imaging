@@ -1,4 +1,20 @@
 import numpy as np
+import clustering as cl
+import skimage.measure as skm
+
+
+def get_diff_labels(mask):
+    """
+    returns mask with different labels
+    :param mask: input np array B x w x h
+    :return: mask with a different label for every neuron
+    """
+    (bs, w, h) = mask.shape
+
+    for b in range(bs):
+        mask[b] = skm.label(mask[b], background=0)
+
+    return mask
 
 
 def get_input_diag(part_nb, dataset):

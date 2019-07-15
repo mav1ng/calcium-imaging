@@ -44,10 +44,10 @@ class UNet(nn.Module):
     H height of image
     """
 
-    def __init__(self, background_pred=False):
+    def __init__(self, input_channels=c.UNet['input_channels'], background_pred=False):
         super(UNet, self).__init__()
 
-        self.input_channels = c.UNet['input_channels']
+        self.input_channels = input_channels
         self.embedding_dim = c.UNet['embedding_dim']
         self.dropout_rate = c.UNet['dropout_rate']
 
@@ -286,7 +286,7 @@ class MS(nn.Module):
                 with torch.no_grad():
                     ret_loss = ret_loss + loss.detach()
 
-                if t == self.iter and not c.UNet['background_pred']:
+                if t == self.iter and not c.UNet['background_pred'] and not t == 0:
                     loss.backward()
                 else:
                     loss.backward(retain_graph=True)
@@ -295,10 +295,10 @@ class MS(nn.Module):
 
 
 class UNetMS(nn.Module):
-    def __init__(self, background_pred=False):
+    def __init__(self, input_channels=c.UNet['input_channels'], background_pred=False):
         super(UNetMS, self).__init__()
 
-        self.UNet = UNet(background_pred=background_pred)
+        self.UNet = UNet(background_pred=background_pred, input_channels=input_channels)
         self.MS = MS()
         self.L2Norm = L2Norm()
         self.background_pred = background_pred
@@ -433,8 +433,12 @@ def compute_label_pair(input):
     """
 
     (bs, w, h) = input.size()
-    # +1 such that background has label != 0 such that following computation works
-    y = torch.add(input.to(torch.float), 1.)
+
+    if c.embedding_loss['include_background']:
+        # +1 such that background has label != 0 such that following computation works
+        y = torch.add(input.to(torch.float), 1.)
+    else:
+        y = input.to(torch.float)
 
     out = torch.zeros((h * w, h * w, 1, bs)).cuda()
 
@@ -444,7 +448,7 @@ def compute_label_pair(input):
         out[:, :, 0, i] = torch.mm(sim, sim.t())
         out[:, :, 0, i] = torch.where(torch.sqrt(out[:, :, 0, i]) == torch.mm(sim, torch.ones_like(sim.t())),
                                       torch.tensor(1.).cuda(), torch.tensor(-1.).cuda())
-
+        out[:, :, 0, i] = torch.where(torch.mm(sim, sim.t()) == 0., torch.tensor(0.).cuda(), out[:, :, 0, i])
     return out
 
 
@@ -474,7 +478,8 @@ def embedding_loss(emb, lab):
                                  torch.where(sim_mat[:, :, 0, b] - c.embedding_loss['margin'] >= 0,
                                              sim_mat[:, :, 0, b] - c.embedding_loss['margin'], torch.tensor(
                                          0.).cuda()), loss[b])
-        loss[b] = torch.mul(1. / (w * h), torch.sum(torch.mul(weights[:, :, 0, b], loss[b])))
+
+        loss[b] = torch.mul(1. / (w * h), torch.mul(weights[:, :, 0, b], loss[b].clone()))
 
     return torch.sum(loss)
 

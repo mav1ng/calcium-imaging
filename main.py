@@ -1,27 +1,7 @@
 import sys
-import future        # pip install future
-# import builtins      # pip install future
-import past          # pip install future
-import six           # pip install six
-
-
-# for path in ['/net/hcihome/storage/mvspreng/PycharmProjects/calcium-imaging',
-#              '/export/home/mvspreng/PycharmProjects/calcium-imaging',
-#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python27.zip',
-#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7',
-#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/plat-linux2',
-#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-tk',
-#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-old',
-#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/lib-dynload',
-#              '/export/home/mvspreng/.local/lib/python2.7/site-packages',
-#              '/export/home/mvspreng/anaconda3/envs/testpy2/lib/python2.7/site-packages']:
-#     if path not in sys.path:
-#         sys.path.append(path)
 
 for i, path in enumerate(sys.path):
     sys.path.pop(i)
-
-# print('here', sys.path)
 
 for path in ['/net/hcihome/storage/mvspreng/PycharmProjects/calcium-imaging',
              '/export/home/mvspreng/anaconda3/envs/pytorch/lib/python37.zip',
@@ -30,9 +10,6 @@ for path in ['/net/hcihome/storage/mvspreng/PycharmProjects/calcium-imaging',
              '/export/home/mvspreng/anaconda3/envs/pytorch/lib/python3.7/site-packages']:
     if path not in sys.path:
         sys.path.append(path)
-
-
-# print(sys.path)
 
 from torch import optim
 import os
@@ -54,6 +31,10 @@ import training as t
 import clustering as cl
 import helpers as h
 import argparse
+import time
+import random
+import numpy as np
+import neurofinder as nf
 
 # parser = argparse.ArgumentParser(description='Set Hyperparameters')
 # parser.add_argument('model_name', metavar='name', type=str, nargs='+',
@@ -62,236 +43,170 @@ import argparse
 #
 # args = parser.parse_args()
 
-
 from torchsummary import summary
 
-writer = SummaryWriter(log_dir='training_log/' + str(c.tb['loss_name']) + '/')
-
-train = c.training['train']
-dtype = c.data['dtype']
-batch_size = c.training['batch_size']
-
-if c.cuda['use_mult']:
-    device = c.cuda['mult_device']
-else:
-    device = c.cuda['device']
-
-lr = c.training['lr']
-nb_epochs = c.training['nb_epochs']
-img_size = c.training['img_size']
-
-torch.cuda.empty_cache()
+h.main()
 
 
-# transform = transforms.Compose([data.CorrRandomCrop(img_size, nb_excluded=2, corr_form='starmy')])
-transform = transforms.Compose([data.RandomCrop(img_size)])
-comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
-                                    transform=transform, device=device, dtype=dtype)
-
-
-# transform = transforms.Compose([data.CorrRandomCrop(img_size, nb_excluded=2, corr_form='right')])
-# comb_dataset = data.CombinedDataset(corr_path='data/corr/right/sliced/slice_size_100/', sum_folder='data/sum_img/',
-#                                     transform=transform, device=device, dtype=dtype)
-
-
-
-
-
+# writer = SummaryWriter(log_dir='training_log/' + str(c.tb['loss_name']) + '/')
+#
+# train = c.training['train']
+# dtype = c.data['dtype']
+# batch_size = c.training['batch_size']
+# device = c.cuda['device']
+#
+# device_ids = c.cuda['use_devices']
+# lr = c.training['lr']
+# resume = c.training['resume']
+# start_epoch = 0
+# img_size = c.training['img_size']
+# num_workers = c.data['num_workers']
+# # num_samples = c.data['num_samples']
+# nb_epochs = c.training['nb_epochs']
+# val_freq = c.val['val_freq']
+#
+# torch.cuda.empty_cache()
+#
 # transform = transforms.Compose([data.RandomCrop(img_size)])
-# comb_dataset = data.LabelledDataset(corr_path='data/corr/small_star/sliced/slice_size_100/', sum_folder='data/sum_img/',
+# comb_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
 #                                     transform=transform, device=device, dtype=dtype)
-
-
-print('Loaded the Dataset')
-
-random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=(100*batch_size))
-dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, sampler=random_sampler)
-
-print('Initialized Dataloader')
-
-model = n.UNetMS(background_pred=c.UNet['background_pred'])
-if c.cuda['use_mult']:
-    model = nn.DataParallel(model, device_ids=c.cuda['use_devices']).cuda()
-else:
-    model.to(device)
-model.type(dtype)
-
-
-# loading old weights
-try:
-    if c.tb['pre_train']:
-        model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['pre_train_name']) + '.pt'))
-    else:
-        model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['loss_name']) + '.pt'))
-    print('Loaded Model!')
-except IOError:
-    print('No Model to load from!')
-    print('Initializing Weights and Bias')
-    model.apply(t.weight_init)
-    print('Finished Initializing')
-
-if train:
-
-    # optimizer = optim.SGD(model.parameters(), lr=lr)
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-    criterion = n.EmbeddingLoss().cuda()
-    criterionCEL = nn.CrossEntropyLoss().cuda()
-    if c.cuda['use_mult']:
-        criterion = nn.DataParallel(criterion, device_ids=c.cuda['use_devices']).cuda()
-
-    for epoch in range(nb_epochs):
-        running_loss = 0.0
-        running_cel_loss = 0.0
-
-        for index, batch in enumerate(dataloader):
-            input = batch['image'].cuda()
-            label = batch['label'].cuda()
-
-            # input, label = h.get_input_diag(part_nb=2, dataset=comb_dataset)
-
-            if c.debug['print_input']:
-                v.plot_emb_pca(input[0], label.detach())
-                v.plot_input(input[0], label.detach())
-
-            input.requires_grad = True
-            label.requires_grad = True
-
-            torch.autograd.set_detect_anomaly(True)
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            if c.UNet['background_pred']:
-                output, ret_loss, y = model(input, label)
-
-                '''Cross Entropy Loss on Background Prediction'''
-                cel_loss = torch.tensor(0.).cuda()
-                for b in range(y.size(0)):
-                    lab = torch.where(label[b].flatten().long() > 0, torch.tensor(1, dtype=torch.long).cuda(),
-                                      torch.tensor(0, dtype=torch.long).cuda())
-                    cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
-                cel_loss = cel_loss / y.size(0)
-
-                writer.add_scalar('Cross Entropy Loss', cel_loss.detach())
-
-                cel_loss.backward(retain_graph=True)
-
-                if c.debug['print_img']:
-                    v.plot_pred_back(y[0].detach(), label.detach())
-
-            else:
-                output, ret_loss = model(input, label)
-
-            if c.debug['print_img']:
-                # fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1),
-                #                   color=label[0].detach().flatten())
-                # plt.show()
-
-                pred_labels = cl.label_embeddings(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.75)
-                pred_labels2 = cl.label_emb_sl(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.5)
-
-                print('There are ' + str(torch.unique(label).size(0)) + ' clusters.')
-
-                v.plot_sk_img(pred_labels, label.detach())
-                v.plot_sk_img(pred_labels2, label.detach())
-
-                v.plot_emb_pca(output[0].detach(), label.detach())
-
-
-            if c.cuda['use_mult']:
-                writer.add_scalar('Embedding Loss',
-                                  n.scaling_loss(ret_loss, c.training['batch_size'], c.cuda['use_devices'].__len__()))
-            else:
-                writer.add_scalar('Embedding Loss', ret_loss)
-
-            optimizer.step()
-
-            if c.debug['print_grad_upd']:
-                for param in model.parameters():
-                    print(param.grad.data.sum())
-                    # print(param)
-
-            # print statistics
-            if c.cuda['use_mult']:
-                running_loss += n.scaling_loss(ret_loss, c.training['batch_size'], c.cuda['use_devices'].__len__())
-            else:
-                running_loss += ret_loss
-                if c.UNet['background_pred']:
-                    running_cel_loss += cel_loss
-            if (epoch * dataloader.__len__() + index) % 1 == 0:  # print every mini-batch
-                print('[%d, %5d] emb loss: %.5f cel loss: %.5f' %
-                      (epoch + 1, index + 1, running_loss / 1, running_cel_loss / 1))
-                running_loss = 0.0
-                running_cel_loss = 0.0
-
-
-        print('Saved Model After Epoch')
-        torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
-
-    writer.close()
-
-    print('Saved Model')
-    torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
-
-    print('Finished Training')
-
-if not train:
-    model.eval()
-    random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=20)
-    dataloader = DataLoader(comb_dataset, batch_size=1, shuffle=True, num_workers=0)
-
-    # optimizer = optim.SGD(model.parameters(), lr=lr)
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-    criterion = n.EmbeddingLoss().cuda()
-    if c.cuda['use_mult']:
-        criterion = nn.DataParallel(criterion, device_ids=c.cuda['use_devices']).cuda()
-
-    for epoch in range(nb_epochs):
-        running_loss = 0.0
-
-        for index, batch in enumerate(dataloader):
-            input = batch['image'].cuda()
-            label = batch['label'].cuda()
-
-            input = comb_dataset[0]['image'][:, :64, :64].view(1, 12, 64, 64).cuda()
-            label = comb_dataset[0]['label'][:64, :64].view(1, 64, 64).cuda()
-
-            input.requires_grad = True
-            label.requires_grad = True
-
-            torch.autograd.set_detect_anomaly(True)
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            output, ret_loss = model(input, label)
-
-            # test = output[0, 0].detach().view(20, -1).t()
-            # lab = cl.label_embeddings(test, th=1.)
-            # v.plot_sk_nn(test, lab)
-
-            writer.add_scalar('Training Loss', ret_loss)
-
-            # for param in model.parameters():
-            #     print(param.grad.data.sum())
-            #     # print(param)
-
-            # print statistics
-            running_loss += ret_loss
-            if (epoch * dataloader.__len__() + index) % 1 == 0:  # print every mini-batch
-                print('[%d, %5d] loss: %.5f' %
-                      (epoch + 1, index + 1, running_loss / 1))
-                running_loss = 0.0
-
-            fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1), color=label.detach().flatten())
-            plt.show()
-
-        print('loss: \t', ret_loss)
-
-    print('Finished Testing')
+#
+# print('Loaded the Dataset')
+#
+# random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=(100*batch_size))
+# dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, sampler=random_sampler)
+#
+# print('Initialized Dataloader')
+#
+# # if c.training['aux_network']:
+# #     bp_model = n.UNetMS(background_pred=True, input_channels=c.UNet['input_channels'] - 2)
+# #     bp_model.to(device)
+# #     bp_model.type(dtype)
+# #     bp_model.load_state_dict(torch.load('model/model_weights_bp.pt'))
+# #     bp_model.eval()
+#
+# model = n.UNetMS(background_pred=c.UNet['background_pred'])
+# model.to(device)
+# model.type(dtype)
+#
+# # loading old weights
+# try:
+#     if c.tb['pre_train']:
+#         model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['pre_train_name']) + '.pt'))
+#     else:
+#         model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['loss_name']) + '.pt'))
+#     print('Loaded Model!')
+# except IOError:
+#     print('No Model to load from!')
+#     print('Initializing Weights and Bias')
+#     model.apply(t.weight_init)
+#     print('Finished Initializing')
+#
+# if train:
+#
+#     optimizer = optim.Adam(model.parameters(), lr=lr)
+#     criterion = n.EmbeddingLoss().cuda()
+#     criterionCEL = nn.CrossEntropyLoss().cuda()
+#
+#     for epoch in range(nb_epochs):
+#         running_loss = 0.0
+#         running_cel_loss = 0.0
+#
+#         for index, batch in enumerate(dataloader):
+#             input = batch['image'].cuda()
+#             label = batch['label'].cuda()
+#
+#             input.requires_grad = True
+#             label.requires_grad = True
+#
+#             # if c.training['aux_network']:
+#             #     output, ret_loss, y = bp_model(input, label)
+#             #     input = torch.cat([input, y], dim=1)
+#
+#             # input, label = h.get_input_diag(part_nb=2, dataset=comb_dataset)
+#
+#             if c.debug['print_input']:
+#                 v.plot_emb_pca(input[0].detach(), label.detach())
+#                 v.plot_input(input[0].detach(), label.detach())
+#
+#             torch.autograd.set_detect_anomaly(True)
+#
+#             # zero the parameter gradients
+#             optimizer.zero_grad()
+#
+#             if c.UNet['background_pred']:
+#                 output, ret_loss, y = model(input, label)
+#
+#                 '''Cross Entropy Loss on Background Prediction'''
+#                 cel_loss = torch.tensor(0.).cuda()
+#                 for b in range(y.size(0)):
+#                     lab = torch.where(label[b].flatten().long() > 0, torch.tensor(1, dtype=torch.long).cuda(),
+#                                       torch.tensor(0, dtype=torch.long).cuda())
+#                     cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
+#                 cel_loss = cel_loss / y.size(0)
+#
+#                 writer.add_scalar('Cross Entropy Loss', cel_loss.item())
+#
+#                 cel_loss.backward(retain_graph=True)
+#
+#                 if c.debug['print_img']:
+#                     v.plot_pred_back(y[0].detach(), label.detach())
+#
+#             else:
+#                 output, ret_loss = model(input, label)
+#
+#             if c.debug['print_img']:
+#                 # fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1),
+#                 #                   color=label[0].detach().flatten())
+#                 # plt.show()
+#
+#                 pred_labels = cl.label_embeddings(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.75)
+#                 pred_labels2 = cl.label_emb_sl(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.5)
+#
+#                 print('There are ' + str(torch.unique(label).size(0)) + ' clusters.')
+#
+#                 v.plot_sk_img(pred_labels, label.detach())
+#                 v.plot_sk_img(pred_labels2, label.detach())
+#
+#                 v.plot_emb_pca(output[0].detach(), label.detach())
+#
+#             writer.add_scalar('Embedding Loss', ret_loss)
+#
+#             optimizer.step()
+#
+#             if c.debug['print_grad_upd']:
+#                 for param in model.parameters():
+#                     print(param.grad.data.sum())
+#                     # print(param)
+#
+#             # print statistics
+#             if c.cuda['use_mult']:
+#                 running_loss += n.scaling_loss(ret_loss, c.training['batch_size'], c.cuda['use_devices'].__len__())
+#             else:
+#                 running_loss += ret_loss
+#                 if c.UNet['background_pred']:
+#                     running_cel_loss += cel_loss
+#             if (epoch * dataloader.__len__() + index) % 1 == 0:  # print every mini-batch
+#                 print('[%d, %5d] emb loss: %.5f cel loss: %.5f' %
+#                       (epoch + 1, index + 1, running_loss / 1, running_cel_loss / 1))
+#                 running_loss = 0.0
+#                 running_cel_loss = 0.0
+#
+#
+#         print('Saved Model After Epoch')
+#         torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
+#
+#     writer.close()
+#
+#     print('Saved Model')
+#     torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
+#
+#     print('Finished Training')
 
 
 
 '''_______________________________________________________________________________________________________'''
+
 #
 # import time
 # import random
@@ -368,7 +283,7 @@ if not train:
 #     # cudnn.benchmark = True
 #
 #     # preparing the training loader
-#     transform_train = transforms.Compose([data.CorrRandomCrop(img_size, summary_included=True)])
+#     transform_train = transforms.Compose([data.RandomCrop(img_size)])
 #     random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=num_samples)
 #
 #     train_loader = torch.utils.data.DataLoader(
@@ -505,7 +420,7 @@ if not train:
 #             data.write_to_json(mask_predict, 'data/val_mask/mask_predict.json')
 #             true_mask = nf.load('data/val_mask/mask_true.json')
 #             predict_mask = nf.load('data/val_mask/mask_predict.json')
-#             (recall_, precision_) = (recall_, precision_) + nf.centers(true_mask, predict_mask, threshold=nf_threshold)
+#             (recall_, precision_) = (recall_, precision_) + nf.centers(true_mask, predict_mask)
 #             f1_metric_ = f1_metric_ + 2 * (recall_ * precision_) / (recall_ + precision_)
 #
 #         f1_metric_ = f1_metric_ / input.size(0)

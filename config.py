@@ -17,14 +17,16 @@ mean_shift = dict(
 embedding_loss = dict(
     margin=0.5,
     on=True,
-    scaling=0.000001
+    include_background=False,
+    scaling=10.,
 )
 
 data = dict(
     different_labels=True,
     use_compression=True,
     dtype=torch.float,
-    snapshots='models/'
+    snapshots='models/',
+    num_workers=0,
 )
 
 corr = dict(
@@ -34,12 +36,20 @@ corr = dict(
 
 training = dict(
     train=True,
-    lr=0.001,
-    nb_epochs=10,
+    lr=0.002,
+    nb_epochs=30,
     img_size=64,
-    batch_size=20,
+    batch_size=1,
+
+    aux_network=False,
 
     min_neuron_pixels=0.1,
+
+    resume=False,
+)
+
+val = dict(
+    val_freq=1,
 )
 
 cuda = dict(
@@ -50,9 +60,9 @@ cuda = dict(
 )
 
 tb = dict(
-    loss_name='de_bp_4',
+    loss_name='test',
     pre_train=True,
-    pre_train_name='bp',
+    pre_train_name='prime_no_back',
 )
 
 debug = dict(

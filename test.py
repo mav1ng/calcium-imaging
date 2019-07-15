@@ -1,4 +1,5 @@
 import torch
+import network as n
 import data
 import corr
 import config as c
@@ -24,16 +25,25 @@ batch_size = c.training['batch_size']
 
 device = torch.device('cpu')
 img_size = c.training['img_size']
+
+
+t = torch.randint(0, 10, (3, 3)).cuda()
+print(t)
+t_ = n.compute_label_pair(t.view(1, 3, 3))
+print(t_.size())
+print(t_[:, :, 0, 0])
+
+
 # data.get_summarized_masks('data/masks')
 # masks = data.load_numpy_from_h5py('data/sum_masks/nf_00.09_gzip.hkl')
 # print(masks.shape)
 # plt.imshow(masks)
 # plt.show()
 
-data.preprocess_corr(corr_path='data/corr/starmy/sliced/slice_size_100/', nb_corr_to_preserve=4, use_denoiser=False)
-data.preprocess_corr(corr_path='data/corr/starmy/sliced/slice_size_100/', nb_corr_to_preserve=8, use_denoiser=False)
-data.preprocess_corr(corr_path='data/corr/suit/sliced/slice_size_100/', nb_corr_to_preserve=4, use_denoiser=False)
-data.preprocess_corr(corr_path='data/corr/suit/sliced/slice_size_100/', nb_corr_to_preserve=8, use_denoiser=False)
+# data.preprocess_corr(corr_path='data/corr/starmy/sliced/slice_size_100/', nb_corr_to_preserve=4, use_denoiser=False)
+# data.preprocess_corr(corr_path='data/corr/starmy/sliced/slice_size_100/', nb_corr_to_preserve=8, use_denoiser=False)
+# data.preprocess_corr(corr_path='data/corr/suit/sliced/slice_size_100/', nb_corr_to_preserve=4, use_denoiser=False)
+# data.preprocess_corr(corr_path='data/corr/suit/sliced/slice_size_100/', nb_corr_to_preserve=8, use_denoiser=False)
 
 
 

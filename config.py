@@ -16,9 +16,9 @@ mean_shift = dict(
 
 embedding_loss = dict(
     margin=0.5,
-    on=True,
+    on=False,
     include_background=False,
-    scaling=10.,
+    scaling=1.,
 )
 
 data = dict(
@@ -26,6 +26,7 @@ data = dict(
     use_compression=True,
     dtype=torch.float,
     snapshots='models/',
+    model_name='first3',
     num_workers=0,
 )
 
@@ -36,10 +37,10 @@ corr = dict(
 
 training = dict(
     train=True,
-    lr=0.002,
-    nb_epochs=30,
+    lr=0.001,
+    nb_epochs=100,
     img_size=64,
-    batch_size=1,
+    batch_size=40,
 
     aux_network=False,
 
@@ -49,7 +50,7 @@ training = dict(
 )
 
 val = dict(
-    val_freq=1,
+    val_freq=100,
 )
 
 cuda = dict(
@@ -60,9 +61,9 @@ cuda = dict(
 )
 
 tb = dict(
-    loss_name='test',
-    pre_train=True,
-    pre_train_name='prime_no_back',
+    loss_name='bp3',
+    pre_train=False,
+    pre_train_name='bp',
 )
 
 debug = dict(

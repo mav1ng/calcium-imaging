@@ -42,7 +42,11 @@ def toCoords(mask):
     :param mask:
     :return:
     """
-    unique = torch.unique(mask)
+    try:
+        unique = torch.unique(mask)
+    except TypeError:
+        mask = torch.tensor(mask).cuda()
+        unique = torch.unique(mask)
     coords = []
     for _, label in enumerate(unique):
         coords.append({'coordinates': (mask == label).nonzero().cpu().numpy().tolist()})
@@ -299,7 +303,7 @@ class CombinedDataset(Dataset):
             dtype=dtype,
             device=device)
         self.train_val_ratio = 0.75
-        self.x_bound = int(round(self.train_val_ratio * self.dims[0]))
+        # self.x_bound = int(round(self.train_val_ratio * self.dims[0]))
         self.y_bound = int(round(self.train_val_ratio * self.dims[1]))
 
     def __len__(self):
@@ -309,14 +313,14 @@ class CombinedDataset(Dataset):
         if not self.test:
             sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.imgs[idx]], dim=0)[:, :self.x_bound, :self.y_bound],
-                      'label': self.labels[idx][:self.x_bound, :self.y_bound]}
+                                          self.imgs[idx]], dim=0)[:, :, :self.y_bound],
+                      'label': self.labels[idx][:, :self.y_bound]}
             # markdown
         else:
             sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.imgs[idx]], dim=0)[:, self.x_bound:, self.y_bound:],
-                      'label': self.labels[idx][self.x_bound:, self.y_bound:]}
+                                          self.imgs[idx]], dim=0)[:, :, self.y_bound:],
+                      'label': self.labels[idx][:, self.y_bound:]}
             # print(sample['image'].size())
             # print(sample['label'].size())
         if self.transform:
@@ -477,13 +481,14 @@ class RandomCrop(object):
             is made.
     """
 
-    def __init__(self, output_size):
+    def __init__(self, output_size, val=False):
         assert isinstance(output_size, (int, tuple))
         if isinstance(output_size, int):
             self.output_size = (output_size, output_size)
         else:
             assert len(output_size) == 2
             self.output_size = output_size
+        self.val = val
 
     def __call__(self, sample):
         image, label = sample['image'], sample['label']
@@ -501,6 +506,8 @@ class RandomCrop(object):
             top = np.random.randint(0, h - new_h)
             left = np.random.randint(0, w - new_w)
             label_ = label[top: top + new_h, left: left + new_w]
+            if self.val:
+                break
 
         label = label_
         image = image[:, top: top + new_h, left: left + new_w]

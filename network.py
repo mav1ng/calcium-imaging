@@ -195,6 +195,7 @@ class MS(nn.Module):
         self.bs = None
         self.w = None
         self.h = None
+        self.val = False
 
         self.criterion = EmbeddingLoss().cuda()
         if c.cuda['use_mult']:
@@ -274,7 +275,7 @@ class MS(nn.Module):
 
             x = out.view(self.bs, self.emb, -1)
 
-            if c.embedding_loss['on']:
+            if c.embedding_loss['on'] and not self.val:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy())).cuda()
                 loss = self.criterion(out, lab_in_)
 

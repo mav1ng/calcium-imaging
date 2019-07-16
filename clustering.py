@@ -16,7 +16,7 @@ def label_emb_sl(data, th):
     except AttributeError:
         d = data
     clustering = AgglomerativeClustering(linkage='single', n_clusters=None, distance_threshold=th).fit(d)
-    print('Found ' + str(clustering.n_clusters_) + ' clusters.')
+    # print('Found ' + str(clustering.n_clusters_) + ' clusters.')
     return clustering.labels_
 
 
@@ -27,7 +27,10 @@ def label_embeddings(data, th):
     :param th: threshold radius of the sk learn nearest neighbour ball
     :return: N x 1 labelled pixels
     """
-    d = data.cpu().numpy()
+    try:
+        d = data.cpu().numpy()
+    except AttributeError:
+        d = data
     out = np.zeros((data.shape[0], 1))
     label = 0
     neigh = NearestNeighbors(radius=th)

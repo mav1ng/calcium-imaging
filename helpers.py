@@ -474,13 +474,19 @@ def denoise(img, weight=0.1, eps=1e-3, num_iter_max=10000):
 
 
 def pad_nf(array, img_size=514):
+    """
+    Padding the input array
+    :param array: T x W x H , T time series, width , height
+    :param img_size: wanted image size W x H
+    :return: padded array
+    """
     w = array.shape[1]
     h = array.shape[2]
 
     w_pad = int((img_size - w) / 2)
     h_pad = int((img_size - h) / 2)
 
-    return np.pad(array, ((0, 0, 0), (w, w, w), (h, h, h)), 'constant', constant_values=0)
+    return np.pad(array, ((0, 0), (w_pad, w_pad), (h_pad, h_pad)), 'constant', constant_values=0)
 
 
 def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/sliced/slice_size_100/transformed_4',

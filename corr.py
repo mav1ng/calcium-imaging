@@ -13,8 +13,7 @@ def get_right_mask():
     """
     :return: offsets of correlation pixels
     """
-    indices_list = torch.tensor([(1, 0)], dtype=torch.int,
-                                device=c.cuda['device'])
+    indices_list = torch.tensor([(1, 0)], dtype=torch.int)
     return indices_list
 
 
@@ -22,8 +21,7 @@ def get_suit_mask():
     """
     :return: offsets of correlation pixels
     """
-    indices_list = torch.tensor([(-1, 0), (0, -1), (1, 0), (0, 1), (1, -1), (-1, 1), (1, 1), (-1, -1)], dtype=torch.int,
-                                device=c.cuda['device'])
+    indices_list = torch.tensor([(-1, 0), (0, -1), (1, 0), (0, 1), (1, -1), (-1, 1), (1, 1), (-1, -1)], dtype=torch.int)
     return indices_list
 
 
@@ -32,8 +30,7 @@ def get_big_star_mask():
     :return: offsets of correlation pixels
     """
     indices_list = torch.tensor([(-1, 0), (0, -1), (1, 0), (0, 1), (0, -6), (5, -2), (5, 2), (0, 6), (-5, 2), (-5, -2),
-                                 (0, -18), (15, -6), (15, 6), (0, 18), (-15, 6), (-15, -6)], dtype=torch.int,
-                                device=c.cuda['device'])
+                                 (0, -18), (15, -6), (15, 6), (0, 18), (-15, 6), (-15, -6)], dtype=torch.int)
     return indices_list
 
 
@@ -42,7 +39,7 @@ def get_small_star_mask():
     :return: offsets correlation pixels in flattened image
     """
     indices_list = torch.tensor([(-1, 0), (0, -1), (1, 0), (0, 1), (0, -6), (5, -2), (5, 2), (0, 6), (-5, 2), (-5, -2)],
-                                dtype=torch.int, device=c.cuda['device'])
+                                dtype=torch.int)
     return indices_list
 
 
@@ -54,7 +51,7 @@ def get_starmy_mask():
         [(-1, 0), (0, -1), (1, 0), (0, 1), (2, 2), (2, -2), (-2, 2), (-2, -2), (-4, 0), (0, -4), (4, 0), (0, 4),
          (5, -2), (5, 2), (-5, 2), (-5, -2), (10, 0), (0, 10), (-10, 0), (0, -10), (0, -18), (15, -6), (15, 6), (0, 18),
          (-15, 6), (-15, -6)],
-        dtype=torch.int, device=c.cuda['device'])
+        dtype=torch.int)
     return indices_list
 
 
@@ -73,19 +70,19 @@ def get_corr(input_video, corr_form=c.corr['corr_form'], dtype=c.data['dtype'], 
 
     # choosing correlation form here
     if corr_form == 'big_star':
-        corr_mask = get_big_star_mask()
+        corr_mask = get_big_star_mask().to(device)
 
     elif corr_form == 'small_star':
-        corr_mask = get_small_star_mask()
+        corr_mask = get_small_star_mask().to(device)
 
     elif corr_form == 'starmy':
-        corr_mask = get_starmy_mask()
+        corr_mask = get_starmy_mask().to(device)
 
     elif corr_form == 'suit':
-        corr_mask = get_suit_mask()
+        corr_mask = get_suit_mask().to(device)
 
     elif corr_form == 'right':
-        corr_mask = get_right_mask()
+        corr_mask = get_right_mask().to(device)
 
     correlation_pic = torch.zeros((corr_mask.size(0), X, Y), dtype=dtype, device=device)
 

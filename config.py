@@ -18,7 +18,7 @@ embedding_loss = dict(
     margin=0.5,
     on=False,
     include_background=False,
-    scaling=1.,
+    scaling=.1,
 )
 
 data = dict(
@@ -26,7 +26,7 @@ data = dict(
     use_compression=True,
     dtype=torch.float,
     snapshots='models/',
-    model_name='first3',
+    model_name='bp3_con3',
     num_workers=0,
 )
 
@@ -38,7 +38,8 @@ corr = dict(
 training = dict(
     train=True,
     lr=0.001,
-    nb_epochs=100,
+    nb_epochs=1000,
+    nb_samples=100,
     img_size=64,
     batch_size=40,
 
@@ -51,19 +52,27 @@ training = dict(
 
 val = dict(
     val_freq=100,
+    th_nn=.75,
+    th_sl=1.,
+
+    show_img=False,
+)
+
+test = dict(
+    show_img=False,
 )
 
 cuda = dict(
     use_mult=False,
-    device=torch.device('cuda:0'),
+    device=torch.device("cuda:0"),
     mult_device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
     use_devices=[0, 1, 2, 3],
 )
 
 tb = dict(
-    loss_name='bp3',
-    pre_train=False,
-    pre_train_name='bp',
+    loss_name='bp3_con3',
+    pre_train=True,
+    pre_train_name='bp3_con',
 )
 
 debug = dict(

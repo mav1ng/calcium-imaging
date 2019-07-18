@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import clustering as cl
 import skimage.measure as skm
@@ -28,241 +30,30 @@ import numpy as np
 import neurofinder as nf
 
 
-def main():
+class Setup:
+    def __init__(self, th_nn=c.val['th_nn']):
+        self.th_nn = th_nn
+        self.writer = SummaryWriter(log_dir='training_log/' + str(c.data['model_name']) + '/')
 
-    writer = SummaryWriter(log_dir='training_log/' + str(c.data['model_name']) + '/')
+    def train(self, train_loader, model, criterion, criterionCEL, optimizer, epoch):
+        batch_time = AverageMeter()
+        data_time = AverageMeter()
+        emb_losses = AverageMeter()
+        cel_losses = AverageMeter()
 
-    dtype = c.data['dtype']
-    batch_size = c.training['batch_size']
-    device = c.cuda['device']
+        top1 = AverageMeter()
+        top5 = AverageMeter()
 
-    device_ids = c.cuda['use_devices']
-    lr = c.training['lr']
-    resume = c.training['resume']
-    start_epoch = 0
-    img_size = c.training['img_size']
-    num_workers = c.data['num_workers']
-    # num_samples = c.data['num_samples']
-    nb_epochs = c.training['nb_epochs']
-    val_freq = c.val['val_freq']
-
-    device = c.cuda['device']
-    model = n.UNetMS(background_pred=c.UNet['background_pred'])
-
-    model.to(device)
-    model.type(dtype)
-
-    # loading old weights
-    try:
-        if c.tb['pre_train']:
-            model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['pre_train_name']) + '.pt'))
-        else:
-            model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['loss_name']) + '.pt'))
-        print('Loaded Model!')
-    except IOError:
-        print('No Model to load from!')
-        print('Initializing Weights and Bias')
-        model.apply(t.weight_init)
-        print('Finished Initializing')
-
-    # define loss function (criterion) and optimizer
-    # perhaps add additional loss functions if this one does not work
-
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-
-    criterion = n.EmbeddingLoss().cuda()
-    criterionCEL = nn.CrossEntropyLoss().cuda()
-
-    # # creating different parameter groups
-    base_params = list(map(id, model.parameters()))
-
-    if resume:
-        if os.path.isfile(resume):
-            print("=> loading checkpoint '{}'".format(resume))
-            checkpoint = torch.load(resume)
-            start_epoch = checkpoint['epoch']
-            best_f1 = checkpoint['best_f1']
-            model.load_state_dict(checkpoint['state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            print("=> loaded checkpoint '{}' (epoch {})"
-                  .format(resume, checkpoint['epoch']))
-        else:
-            print("=> no checkpoint found at '{}'".format(resume))
-            best_f1 = 0.
-    else:
-        best_f1 = 0.
-
-    # models are save only when their loss obtains the best value in the validation
-    f1track = 0
-
-    # data preparation, loaders
-    # cudnn.benchmark = True
-
-    # preparing the training loader
-    transform_train = transforms.Compose([data.RandomCrop(img_size)])
-    train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
-                                        transform=transform_train, device=device, dtype=dtype)
-    random_sampler = torch.utils.data.RandomSampler(train_dataset, replacement=True, num_samples=(100 * batch_size))
-
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, sampler=random_sampler,
-                                               num_workers=num_workers)
-    print('Training loader prepared.')
-
-    # preparing validation loader
-    transform_val = transforms.Compose([data.RandomCrop(img_size, val=True)])
-    val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
-                                       transform=None, device=device, dtype=dtype, test=True)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, num_workers=num_workers)
-    print('Validation loader prepared.')
-
-    # run epochs
-    for epoch in range(start_epoch, nb_epochs):
-
-        # train for one epoch
-        train(train_loader, model, criterion, criterionCEL, optimizer, epoch, writer)
-
-        # evaluate on validation set
-        if (epoch + 1) % val_freq == 0 and epoch != 0:
-            'rewrite THIS PART BECAUSE USING NEUROFINDER METRIC'
-            f1_metric = validate(val_loader, model)
-
-            # check patience
-            if f1_metric <= best_f1:
-                f1track += 1
-            else:
-                f1track = 0
-
-            # save the best model
-            is_best = f1_metric > best_f1
-            best_f1 = max(f1_metric, best_f1)
-            save_checkpoint({
-                'epoch': epoch + 1,
-                'state_dict': model.state_dict(),
-                'best_val': best_f1,
-                'optimizer': optimizer.state_dict(),
-                'valtrack': f1track,
-                'curr_val': f1_metric,
-            }, is_best)
-
-            print('** Validation: %f (best) - %d (f1track)' % (best_f1, f1track))
-
-        print('Saved Model After Epoch')
-        torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
-
-
-def train(train_loader, model, criterion, criterionCEL, optimizer, epoch, writer):
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
-    emb_losses = AverageMeter()
-    cel_losses = AverageMeter()
-
-    top1 = AverageMeter()
-    top5 = AverageMeter()
-
-    # switch to train mode
-    model.train()
-
-    end = time.time()
-    for i, batch in enumerate(train_loader):
-        input = batch['image'].cuda()
-        label = batch['label'].cuda()
-
-        # measure data loading time
-        data_time.update(time.time() - end)
-
-        input_var = list()
-        for j in range(len(input)):
-            input_var.append(torch.autograd.Variable(input[j]).cuda())
-
-        target_var = list()
-        for j in range(len(label)):
-            label[j] = label[j].cuda()
-            target_var.append(torch.autograd.Variable(label[j]))
-
-        input.requires_grad = True
-        label.requires_grad = True
-
-        if c.debug['print_input']:
-            v.plot_emb_pca(input[0].detach(), label.detach())
-            v.plot_input(input[0].detach(), label.detach())
-
-        # zero the parameter gradients
-        optimizer.zero_grad()
-
-        if c.UNet['background_pred']:
-            output, ret_loss, y = model(input, label)
-
-            '''Cross Entropy Loss on Background Prediction'''
-            cel_loss = torch.tensor(0.).cuda()
-            for b in range(y.size(0)):
-                lab = torch.where(label[b].flatten().long() > 0, torch.tensor(1, dtype=torch.long).cuda(),
-                                  torch.tensor(0, dtype=torch.long).cuda())
-                cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
-            cel_loss = cel_loss / y.size(0)
-
-            writer.add_scalar('Cross Entropy Loss', cel_loss.item())
-
-            cel_loss.backward(retain_graph=True)
-            cel_losses.update(cel_loss.item())
-
-            if c.debug['print_img']:
-                v.plot_pred_back(y[0].detach(), label.detach())
-        else:
-            output, ret_loss = model(input, label)
-
-        # measure performance and record loss
-        try:
-            emb_losses.update(ret_loss.item())
-        except AttributeError:
-            emb_losses.update(ret_loss)
-
-        if c.debug['print_img']:
-            # fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1),
-            #                   color=label[0].detach().flatten())
-            # plt.show()
-
-            pred_labels = cl.label_embeddings(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.75)
-            pred_labels2 = cl.label_emb_sl(output[0].view(c.UNet['embedding_dim'], -1).t().detach(), th=0.5)
-
-            print('There are ' + str(torch.unique(label).size(0)) + ' clusters.')
-
-            v.plot_sk_img(pred_labels, label.detach())
-            v.plot_sk_img(pred_labels2, label.detach())
-
-            v.plot_emb_pca(output[0].detach(), label.detach())
-
-        writer.add_scalar('Embedding Loss', ret_loss)
-
-        optimizer.step()
-
-        # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
-
-        print('Epoch: {0}\t'
-              'Emb Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-              'CEL Loss {lossCEL.val:.4f} ({lossCEL.avg:.4f})\t'
-              'Param ({param}))\t'.format(
-            epoch, loss=emb_losses, lossCEL=cel_losses, param=optimizer.param_groups[0]['lr']))
-
-
-def validate(val_loader, model):
-
-    # nf_threshold = c.val['nf_threshold']
-    # switch to evaluate mode
-    model.eval()
-    model.MS.val = True
-
-    with torch.no_grad():
+        # switch to train mode
+        model.train()
 
         end = time.time()
-
-        f1_metric = 0.
-        (recall, precision) = (0., 0.)
-
-        for i, batch in enumerate(val_loader):
+        for i, batch in enumerate(train_loader):
             input = batch['image'].cuda()
             label = batch['label'].cuda()
+
+            # measure data loading time
+            data_time.update(time.time() - end)
 
             input_var = list()
             for j in range(len(input)):
@@ -273,60 +64,284 @@ def validate(val_loader, model):
                 label[j] = label[j].cuda()
                 target_var.append(torch.autograd.Variable(label[j]))
 
-            # compute output
-            output, _, __ = model(input, label)
-            '''Write Clustering METHOD such that Embeddings get clustered
-            Write From Labels to Coordinates Method
-            Write Method that saves input and target data as Jason file appropriately'''
+            input.requires_grad = True
+            label.requires_grad = True
 
-            (bs, ch, w, h) = output.size()
-            # predict = cl.label_emb_sl(output.view(ch, -1).t(), th=.5)
-            predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.75)
-            predict = predict.reshape(bs, w, h)
+            if c.debug['print_input']:
+                v.plot_emb_pca(input[0].detach(), label.detach())
+                v.plot_input(input[0].detach(), label.detach())
 
-            f1_metric_ = 0.
-            (recall_, precision_) = (0., 0.)
+            # zero the parameter gradients
+            optimizer.zero_grad()
 
-            label = get_diff_labels(label.cpu().numpy())
+            if c.UNet['background_pred']:
+                output, ret_loss, y = model(input, label)
 
-            # plt.imshow(predict[0])
-            # plt.show()
-            #
-            # plt.imshow(label[0])
-            # plt.show()
+                '''Cross Entropy Loss on Background Prediction'''
+                cel_loss = torch.tensor(0.).cuda()
+                for b in range(y.size(0)):
+                    lab = torch.where(label[b].flatten().long() > 0, torch.tensor(1, dtype=torch.long).cuda(),
+                                      torch.tensor(0, dtype=torch.long).cuda())
+                    cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
+                cel_loss = cel_loss / y.size(0)
 
-            for i in range(bs):
-                (mask_true, mask_predict) = (data.toCoords(label[i]), data.toCoords(predict[i]))
-                data.write_to_json(mask_true, 'data/val_mask/mask_true_' + c.training['model_name'] + '.json')
-                data.write_to_json(mask_predict, 'data/val_mask/mask_predict_' + c.training['model_name'] + '.json')
-                true_mask = nf.load('data/val_mask/mask_true_' + c.training['model_name'] + '.json')
-                predict_mask = nf.load('data/val_mask/mask_predict_' + c.training['model_name'] + '.json')
-                recall_c, precision_c = nf.centers(true_mask, predict_mask)
-                recall_ += recall_c
-                precision_ += precision_c
-                f1_metric_ = f1_metric_ + 2 * (recall_ * precision_) / (recall_ + precision_)
+                self.writer.add_scalar('Cross Entropy Loss', cel_loss.item())
 
-            f1_metric_ = f1_metric_ / input.size(0)
-            recall_ = recall_ / input.size(0)
-            precision_ = precision_ / input.size()
+                cel_loss.backward(retain_graph=True)
+                cel_losses.update(cel_loss.item())
 
-            f1_metric = f1_metric + f1_metric_
-            recall = recall + recall_
-            precision = precision + precision_
+                if c.debug['print_img']:
+                    v.plot_pred_back(y[0].detach(), label.detach())
+            else:
+                output, ret_loss = model(input, label)
 
-        count = val_loader.__len__()
+            # measure performance and record loss
+            try:
+                emb_losses.update(ret_loss.item())
+            except AttributeError:
+                emb_losses.update(ret_loss)
 
-        f1_metric = f1_metric / count
-        recall = recall / count
-        precision = precision / count
+            if c.debug['print_img']:
+                # fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1),
+                #                   color=label[0].detach().flatten())
+                # plt.show()
 
-        print('* F1 Metric {f1:.4f}\t'
-              'Recall {recall}\t'
-              'Precision'.format(f1=f1_metric, recall=recall, precision=precision))
+                pred_labels = cl.label_embeddings(output[0].view(c.UNet['embedding_dim'], -1).t().detach(),
+                                                  th=c.val['th_nn'])
+                pred_labels2 = cl.label_emb_sl(output[0].view(c.UNet['embedding_dim'], -1).t().detach(),
+                                               th=c.val['th_sl'])
 
-        model.MS.val = False
+                print('There are ' + str(torch.unique(label).size(0)) + ' clusters.')
 
-    return f1_metric
+                v.plot_sk_img(pred_labels, label.detach())
+                v.plot_sk_img(pred_labels2, label.detach())
+
+                v.plot_emb_pca(output[0].detach(), label.detach())
+
+            self.writer.add_scalar('Embedding Loss', ret_loss)
+
+            optimizer.step()
+
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+            print('Epoch: {0}\t'
+                  'Emb Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'CEL Loss {lossCEL.val:.4f} ({lossCEL.avg:.4f})\t'
+                  'Param ({param}))\t'.format(
+                epoch, loss=emb_losses, lossCEL=cel_losses, param=optimizer.param_groups[0]['lr']))
+
+
+    def validate(self, val_loader, model, model_name=c.data['model_name']):
+
+        # nf_threshold = c.val['nf_threshold']
+        # switch to evaluate mode
+        model.eval()
+        model.MS.val = True
+
+        with torch.no_grad():
+
+            end = time.time()
+
+            f1_metric = 0.
+            (recall, precision) = (0., 0.)
+
+            for i, batch in enumerate(val_loader):
+                input = batch['image'].cuda()
+                label = batch['label'].cuda()
+
+                input_var = list()
+                for j in range(len(input)):
+                    input_var.append(torch.autograd.Variable(input[j]).cuda())
+
+                target_var = list()
+                for j in range(len(label)):
+                    label[j] = label[j].cuda()
+                    target_var.append(torch.autograd.Variable(label[j]))
+
+                # compute output
+                output, _, __ = model(input, label)
+                '''Write Clustering METHOD such that Embeddings get clustered
+                Write From Labels to Coordinates Method
+                Write Method that saves input and target data as Jason file appropriately'''
+
+                (bs, ch, w, h) = output.size()
+                # predict = cl.label_emb_sl(output.view(ch, -1).t(), th=.5)
+                predict = cl.label_embeddings(output.view(ch, -1).t(), th=self.th_nn)
+                predict = predict.reshape(bs, w, h)
+
+                f1_metric_ = 0.
+                (recall_, precision_) = (0., 0.)
+
+                label = get_diff_labels(label.cpu().numpy())
+
+                if c.val['show_img']:
+                    for b in range(bs):
+                        f, axarr = plt.subplots(2)
+                        axarr[0].imshow(predict[b])
+                        axarr[1].imshow(label[b])
+
+                        plt.title('Predicted Background (upper) vs Ground Truth (lower)')
+                        plt.show()
+
+                for k in range(bs):
+                    (mask_true, mask_predict) = (data.toCoords(label[k]), data.toCoords(predict[k]))
+                    data.write_to_json(mask_true, 'data/val_mask/mask_true_' + str(model_name) + '.json')
+                    data.write_to_json(mask_predict, 'data/val_mask/mask_predict_' + str(model_name) + '.json')
+                    true_mask = nf.load('data/val_mask/mask_true_' + str(model_name) + '.json')
+                    predict_mask = nf.load('data/val_mask/mask_predict_' + str(model_name) + '.json')
+                    recall_c, precision_c = nf.centers(true_mask, predict_mask)
+                    recall_ += recall_c
+                    precision_ += precision_c
+                    f1_metric_ = f1_metric_ + 2 * (recall_ * precision_) / (recall_ + precision_)
+
+                f1_metric_ = f1_metric_ / bs
+                recall_ = recall_ / bs
+                precision_ = precision_ / bs
+
+                f1_metric = f1_metric + f1_metric_
+                recall = recall + recall_
+                precision = precision + precision_
+
+            count = val_loader.__len__()
+
+            f1_metric = f1_metric / count
+            recall = recall / count
+            precision = precision / count
+
+            print('* F1 Metric {f1:.4f}\t'
+                  'Recall {recall}\t'
+                  'Precision {precision}\t'.format(f1=f1_metric, recall=recall, precision=precision))
+
+            model.MS.val = False
+
+            self.writer.add_scalar('F1', f1_metric)
+            self.writer.add_scalar('Recall', recall)
+            self.writer.add_scalar('Precision', precision)
+
+        return f1_metric
+
+
+    def main(self):
+
+        dtype = c.data['dtype']
+        batch_size = c.training['batch_size']
+        device = c.cuda['device']
+
+        device_ids = c.cuda['use_devices']
+        lr = c.training['lr']
+        resume = c.training['resume']
+        start_epoch = 0
+        img_size = c.training['img_size']
+        num_workers = c.data['num_workers']
+        nb_samples = c.training['nb_samples']
+        nb_epochs = c.training['nb_epochs']
+        val_freq = c.val['val_freq']
+
+        device = c.cuda['device']
+        model = n.UNetMS(background_pred=c.UNet['background_pred'])
+
+        model.to(device)
+        model.type(dtype)
+
+        # loading old weights
+        try:
+            if c.tb['pre_train']:
+                model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['pre_train_name']) + '.pt'))
+            else:
+                model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['loss_name']) + '.pt'))
+            print('Loaded Model!')
+        except IOError:
+            print('No Model to load from!')
+            print('Initializing Weights and Bias')
+            model.apply(t.weight_init)
+            print('Finished Initializing')
+
+        # define loss function (criterion) and optimizer
+        # perhaps add additional loss functions if this one does not work
+
+        optimizer = optim.Adam(model.parameters(), lr=lr)
+
+        criterion = n.EmbeddingLoss().cuda()
+        criterionCEL = nn.CrossEntropyLoss().cuda()
+
+        # # creating different parameter groups
+        base_params = list(map(id, model.parameters()))
+
+        if resume:
+            if os.path.isfile(resume):
+                print("=> loading checkpoint '{}'".format(resume))
+                checkpoint = torch.load(resume)
+                start_epoch = checkpoint['epoch']
+                best_val = checkpoint['best_val']
+                model.load_state_dict(checkpoint['state_dict'])
+                optimizer.load_state_dict(checkpoint['optimizer'])
+                print("=> loaded checkpoint '{}' (epoch {})"
+                      .format(resume, checkpoint['epoch']))
+            else:
+                print("=> no checkpoint found at '{}'".format(resume))
+                best_f1 = 0.
+        else:
+            best_f1 = 0.
+
+        # models are save only when their loss obtains the best value in the validation
+        f1track = 0
+
+        # data preparation, loaders
+        # cudnn.benchmark = True
+
+        # preparing the training loader
+        transform_train = transforms.Compose([data.RandomCrop(img_size)])
+        train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
+                                             transform=transform_train, device=device, dtype=dtype)
+        random_sampler = torch.utils.data.RandomSampler(train_dataset, replacement=True,
+                                                        num_samples=(nb_samples * batch_size))
+
+        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, sampler=random_sampler,
+                                                   num_workers=num_workers)
+        print('Training loader prepared.')
+
+        # preparing validation loader
+        transform_val = transforms.Compose([data.RandomCrop(img_size, val=True)])
+        val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
+                                           transform=None, device=device, dtype=dtype, test=True)
+        val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, num_workers=num_workers)
+        print('Validation loader prepared.')
+
+        # run epochs
+        for epoch in range(start_epoch, nb_epochs):
+
+            # train for one epoch
+            self.train(train_loader, model, criterion, criterionCEL, optimizer, epoch)
+
+            # evaluate on validation set
+            if (epoch + 1) % val_freq == 0 and epoch != 0:
+                'rewrite THIS PART BECAUSE USING NEUROFINDER METRIC'
+                f1_metric = self.validate(val_loader, model)
+
+                # check patience
+                if f1_metric <= best_f1:
+                    f1track += 1
+                else:
+                    f1track = 0
+
+                # save the best model
+                is_best = f1_metric > best_f1
+                best_f1 = max(f1_metric, best_f1)
+                save_checkpoint({
+                    'epoch': epoch + 1,
+                    'state_dict': model.state_dict(),
+                    'best_val': best_f1,
+                    'optimizer': optimizer.state_dict(),
+                    'valtrack': f1track,
+                    'curr_val': f1_metric,
+                }, is_best)
+
+                print('** Validation: %f (best) - %d (f1track)' % (best_f1, f1track))
+
+            print('Saved Model After Epoch')
+            torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
 
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
@@ -456,3 +471,129 @@ def denoise(img, weight=0.1, eps=1e-3, num_iter_max=10000):
         # don't forget to update iterator
         i += 1
     return u
+
+
+def pad_nf(array, img_size=514):
+    w = array.shape[1]
+    h = array.shape[2]
+
+    w_pad = int((img_size - w) / 2)
+    h_pad = int((img_size - h) / 2)
+
+    return np.pad(array, ((0, 0, 0), (w, w, w), (h, h, h)), 'constant', constant_values=0)
+
+
+def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/sliced/slice_size_100/transformed_4',
+         th=c.val['th_nn'], bp=c.UNet['background_pred']):
+    dtype = c.data['dtype']
+    device = c.cuda['device']
+    model = n.UNetMS(background_pred=bp)
+
+    results = []
+    result_dict = {'dataset': None, 'regions': None}
+    namelist = ['00.00.test', '00.01.test', '01.00.test', '01.01.test', '02.00.test', '02.01.test', '03.00.test',
+                '04.00.test', '04.01.test']
+
+    model.to(device)
+    model.type(dtype)
+    model.load_state_dict(torch.load('model/model_weights_' + str(model_name) + '.pt'))
+    test_dataset = data.TestCombinedDataset(corr_path=corr_path, device=device, dtype=dtype)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0)
+    print('Test loader prepared.')
+
+    model.eval()
+    model.MS.val = True
+
+    with torch.no_grad():
+        for i, batch in enumerate(test_loader):
+            input = batch['image'].cuda()
+
+            input_var = list()
+            for j in range(len(input)):
+                input_var.append(torch.autograd.Variable(input[j]).cuda())
+
+            # compute output
+            output, _, __ = model(input)
+
+            (bs, ch, w, h) = output.size()
+            predict = cl.label_embeddings(output.view(ch, -1).t(), th=th)
+            predict = predict.reshape(bs, w, h)
+
+            if c.test['show_img']:
+                for b in range(bs):
+                    plt.imshow(predict[b])
+                    plt.title('Predicted Background (upper) vs Ground Truth (lower)')
+                    plt.show()
+
+            for k in range(bs):
+                mask_predict = data.toCoords(predict[k])
+                result_dict['dataset'] = namelist[k]
+                result_dict['regions'] = mask_predict
+                results.append(result_dict)
+
+        with open('data/test_results/results.json', 'w') as f:
+            f.write(json.dumps(results))
+
+        model.MS.val = False
+
+    pass
+
+
+def val_score(iter=10, th=c.val['th_nn'], model_name=c.tb['pre_train_name'], background_pred=c.UNet['background_pred']):
+    """
+    Method to quantify the overall performance of a model
+    :param iter: the more iterations the more accurate
+    :param th: threshold of the clustering method
+    :param model_name: model that should be evaluated
+    :background_pred: wether model uses background pred
+    :return: Overall Score of the current model
+    """
+    dtype = c.data['dtype']
+    device = c.cuda['device']
+    model = n.UNetMS(background_pred=background_pred)
+
+    model.to(device)
+    model.type(dtype)
+    model.load_state_dict(torch.load('model/model_weights_' + str(model_name) + '.pt'))
+    val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
+                                       transform=None, device=device, dtype=dtype, test=True)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, num_workers=0)
+    print('Validation loader prepared.')
+
+    set = h.Setup(th_nn=th)
+    f1_ = []
+    for i in range(iter):
+        f1_metric = set.validate(val_loader, model, model_name=model_name)
+        f1_.append(f1_metric)
+    ret = sum(f1_)/f1_.__len__()
+    print('Average Val Score of model ' + str(model_name) + ':\t' + str(ret))
+    return ret
+
+
+def test_th(np_arange=(0.005, 2.05, 0.005), iter=10):
+    dtype = c.data['dtype']
+    device = c.cuda['device']
+    model = n.UNetMS(background_pred=c.UNet['background_pred'])
+
+    model.to(device)
+    model.type(dtype)
+    model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['pre_train_name']) + '.pt'))
+    val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
+                                       transform=None, device=device, dtype=dtype, test=True)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, num_workers=0)
+    print('Validation loader prepared.')
+
+    list = np_arange
+    f1_list = []
+    f1_ind_list = []
+    for th in list:
+        f1_ = []
+        set = h.Setup(th_nn=th)
+        print('Threshold = ' + str(th))
+        for i in range(iter):
+            f1_metric = set.validate(val_loader, model)
+            f1_.append(f1_metric)
+        f1_list.append(sum(f1_)/f1_.__len__())
+        f1_ind_list.append(th)
+    print('Best Possible Th:\t', np.array(f1_ind_list)[np.argmax(np.array(f1_list))], max(f1_list))
+    return np.array(f1_list, np.array(f1_ind_list))

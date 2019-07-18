@@ -266,6 +266,52 @@ class SingleCombinedDataset(Dataset):
         return sample
 
 
+class TestCombinedDataset(Dataset):
+    """Test Combined Dataset with Correlations and Mean Summary image and Var Summary image"""
+
+    def __init__(self, corr_path, sum_folder='data/test_sum_img', transform=None,
+                 dtype=c.data['dtype'],
+                 device=c.cuda['device']):
+        """
+        :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
+        be used for testing
+        :param transform: whether a transform should be used on a sample that is getting drawn
+        """
+
+        self.corr_path = str(corr_path) + '/'
+        self.sum_folder = str(sum_folder) + '/'
+        self.folder_path = self.corr_path
+        self.files = sorted(glob(self.corr_path + '*.hkl'))
+        self.sum_img = sorted(glob(self.sum_folder + '*.hkl'))
+        self.transform = transform
+
+        self.imgs = torch.tensor(
+            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f], dtype=dtype,
+            device=device)
+        self.dims = self.imgs.shape[2:]  # 512 x 512
+        self.len = self.imgs.shape[0]
+        self.dtype = dtype
+        self.sum_mean = torch.tensor(
+            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'var' not in f],
+            dtype=dtype,
+            device=device)
+        self.sum_var = torch.tensor(
+            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'mean' not in f],
+            dtype=dtype,
+            device=device)
+
+    def __len__(self):
+        return self.len
+
+    def __getitem__(self, idx):
+        sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                      self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                      self.imgs[idx]], dim=0)[:, :, :]}
+        if self.transform:
+            sample = self.transform(sample)
+        return sample
+
+
 class CombinedDataset(Dataset):
     """Combined Dataset with Correlations and Mean Summary image and Var Summary image"""
 
@@ -596,18 +642,17 @@ class CorrCorrect(object):
         return {'image': image, 'label': label}
 
 
-def preprocess_corr(corr_path, nb_corr_to_preserve=0, use_denoiser=False):
+def preprocess_corr(corr_path, nb_corr_to_preserve=0, use_denoiser=False, test=False):
     """
     Method to preprocess correlation input data
     :param corr_path:
     :param nb_corr_to_preserve:
     :return:
     """
+    corr_path = str(corr_path) + '/'
     files = sorted(glob(corr_path + '*.hkl'))
     imgs = torch.tensor(
         [load_numpy_from_h5py(file_name=f) for f in files if 'labels' not in f and '16' not in f])
-    labels = torch.tensor(
-        [load_numpy_from_h5py(file_name=f) for f in files if 'labels' in f and '16' not in f])
     dims = imgs.size()[2:]  # 512 x 512
 
     for i in range(imgs.size(0)):
@@ -628,15 +673,18 @@ def preprocess_corr(corr_path, nb_corr_to_preserve=0, use_denoiser=False):
 
         save_numpy_to_h5py(data_array=ret, file_name='corr_nf_' + str(i),
                                file_path=str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/')
-        save_numpy_to_h5py(data_array=labels[i].detach().cpu().numpy(), file_name='corr_nf_' + str(i) + '_labels',
-                               file_path=str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/')
+
+        if not test:
+            labels = torch.tensor(
+                [load_numpy_from_h5py(file_name=f) for f in files if 'labels' in f and '16' not in f])
+            save_numpy_to_h5py(data_array=labels[i].detach().cpu().numpy(), file_name='corr_nf_' + str(i) + '_labels',
+                                   file_path=str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/')
 
     pass
 
 
-
 def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['use_slicing'], slice_size=1,
-                     dtype=c.data['dtype'], device=c.cuda['device']):
+                     test=False, dtype=c.data['dtype'], device=c.cuda['device']):
     """
     Method that creates the corresponding correlation data from the neurofinder videos and returns them
     :param neurofinder_path:
@@ -656,29 +704,61 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
 
     different_labels = c.data['different_labels']
 
-    # load the regions (training data only)
-    with open(neurofinder_path + '/regions/regions.json') as f:
-        regions = json.load(f)
-
-    mask = array([tomask(s['coordinates'], dims) for s in regions])
-    counter = 0
-
-    if different_labels:
-        for s in mask:
-            mask[counter, :, :] = np.where(s == 1., 1. + counter, 0.)
-            counter = counter + 1
-
-    mask = torch.tensor(np.amax(mask, axis=0))
-
     # if not using slicing correlations:
     if not slicing:
         corr_tensor = corr.get_corr(imgs, corr_form=corr_form, device=device, dtype=dtype)
     else:
         corr_tensor = corr.get_sliced_corr(imgs, corr_form=corr_form, slice_size=slice_size, device=device, dtype=dtype)
 
-    corr_sample = {'correlations': corr_tensor, 'labels': mask}
+    if not test:
+        # load the regions (training data only)
+        with open(neurofinder_path + '/regions/regions.json') as f:
+            regions = json.load(f)
+
+        mask = array([tomask(s['coordinates'], dims) for s in regions])
+        counter = 0
+
+        if different_labels:
+            for s in mask:
+                mask[counter, :, :] = np.where(s == 1., 1. + counter, 0.)
+                counter = counter + 1
+
+        mask = torch.tensor(np.amax(mask, axis=0))
+
+        corr_sample = {'correlations': corr_tensor, 'labels': mask}
+    else:
+        corr_sample = {'correlations': corr_tensor}
 
     return corr_sample
+
+
+def get_corr_data(nf_folder, corr_path, file_name='corr_nf_', slicing=True, slice_size=100, corr_form='starmy',
+                  test=False, dtype=c.data['dtype'], device=c.cuda['device']):
+    """
+    Method that creates correlation and saves it to specified folder
+    :param nf_folder:
+    :param corr_path:
+    :param file_name:
+    :param slicing:
+    :param corr_form:
+    :param dtype:
+    :param device:
+    :return:
+    """
+    for index, folder in enumerate(sorted(os.listdir(nf_folder))):
+        print(folder)
+        corr_ = create_corr_data(neurofinder_path=str(nf_folder) + '/' + str(folder), slicing=slicing,
+                                 slice_size=slice_size,
+                                 corr_form=corr_form, test=test, dtype=dtype, device=device)
+        if not test:
+            save_numpy_to_h5py(data_array=corr_['correlations'].numpy(), label_array=corr_['labels'].numpy(),
+                               file_name=file_name + str(index),
+                               file_path=corr_path + '/')
+        else:
+            save_numpy_to_h5py(data_array=corr_['correlations'].numpy(),
+                               file_name=file_name + str(index),
+                               file_path=corr_path + '/')
+    pass
 
 
 def get_mean_img(video):
@@ -720,7 +800,7 @@ def normalize_summary_img(summary_img, device=c.cuda['device'], dtype=c.data['dt
 # print(a['correlations'].size(), a['labels'].size())
 
 
-def create_summary_img(nf_folder, dtype=c.data['dtype'], device=c.cuda['device']):
+def create_summary_img(nf_folder, sum_folder='data/sum_img', test=False, dtype=c.data['dtype'], device=c.cuda['device']):
     """
     Method that creates summary image of specified neurofinder folder
     :param nf_folder:
@@ -729,7 +809,9 @@ def create_summary_img(nf_folder, dtype=c.data['dtype'], device=c.cuda['device']
     :param test:
     :return:
     """
+
     files = sorted(glob(nf_folder + '/images/*.tiff'))
+
     imgs = torch.tensor(array([imread(f) for f in files]).astype(np.float64), dtype=dtype,
                         device=device)
 
@@ -744,26 +826,59 @@ def create_summary_img(nf_folder, dtype=c.data['dtype'], device=c.cuda['device']
     g_ = torch.sqrt(g)
     var_summar = normalize_summary_img(g_)
 
-    save_numpy_to_h5py(data_array=mean_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-5:] + '_mean',
-                       file_path='data/sum_img/')
-    save_numpy_to_h5py(data_array=var_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-5:] + '_var',
-                       file_path='data/sum_img/')
+    con = 0
+    if test:
+        con = 5
+    save_numpy_to_h5py(data_array=mean_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-(5+con):-con] + '_mean',
+                       file_path=str(sum_folder) + '/')
+    save_numpy_to_h5py(data_array=var_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-(5+con):-con] + '_var',
+                       file_path=str(sum_folder) + '/')
     pass
 
 
-def get_summary_img(folder, dtype=c.data['dtype'], device=c.cuda['device']):
+def get_summary_img(nf_folder, sum_folder='data/sum_img', test=False, dtype=c.data['dtype'], device=c.cuda['device']):
     """
     Method that creates summmary images of the Neurofinder Datasets
-    :param folder:
+    :param nf_folder:
     :param dtype:
     :param device:
     :return:
     """
-    dic = os.listdir(folder)
+    dic = os.listdir(nf_folder)
     print(dic)
     for x in dic:
         print('Summarizing ' + str(x) + ' ...')
-        create_summary_img(str(folder) + str(x), dtype=dtype, device=device)
+        create_summary_img(str(nf_folder) + '/' + str(x), sum_folder=sum_folder, test=test, dtype=dtype, device=device)
+    pass
+
+
+def generate_data(nf_folder, corr_path, slicing, slice_size, sum_folder, nb_corr_to_preserve, generate_summary=False,
+                  use_denoiser=False,
+                  testset=False):
+    """
+    Method to generate input data give the following settings
+    :param nf_folder: Folder which  has the Neurofinder Data
+    :param corr_path: Folder where correlations should be stored
+    :param slicing: Whether to use slicing
+    :param slice_size: specify slice size
+    :param sum_folder: folder where summary images should be stored
+    :param nb_corr_to_preserve: number or correlations dimensions to preserve in preprocess correlations
+    :param generate_summary: whether to generate summary images
+    :param use_denoiser: whether to use denoiser (should be False)
+    :param testset: whether nf_folder contains test set or training set
+    :return: nothing
+    """
+    dtype = torch.double
+    cpu = torch.device('cpu')
+
+    get_corr_data(nf_folder=nf_folder, corr_path=corr_path,
+                  slicing=slicing, test=testset,
+                  slice_size=slice_size, device=cpu, dtype=dtype)
+    if generate_summary:
+        get_summary_img(nf_folder=nf_folder, sum_folder=sum_folder,
+                        test=testset, device=cpu, dtype=dtype)
+    preprocess_corr(corr_path=corr_path, nb_corr_to_preserve=nb_corr_to_preserve,
+                    use_denoiser=use_denoiser)
     pass
 
 

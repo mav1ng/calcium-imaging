@@ -237,9 +237,10 @@ class MS(nn.Module):
     #
     #     return out
 
-    def forward(self, x_in, lab_in):
+    def forward(self, x_in, lab_in=None):
         """
         :param x_in: flattened image in D x N , D embedding Dimension, N number of Pixels
+        :param lab_in specify labels B x W x H if model is usd in training mode
         :return: tensor with dimension B x D x W x H, B batch size, D embedding dimension, loss
         W width of the image, H height of the image, embeddings x_in mean shifted
         """
@@ -275,7 +276,9 @@ class MS(nn.Module):
 
             x = out.view(self.bs, self.emb, -1)
 
-            if c.embedding_loss['on'] and not self.val:
+            print('self.training', self.training)
+
+            if self.training and c.embedding_loss['on'] and not self.val:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy())).cuda()
                 loss = self.criterion(out, lab_in_)
 

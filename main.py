@@ -45,7 +45,8 @@ import neurofinder as nf
 
 from torchsummary import summary
 
-h.main()
+set = h.Setup()
+set.main()
 
 
 # writer = SummaryWriter(log_dir='training_log/' + str(c.tb['loss_name']) + '/')
@@ -61,7 +62,7 @@ h.main()
 # start_epoch = 0
 # img_size = c.training['img_size']
 # num_workers = c.data['num_workers']
-# # num_samples = c.data['num_samples']
+# nb_samples = c.training['nb_samples']
 # nb_epochs = c.training['nb_epochs']
 # val_freq = c.val['val_freq']
 #
@@ -73,7 +74,7 @@ h.main()
 #
 # print('Loaded the Dataset')
 #
-# random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=(100*batch_size))
+# random_sampler = torch.utils.data.RandomSampler(comb_dataset, replacement=True, num_samples=(nb_samples*batch_size))
 # dataloader = DataLoader(comb_dataset, batch_size=batch_size, num_workers=0, sampler=random_sampler)
 #
 # print('Initialized Dataloader')

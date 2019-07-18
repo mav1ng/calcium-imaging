@@ -3,6 +3,7 @@ import network as n
 import data
 import corr
 import config as c
+import helpers as h
 import numpy as np
 import matplotlib.pyplot as plt
 import clustering as cl
@@ -18,21 +19,42 @@ from numpy import array, zeros
 import scipy.ndimage as ndimage
 import cv2
 
-
-train = c.training['train']
-dtype = c.data['dtype']
 batch_size = c.training['batch_size']
+train = c.training['train']
+
+dtype = c.data['dtype']
 
 device = torch.device('cpu')
 img_size = c.training['img_size']
 
 
-t = torch.randint(0, 10, (3, 3)).cuda()
-print(t)
-t_ = n.compute_label_pair(t.view(1, 3, 3))
-print(t_.size())
-print(t_[:, :, 0, 0])
+a = np.random.rand(3000, 512, 512)
+print(h.pad_nf(a).shape)
+# data.get_summary_img(nf_folder='data/test_data', sum_folder='data/test_sum_img',
+#                      test=True, device=device, dtype=dtype)
+# data.preprocess_corr(corr_path='data/test_corr/starmy/sliced/slice_size_100', nb_corr_to_preserve=4,
+#                      use_denoiser=False)
 
+# data.generate_data(nf_folder='data/test_data', corr_path='data/test_corr/starmy/sliced/slice_size_100', slicing=True,
+#                    slice_size=100, nb_corr_to_preserve=4, generate_summary=True, sum_folder='data/test_sum_img',
+#                    testset=True, use_denoiser=False)
+
+#
+# device = c.cuda['device']
+# model = n.UNetMS(background_pred=c.UNet['background_pred'])
+#
+# model.to(device)
+
+# h.val_score(10, 0.75, 'bp', True)
+# h.val_score(10, 0.75, 'bp2', True)
+# h.val_score(10, 0.75, 'bp3_con', True)
+
+
+# a, b, = h.test_th()
+# data.save_numpy_to_h5py(a, 'test_optimal_th_f1_list', 'plot_data/', label_array=None,
+#                         use_compression=c.data['use_compression'])
+# data.save_numpy_to_h5py(b, 'test_optimal_th_th_list', 'plot_data/', label_array=None,
+#                         use_compression=c.data['use_compression'])
 
 # data.get_summarized_masks('data/masks')
 # masks = data.load_numpy_from_h5py('data/sum_masks/nf_00.09_gzip.hkl')

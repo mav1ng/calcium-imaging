@@ -27,17 +27,24 @@ dtype = c.data['dtype']
 device = torch.device('cpu')
 img_size = c.training['img_size']
 
+h.test(model_name='bp3_con3')
 
-a = np.random.rand(3000, 512, 512)
-print(h.pad_nf(a).shape)
 # data.get_summary_img(nf_folder='data/test_data', sum_folder='data/test_sum_img',
-#                      test=True, device=device, dtype=dtype)
-# data.preprocess_corr(corr_path='data/test_corr/starmy/sliced/slice_size_100', nb_corr_to_preserve=4,
-#                      use_denoiser=False)
+#                         test=True, device=device, dtype=torch.double)
+# data.preprocess_corr(corr_path='data/test_corr/starmy/sliced/slice_size_50', nb_corr_to_preserve=4,
+#                     use_denoiser=False, test=True)
 
-# data.generate_data(nf_folder='data/test_data', corr_path='data/test_corr/starmy/sliced/slice_size_100', slicing=True,
-#                    slice_size=100, nb_corr_to_preserve=4, generate_summary=True, sum_folder='data/test_sum_img',
-#                    testset=True, use_denoiser=False)
+# a, b = h.test_th(np_arange=(0.005, 0.015, 0.005), iter=2)
+# print(a.shape)
+# print(b.shape)
+# data.save_numpy_to_h5py(a, 'test_optimal_th_f1_list', 'plot_data/', label_array=None,
+#                         use_compression=c.data['use_compression'])
+# data.save_numpy_to_h5py(b, 'test_optimal_th_th_list', 'plot_data/', label_array=None,
+#                         use_compression=c.data['use_compression'])
+
+# data.generate_data(nf_folder='data/training_data', corr_path='data/corr/starmy/sliced/slice_size_50', slicing=True,
+#                     slice_size=50, nb_corr_to_preserve=4, generate_summary=True, sum_folder='data/sum_img',
+#                     testset=False, use_denoiser=False)
 
 #
 # device = c.cuda['device']
@@ -45,7 +52,7 @@ print(h.pad_nf(a).shape)
 #
 # model.to(device)
 
-# h.val_score(10, 0.75, 'bp', True)
+# h.val_score(10, 0.75, 'full2', True)
 # h.val_score(10, 0.75, 'bp2', True)
 # h.val_score(10, 0.75, 'bp3_con', True)
 

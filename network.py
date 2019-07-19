@@ -276,7 +276,7 @@ class MS(nn.Module):
 
             x = out.view(self.bs, self.emb, -1)
 
-            print('self.training', self.training)
+            # print('self.training', self.training)
 
             if self.training and c.embedding_loss['on'] and not self.val:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy())).cuda()

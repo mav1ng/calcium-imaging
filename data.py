@@ -155,21 +155,24 @@ class LabelledDataset(Dataset):
         self.masks = sorted(glob(mask_folder + '*.hkl'))
         self.sum_img = sorted(glob(sum_folder + '*.hkl'))
         self.imgs = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f], dtype=dtype,
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), img_size=512) for f in self.files if 'labels' not in f],
+            dtype=dtype,
             device=device)
         self.labels = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.masks if '03.00' not in f], dtype=dtype,
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), img_size=512, labels=True) for f in self.masks], dtype=dtype,
             device=device)
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
         self.test = test
         self.dtype = dtype
         self.sum_mean = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'var' not in f and '03.00' not in f],
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), img_size=512, labels=True) for f in self.sum_img if
+             'var' not in f],
             dtype=dtype,
             device=device)
         self.sum_var = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'mean' not in f and '03.00' not in f],
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), img_size=512, labels=True) for f in self.sum_img if
+             'mean' not in f],
             dtype=dtype,
             device=device)
         self.train_val_ratio = 0.75
@@ -218,10 +221,10 @@ class SingleCombinedDataset(Dataset):
         self.masks = sorted(glob(mask_folder + '*.hkl'))
         self.sum_img = sorted(glob(sum_folder + '*.hkl'))
         self.imgs = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f], dtype=dtype,
+            [h.pad_nf(load_numpy_from_h5py(file_name=f)) for f in self.files if 'labels' not in f], dtype=dtype,
             device=device)
         self.labels = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.masks if '03.00' not in f], dtype=dtype,
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.masks], dtype=dtype,
             device=device)
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
@@ -230,11 +233,11 @@ class SingleCombinedDataset(Dataset):
         self.test = test
         self.dtype = dtype
         self.sum_mean = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'var' not in f and '03.00' not in f],
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.sum_img if 'var' not in f],
             dtype=dtype,
             device=device)
         self.sum_var = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'mean' not in f and '03.00' not in f],
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.sum_img if 'mean' not in f],
             dtype=dtype,
             device=device)
         self.train_val_ratio = 0.75
@@ -286,17 +289,17 @@ class TestCombinedDataset(Dataset):
         self.transform = transform
 
         self.imgs = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f], dtype=dtype,
+            [h.pad_nf(load_numpy_from_h5py(file_name=f)) for f in self.files if 'labels' not in f], dtype=dtype,
             device=device)
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
         self.dtype = dtype
         self.sum_mean = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'var' not in f],
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.sum_img if 'var' not in f],
             dtype=dtype,
             device=device)
         self.sum_var = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'mean' not in f],
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.sum_img if 'mean' not in f],
             dtype=dtype,
             device=device)
 
@@ -331,21 +334,21 @@ class CombinedDataset(Dataset):
         self.sum_img = sorted(glob(sum_folder + '*.hkl'))
 
         self.imgs = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f], dtype=dtype,
+            [h.pad_nf(load_numpy_from_h5py(file_name=f)) for f in self.files if 'labels' not in f], dtype=dtype,
             device=device)
         self.labels = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.masks if '03.00' not in f], dtype=dtype,
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.masks], dtype=dtype,
             device=device)
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
         self.test = test
         self.dtype = dtype
         self.sum_mean = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'var' not in f and '03.00' not in f],
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.sum_img if 'var' not in f],
             dtype=dtype,
             device=device)
         self.sum_var = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.sum_img if 'mean' not in f and '03.00' not in f],
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.sum_img if 'mean' not in f],
             dtype=dtype,
             device=device)
         self.train_val_ratio = 0.75
@@ -446,10 +449,10 @@ class CorrelationDataset(Dataset):
         self.files = sorted(glob(folder_path + '*.hkl'))
         self.masks = sorted(glob(mask_folder + '*.hkl'))
         self.imgs = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.files if 'labels' not in f and '16' not in f], dtype=dtype,
+            [h.pad_nf(load_numpy_from_h5py(file_name=f)) for f in self.files if 'labels' not in f], dtype=dtype,
             device=device)
         self.labels = torch.tensor(
-            [load_numpy_from_h5py(file_name=f) for f in self.masks if '03.00' not in f], dtype=dtype,
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.masks], dtype=dtype,
             device=device)
         self.dims = self.imgs.shape[2:]  # 512 x 512
         self.len = self.imgs.shape[0]
@@ -652,7 +655,7 @@ def preprocess_corr(corr_path, nb_corr_to_preserve=0, use_denoiser=False, test=F
     corr_path = str(corr_path) + '/'
     files = sorted(glob(corr_path + '*.hkl'))
     imgs = torch.tensor(
-        [load_numpy_from_h5py(file_name=f) for f in files if 'labels' not in f and '16' not in f])
+        [h.pad_nf(load_numpy_from_h5py(file_name=f), img_size=512) for f in files if 'labels' not in f])
     dims = imgs.size()[2:]  # 512 x 512
 
     for i in range(imgs.size(0)):
@@ -671,14 +674,17 @@ def preprocess_corr(corr_path, nb_corr_to_preserve=0, use_denoiser=False, test=F
                 corrected_img = corrected_img.cpu().numpy()
             ret[j] = normalize_summary_img(torch.tensor(corrected_img)).cpu().numpy()
 
+        if not os.path.exists(str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/'):
+            os.makedirs(str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/')
+
         save_numpy_to_h5py(data_array=ret, file_name='corr_nf_' + str(i),
-                               file_path=str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/')
+                           file_path=str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/')
 
         if not test:
             labels = torch.tensor(
-                [load_numpy_from_h5py(file_name=f) for f in files if 'labels' in f and '16' not in f])
+                [h.pad_nf(load_numpy_from_h5py(file_name=f), img_size=512) for f in files if 'labels' in f])
             save_numpy_to_h5py(data_array=labels[i].detach().cpu().numpy(), file_name='corr_nf_' + str(i) + '_labels',
-                                   file_path=str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/')
+                               file_path=str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/')
 
     pass
 
@@ -750,6 +756,10 @@ def get_corr_data(nf_folder, corr_path, file_name='corr_nf_', slicing=True, slic
         corr_ = create_corr_data(neurofinder_path=str(nf_folder) + '/' + str(folder), slicing=slicing,
                                  slice_size=slice_size,
                                  corr_form=corr_form, test=test, dtype=dtype, device=device)
+
+        if not os.path.exists(corr_path + '/'):
+            os.makedirs(corr_path + '/')
+
         if not test:
             save_numpy_to_h5py(data_array=corr_['correlations'].numpy(), label_array=corr_['labels'].numpy(),
                                file_name=file_name + str(index),
@@ -817,12 +827,12 @@ def create_summary_img(nf_folder, sum_folder='data/sum_img', test=False, dtype=c
 
     mean_summar = get_mean_img(imgs)
     h = imgs - mean_summar
-    h_ = get_mean_img(torch.where(h < 0., torch.tensor(0.), h))
+    h_ = get_mean_img(torch.where(h < 0., torch.tensor(0., dtype=torch.double), h))
     mean_summar = normalize_summary_img(h_)
 
     var_summar = get_var_img(imgs)
     g = var_summar
-    g_ = get_var_img(torch.where(g < 0., torch.tensor(0.), g))
+    g_ = get_var_img(torch.where(g < 0., torch.tensor(0., dtype=torch.double), g))
     g_ = torch.sqrt(g)
     var_summar = normalize_summary_img(g_)
 
@@ -876,9 +886,9 @@ def generate_data(nf_folder, corr_path, slicing, slice_size, sum_folder, nb_corr
                   slice_size=slice_size, device=cpu, dtype=dtype)
     if generate_summary:
         get_summary_img(nf_folder=nf_folder, sum_folder=sum_folder,
-                        test=testset, device=cpu, dtype=dtype)
+                        test=testset, device=cpu, dtype=torch.double)
     preprocess_corr(corr_path=corr_path, nb_corr_to_preserve=nb_corr_to_preserve,
-                    use_denoiser=use_denoiser)
+                    use_denoiser=use_denoiser, test=testset)
     pass
 
 

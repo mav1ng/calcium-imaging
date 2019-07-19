@@ -473,20 +473,32 @@ def denoise(img, weight=0.1, eps=1e-3, num_iter_max=10000):
     return u
 
 
-def pad_nf(array, img_size=514):
+def pad_nf(array, img_size=512, labels=False):
     """
     Padding the input array
     :param array: T x W x H , T time series, width , height
     :param img_size: wanted image size W x H
     :return: padded array
     """
-    w = array.shape[1]
-    h = array.shape[2]
+
+    w = array.shape[-2]
+    h = array.shape[-1]
+
+    assert w <= img_size and h <= img_size, 'Image cannot be padded to be smaller'
+
+    if w == img_size and h == img_size:
+        return array
+
+    w_ = w % 2
+    h_ = h % 2
 
     w_pad = int((img_size - w) / 2)
     h_pad = int((img_size - h) / 2)
 
-    return np.pad(array, ((0, 0), (w_pad, w_pad), (h_pad, h_pad)), 'constant', constant_values=0)
+    if not labels:
+        return np.pad(array, ((0, 0), (w_pad + w_, w_pad), (h_pad + h_, h_pad)), 'constant', constant_values=0)
+    else:
+        return np.pad(array, ((w_pad + w_, w_pad), (h_pad + h_, h_pad)), 'constant', constant_values=0)
 
 
 def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/sliced/slice_size_100/transformed_4',
@@ -519,7 +531,7 @@ def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/sli
                 input_var.append(torch.autograd.Variable(input[j]).cuda())
 
             # compute output
-            output, _, __ = model(input)
+            output, _, __ = model(input, None)
 
             (bs, ch, w, h) = output.size()
             predict = cl.label_embeddings(output.view(ch, -1).t(), th=th)
@@ -537,7 +549,10 @@ def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/sli
                 result_dict['regions'] = mask_predict
                 results.append(result_dict)
 
-        with open('data/test_results/results.json', 'w') as f:
+        if not os.path.exists('data/test_results'):
+            os.makedirs('data/test_results')
+
+        with open('data/test_results/' + str(model_name) + '.json', 'w') as f:
             f.write(json.dumps(results))
 
         model.MS.val = False
@@ -589,7 +604,7 @@ def test_th(np_arange=(0.005, 2.05, 0.005), iter=10):
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, num_workers=0)
     print('Validation loader prepared.')
 
-    list = np_arange
+    list = np.arange(np_arange[0], np_arange[1], np_arange[2])
     f1_list = []
     f1_ind_list = []
     for th in list:
@@ -602,4 +617,4 @@ def test_th(np_arange=(0.005, 2.05, 0.005), iter=10):
         f1_list.append(sum(f1_)/f1_.__len__())
         f1_ind_list.append(th)
     print('Best Possible Th:\t', np.array(f1_ind_list)[np.argmax(np.array(f1_list))], max(f1_list))
-    return np.array(f1_list, np.array(f1_ind_list))
+    return np.array(f1_list), np.array(f1_ind_list)

@@ -27,7 +27,8 @@ dtype = c.data['dtype']
 device = torch.device('cpu')
 img_size = c.training['img_size']
 
-h.test(model_name='bp3_con3')
+h.val_score(model_name='full2', th=0.75)
+h.test(model_name='full3')
 
 # data.get_summary_img(nf_folder='data/test_data', sum_folder='data/test_sum_img',
 #                         test=True, device=device, dtype=torch.double)

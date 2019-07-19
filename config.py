@@ -37,11 +37,11 @@ corr = dict(
 
 training = dict(
     train=True,
-    lr=0.0005,
-    nb_epochs=100,
+    lr=0.002,
+    nb_epochs=30,
     nb_samples=100,
     img_size=64,
-    batch_size=10,
+    batch_size=1,
 
     aux_network=False,
 
@@ -59,7 +59,7 @@ val = dict(
 )
 
 test = dict(
-    show_img=False,
+    show_img=True,
 )
 
 cuda = dict(
@@ -72,13 +72,13 @@ cuda = dict(
 tb = dict(
     loss_name='test',
     pre_train=True,
-    pre_train_name='full2',
+    pre_train_name='full3',
 )
 
 debug = dict(
     add_emb=False,
     umap_img=False,
-    print_img=False,
+    print_img=True,
     print_input=False,
     print_img_steps=20,
     print_grad_upd=False,

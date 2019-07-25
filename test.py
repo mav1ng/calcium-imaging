@@ -27,8 +27,76 @@ dtype = c.data['dtype']
 device = torch.device('cpu')
 img_size = c.training['img_size']
 
-h.val_score(model_name='full2', th=0.75)
-h.test(model_name='full3')
+
+
+# a = data.load_numpy_from_h5py('plot_data/test_optimal_th_f1_list_gzip.hkl').flatten()
+# b = data.load_numpy_from_h5py('plot_data/test_optimal_th_th_list_gzip.hkl').flatten()
+#
+# plt.plot(b, a)
+#
+# a = data.load_numpy_from_h5py('plot_data/test_optimal_th_f1_list_bp3_con3_gzip.hkl').flatten()
+# b = data.load_numpy_from_h5py('plot_data/test_optimal_th_th_list_bp3_con3_gzip.hkl').flatten()
+#
+# plt.plot(b, a)
+#
+# a = data.load_numpy_from_h5py('plot_data/test_optimal_th_f1_list_full2_con_gzip.hkl').flatten()
+# b = data.load_numpy_from_h5py('plot_data/test_optimal_th_th_list_full2_con_gzip.hkl').flatten()
+#
+# plt.plot(b, a)
+#
+# a = data.load_numpy_from_h5py('plot_data/test_optimal_th_f1_list_full3_gzip.hkl').flatten()
+# b = data.load_numpy_from_h5py('plot_data/test_optimal_th_th_list_full3_gzip.hkl').flatten()
+#
+# plt.plot(b, a)
+#
+# plt.show()
+#
+# print(a.shape)
+# print(b.shape)
+#
+# h.val_score(model_name='pms3')
+# h.test(model_name='pms3', th=0.75)
+
+# data.preprocess_corr(corr_path='data/corr/starmy/sliced/slice_size_50', nb_corr_to_preserve=4,
+#                     use_denoiser=False, test=False)
+
+# a, b = h.test_th(np_arange=(0.01, 2.0, 0.01), iter=10, model_name='full3')
+# print(a.shape)
+# print(b.shape)
+# data.save_numpy_to_h5py(a, 'test_optimal_th_f1_list_full3', 'plot_data/', label_array=None,
+#                         use_compression=c.data['use_compression'])
+# data.save_numpy_to_h5py(b, 'test_optimal_th_th_list_full3', 'plot_data/', label_array=None,
+#                         use_compression=c.data['use_compression'])
+#
+#
+# a, b = h.test_th(np_arange=(0.01, 2.0, 0.01), iter=10, model_name='full2_con')
+# print(a.shape)
+# print(b.shape)
+# data.save_numpy_to_h5py(a, 'test_optimal_th_f1_list_full2_con', 'plot_data/', label_array=None,
+#                         use_compression=c.data['use_compression'])
+# data.save_numpy_to_h5py(b, 'test_optimal_th_th_list_full2_con', 'plot_data/', label_array=None,
+#                         use_compression=c.data['use_compression'])
+#
+#
+# a, b = h.test_th(np_arange=(0.01, 2.0, 0.01), iter=10, model_name='bp3_con3')
+# print(a.shape)
+# print(b.shape)
+# data.save_numpy_to_h5py(a, 'test_optimal_th_f1_list_bp3_con3', 'plot_data/', label_array=None,
+#                         use_compression=c.data['use_compression'])
+# data.save_numpy_to_h5py(b, 'test_optimal_th_th_list_bp3_con3', 'plot_data/', label_array=None,
+#                         use_compression=c.data['use_compression'])
+
+# h.val_score(model_name='full2', th=0.75)
+# h.val_score(model_name='full3', th=0.75)
+# h.val_score(model_name='full2_con', th=0.75)
+# h.val_score(model_name='full2_con2', th=0.75)
+# h.val_score(model_name='bp3_con3', th=0.75)
+#
+# h.val_score(model_name='full2', th=1.95)
+# h.val_score(model_name='full3', th=1.95)
+# h.val_score(model_name='full2_con', th=1.95)
+# h.val_score(model_name='full2_con2', th=1.95)
+# h.val_score(model_name='bp3_con3', th=1.95)
 
 # data.get_summary_img(nf_folder='data/test_data', sum_folder='data/test_sum_img',
 #                         test=True, device=device, dtype=torch.double)

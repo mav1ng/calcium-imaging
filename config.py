@@ -11,14 +11,15 @@ mean_shift = dict(
     embedding_dim=32,
     kernel_bandwidth=None,                  # set to float if should be used, margin is now used to calculate bandwidth
     step_size=1.,                            # mean shift step size
-    nb_iterations=0,                       # number of iterations, if < 1 model UNet with Unit Sphere Normalization
+    nb_iterations=0,                            # number of iterations, if < 1 model UNet with Unit Sphere Normalization
+    use_in_val=False,
 )
 
 embedding_loss = dict(
     margin=0.5,
     on=True,
     include_background=False,
-    scaling=1000.,
+    scaling=100.,
 )
 
 data = dict(
@@ -26,7 +27,7 @@ data = dict(
     use_compression=True,
     dtype=torch.float,
     snapshots='models/',
-    model_name='test',
+    model_name='p4_figure',
     num_workers=0,
 )
 
@@ -37,7 +38,7 @@ corr = dict(
 
 training = dict(
     train=True,
-    lr=0.002,
+    lr=0.00025,
     nb_epochs=30,
     nb_samples=100,
     img_size=64,
@@ -52,7 +53,7 @@ training = dict(
 
 val = dict(
     val_freq=1,
-    th_nn=.75,
+    th_nn=0.8,
     th_sl=1.,
 
     show_img=False,
@@ -70,15 +71,15 @@ cuda = dict(
 )
 
 tb = dict(
-    loss_name='test',
+    loss_name='p4_figure',
     pre_train=True,
-    pre_train_name='full3',
+    pre_train_name='bp3_con3',
 )
 
 debug = dict(
     add_emb=False,
     umap_img=False,
-    print_img=True,
+    print_img=False,
     print_input=False,
     print_img_steps=20,
     print_grad_upd=False,

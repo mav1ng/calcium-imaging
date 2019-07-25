@@ -176,6 +176,9 @@ class Setup:
 
                 label = get_diff_labels(label.cpu().numpy())
 
+                for b in range(bs):
+                    self.writer.add_figure('Prediction', plt.imshow(predict[b]), global_step=1)
+
                 if c.val['show_img']:
                     for b in range(bs):
                         f, axarr = plt.subplots(2)
@@ -591,14 +594,14 @@ def val_score(iter=10, th=c.val['th_nn'], model_name=c.tb['pre_train_name'], bac
     return ret
 
 
-def test_th(np_arange=(0.005, 2.05, 0.005), iter=10):
+def test_th(np_arange=(0.005, 2.05, 0.005), model_name=c.tb['pre_train_name'], iter=10):
     dtype = c.data['dtype']
     device = c.cuda['device']
     model = n.UNetMS(background_pred=c.UNet['background_pred'])
 
     model.to(device)
     model.type(dtype)
-    model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['pre_train_name']) + '.pt'))
+    model.load_state_dict(torch.load('model/model_weights_' + str(model_name) + '.pt'))
     val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
                                        transform=None, device=device, dtype=dtype, test=True)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, num_workers=0)

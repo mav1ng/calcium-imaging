@@ -198,44 +198,6 @@ class MS(nn.Module):
         self.val = False
 
         self.criterion = EmbeddingLoss().cuda()
-        if c.cuda['use_mult']:
-            self.criterion = nn.DataParallel(self.criterion, device_ids=c.cuda['use_devices']).cuda()
-
-    # x_in flattened image in D x N , N number of Pixels
-
-    # def forward(self, x_in):
-    #     """
-    #     :param x_in: flattened image in D x N , D embedding Dimension, N number of Pixels
-    #     :return: tensor with dimension B x I x D x W x H, B batch size, I number of iterations, D embedding dimension,
-    #     W width of the image, H height of the image, embeddings x_in mean shifted
-    #     """
-    #
-    #     with torch.no_grad():
-    #         self.bs = x_in.size(0)
-    #         self.emb = x_in.size(1)
-    #         self.w = x_in.size(2)
-    #         self.h = x_in.size(3)
-    #
-    #     x = x_in.view(self.bs, self.emb, -1)
-    #
-    #     y = torch.zeros(self.iter + 1, self.emb, self.w * self.h).cuda()
-    #     out = torch.zeros(self.bs, self.iter + 1, self.emb, self.w, self.h).cuda()
-    #
-    #
-    #     # iterating over all samples in the batch
-    #     for b in range(self.bs):
-    #         y[0, :, :] = x[b, :, :]
-    #         for t in range(1, self.iter + 1):
-    #             kernel_mat = torch.exp(
-    #                 torch.mul(self.kernel_bandwidth, mm(y[t - 1, :, :].clone().t(), y[t - 1, :, :].clone())))
-    #             diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(self.w * self.h, 1).cuda())[:, 0], diagonal=0)
-    #
-    #             y[t, :, :] = mm(y[t - 1, :, :].clone(),
-    #                             torch.add(torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))),
-    #                                       torch.mul(1. - self.step_size, torch.eye(self.w * self.h).cuda())))
-    #         out[b, :, :, :, :] = y.view(self.iter + 1, self.emb, self.w, self.h)
-    #
-    #     return out
 
     def forward(self, x_in, lab_in=None):
         """
@@ -257,6 +219,11 @@ class MS(nn.Module):
         out = torch.zeros(self.bs, self.emb, self.w, self.h).cuda()
 
         ret_loss = 0.
+
+        if not c.mean_shift['use_in_val'] and (not self.training or self.val):
+            self.iter = 0
+        elif self.iter == 0:
+            self.iter = c.mean_shift['nb_iterations']
 
         for t in range(self.iter + 1):
             # iterating over all samples in the batch

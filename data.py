@@ -682,7 +682,7 @@ def preprocess_corr(corr_path, nb_corr_to_preserve=0, use_denoiser=False, test=F
 
         if not test:
             labels = torch.tensor(
-                [h.pad_nf(load_numpy_from_h5py(file_name=f), img_size=512) for f in files if 'labels' in f])
+                [h.pad_nf(load_numpy_from_h5py(file_name=f), img_size=512, labels=True) for f in files if 'labels' in f])
             save_numpy_to_h5py(data_array=labels[i].detach().cpu().numpy(), file_name='corr_nf_' + str(i) + '_labels',
                                file_path=str(corr_path) + 'transformed_' + str(nb_corr_to_preserve) + '/')
 

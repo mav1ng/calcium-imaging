@@ -28,12 +28,16 @@ import time
 import random
 import numpy as np
 import neurofinder as nf
+from PIL import Image
 
 
 class Setup:
     def __init__(self, th_nn=c.val['th_nn']):
         self.th_nn = th_nn
         self.writer = SummaryWriter(log_dir='training_log/' + str(c.data['model_name']) + '/')
+        self.device = torch.device('cuda:0')
+        self.nb_cpu_threads = c.cuda['nb_cpu_threads']
+        self.epoch = 0
 
     def train(self, train_loader, model, criterion, criterionCEL, optimizer, epoch):
         batch_time = AverageMeter()
@@ -49,19 +53,18 @@ class Setup:
 
         end = time.time()
         for i, batch in enumerate(train_loader):
-            input = batch['image'].cuda()
-            label = batch['label'].cuda()
+            input = batch['image']
+            label = batch['label']
 
             # measure data loading time
             data_time.update(time.time() - end)
 
             input_var = list()
             for j in range(len(input)):
-                input_var.append(torch.autograd.Variable(input[j]).cuda())
+                input_var.append(torch.autograd.Variable(input[j]))
 
             target_var = list()
             for j in range(len(label)):
-                label[j] = label[j].cuda()
                 target_var.append(torch.autograd.Variable(label[j]))
 
             input.requires_grad = True
@@ -78,10 +81,11 @@ class Setup:
                 output, ret_loss, y = model(input, label)
 
                 '''Cross Entropy Loss on Background Prediction'''
-                cel_loss = torch.tensor(0.).cuda()
+                cel_loss = torch.tensor(0., device=self.device)
                 for b in range(y.size(0)):
-                    lab = torch.where(label[b].flatten().long() > 0, torch.tensor(1, dtype=torch.long).cuda(),
-                                      torch.tensor(0, dtype=torch.long).cuda())
+                    lab = torch.where(label[b].flatten().long() > 0,
+                                      torch.tensor(1, dtype=torch.long, device=self.device),
+                                      torch.tensor(0, dtype=torch.long, device=self.device))
                     cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
                 cel_loss = cel_loss / y.size(0)
 
@@ -148,16 +152,15 @@ class Setup:
             (recall, precision) = (0., 0.)
 
             for i, batch in enumerate(val_loader):
-                input = batch['image'].cuda()
-                label = batch['label'].cuda()
+                input = batch['image']
+                label = batch['label']
 
                 input_var = list()
                 for j in range(len(input)):
-                    input_var.append(torch.autograd.Variable(input[j]).cuda())
+                    input_var.append(torch.autograd.Variable(input[j]))
 
                 target_var = list()
                 for j in range(len(label)):
-                    label[j] = label[j].cuda()
                     target_var.append(torch.autograd.Variable(label[j]))
 
                 # compute output
@@ -177,7 +180,8 @@ class Setup:
                 label = get_diff_labels(label.cpu().numpy())
 
                 for b in range(bs):
-                    self.writer.add_figure('Prediction', plt.imshow(predict[b]), global_step=1)
+                    self.writer.add_image('Prediction Epoch ' + str(self.epoch), predict[b].reshape(1, w, h),
+                                          global_step=1)
 
                 if c.val['show_img']:
                     for b in range(bs):
@@ -242,6 +246,8 @@ class Setup:
         nb_epochs = c.training['nb_epochs']
         val_freq = c.val['val_freq']
 
+        torch.set_num_threads(self.nb_cpu_threads)
+
         device = c.cuda['device']
         model = n.UNetMS(background_pred=c.UNet['background_pred'])
 
@@ -296,7 +302,10 @@ class Setup:
 
         # preparing the training loader
         transform_train = transforms.Compose([data.RandomCrop(img_size)])
-        train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
+        train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+                                             corr_sum_folder='data/corr_sum_img/',
+                                             sum_folder='data/sum_img/',
+                                             mask_folder='data/sum_masks/',
                                              transform=transform_train, device=device, dtype=dtype)
         random_sampler = torch.utils.data.RandomSampler(train_dataset, replacement=True,
                                                         num_samples=(nb_samples * batch_size))
@@ -307,13 +316,18 @@ class Setup:
 
         # preparing validation loader
         transform_val = transforms.Compose([data.RandomCrop(img_size, val=True)])
-        val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
+        val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+                                           corr_sum_folder='data/corr_sum_img/',
+                                           sum_folder='data/sum_img/',
+                                           mask_folder='data/sum_masks/',
                                            transform=None, device=device, dtype=dtype, test=True)
         val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, num_workers=num_workers)
         print('Validation loader prepared.')
 
         # run epochs
         for epoch in range(start_epoch, nb_epochs):
+
+            self.epoch = epoch
 
             # train for one epoch
             self.train(train_loader, model, criterion, criterionCEL, optimizer, epoch)
@@ -504,7 +518,34 @@ def pad_nf(array, img_size=512, labels=False):
         return np.pad(array, ((w_pad + w_, w_pad), (h_pad + h_, h_pad)), 'constant', constant_values=0)
 
 
-def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/sliced/slice_size_100/transformed_4',
+def emb_subsample(embedding_tensor, label_tensor, sub_size=100):
+    """
+    Method that returns a subsampled amount of pixel to calculate the embedding loss
+    :param embedding_tensor: Bs x Ch x w x h
+    :param label_tensor: Bs x w x h
+    :param sub_size: Parameter that specifies the number of pixels in subsampled image
+    :return: subsampled embedding and labels
+    """
+
+    assert np.sqrt(sub_size) % 2 == 0, 'Sub Size needs to be a valid Image size, e.g 10 x 10 = 100'
+
+    (bs, ch, w, h) = embedding_tensor.size()
+    (new_w, new_h) = (int(np.sqrt(sub_size)), int(np.sqrt(sub_size)))
+
+    while True:
+        ind = torch.unique(torch.randint(0, w * h, (sub_size * 2,)))
+        if ind.size(0) > sub_size:
+            ind = ind.clone()[:sub_size]
+            break
+
+    emb = embedding_tensor.view(bs, ch, -1)[:, :, ind].view(bs, ch, new_w, new_h)
+    lab = label_tensor.view(bs, -1)[:, ind].view(bs, new_w, new_h)
+
+    return emb, lab
+
+
+def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/maxpool/transformed_4',
+         corr_sum_folder='data/test_corr_sum_img/',
          th=c.val['th_nn'], bp=c.UNet['background_pred']):
     dtype = c.data['dtype']
     device = c.cuda['device']
@@ -518,7 +559,8 @@ def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/sli
     model.to(device)
     model.type(dtype)
     model.load_state_dict(torch.load('model/model_weights_' + str(model_name) + '.pt'))
-    test_dataset = data.TestCombinedDataset(corr_path=corr_path, device=device, dtype=dtype)
+    test_dataset = data.TestCombinedDataset(corr_path=corr_path, corr_sum_folder=corr_sum_folder, device=device,
+                                            dtype=dtype)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0)
     print('Test loader prepared.')
 
@@ -527,11 +569,11 @@ def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/sli
 
     with torch.no_grad():
         for i, batch in enumerate(test_loader):
-            input = batch['image'].cuda()
 
+            input = batch['image']
             input_var = list()
             for j in range(len(input)):
-                input_var.append(torch.autograd.Variable(input[j]).cuda())
+                input_var.append(torch.autograd.Variable(input[j]))
 
             # compute output
             output, _, __ = model(input, None)
@@ -539,13 +581,11 @@ def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/sli
             (bs, ch, w, h) = output.size()
             predict = cl.label_embeddings(output.view(ch, -1).t(), th=th)
             predict = predict.reshape(bs, w, h)
-
             if c.test['show_img']:
                 for b in range(bs):
                     plt.imshow(predict[b])
                     plt.title('Predicted Background (upper) vs Ground Truth (lower)')
                     plt.show()
-
             for k in range(bs):
                 mask_predict = data.toCoords(predict[k])
                 result_dict['dataset'] = namelist[k]

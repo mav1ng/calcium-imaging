@@ -63,6 +63,9 @@ def get_corr(input_video, corr_form=c.corr['corr_form'], dtype=c.data['dtype'], 
     :return:
     """
 
+    dtype = torch.double
+    device = torch.device('cpu')
+
     X = input_video.size(1)
     Y = input_video.size(2)
 
@@ -154,6 +157,45 @@ def get_sliced_corr(input_video, corr_form=c.corr['corr_form'], slice_size=100, 
 
     return torch.max(corr_array, dim=3)[0]
 
+
+def get_new_corr(input_video):
+    """
+    Method that creates the additional correlation input version
+    :param input_video:
+    :return:
+    """
+
+    (N, w, h) = input_video.size()
+
+    print(input_video.size())
+    mp2d = torch.nn.MaxPool3d((5, 1, 1))
+    imgs = mp2d(input_video.view(1, N, w, h))[0]
+    print(imgs.size())
+
+    corrs = get_corr(imgs, corr_form='suit')
+
+    (c, w, h) = corrs.size()
+
+    up = torch.sum(corrs, dim=0)
+    up_ = torch.mean(up.view(-1))
+    up_n = up.view(-1) - up_
+    up_n_ = torch.sqrt(torch.sum(up_n ** 2, dim=0))
+    up = (up_n / up_n_).view(w, h)
+
+    down_ = torch.mean(corrs, dim=0)
+    down_n = corrs - down_
+    down_n_ = torch.sqrt(torch.sum(down_n ** 2, dim=0))
+    down = torch.where(down_n_ != 0., torch.sum(down_n / down_n_, dim=0),
+                       torch.zeros((w, h), dtype=torch.double, device=torch.device('cpu')))
+
+    ret = torch.where(down != 0., up / down, torch.zeros((w, h), dtype=torch.double, device=torch.device('cpu')))
+    ret_ = torch.mean(ret.view(-1))
+    ret_n = ret - ret_
+    ret_n_ = torch.sqrt(torch.sum(ret_n ** 2, dim=0))
+
+    ret = ret_n / ret_n_
+
+    return ret
 
 # for index, folder in enumerate(sorted(os.listdir('data/training_data'))):
 #     print(folder)

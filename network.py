@@ -207,6 +207,8 @@ class MS(nn.Module):
         W width of the image, H height of the image, embeddings x_in mean shifted
         """
 
+        d = torch.device('cuda:0')
+
         with torch.no_grad():
             self.bs = x_in.size(0)
             self.emb = x_in.size(1)
@@ -215,8 +217,8 @@ class MS(nn.Module):
 
         x = x_in.view(self.bs, self.emb, -1)
 
-        y = torch.zeros(self.emb, self.w * self.h).cuda()
-        out = torch.zeros(self.bs, self.emb, self.w, self.h).cuda()
+        y = torch.zeros(self.emb, self.w * self.h, device=d)
+        out = torch.zeros(self.bs, self.emb, self.w, self.h, device=d)
 
         ret_loss = 0.
 
@@ -229,30 +231,23 @@ class MS(nn.Module):
             # iterating over all samples in the batch
             for b in range(self.bs):
                 y = x[b, :, :]
-
                 if t != 0:
-                    kernel_mat = torch.exp(
-                        torch.mul(self.kernel_bandwidth, mm(y.clone().t(), y.clone())))
-                    diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(self.w * self.h, 1).cuda())[:, 0], diagonal=0)
-
+                    kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(y.clone().t(), y.clone())))
+                    diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(self.w * self.h, 1, device=d))[:, 0],
+                                          diagonal=0)
                     y = mm(y.clone(),
-                                    torch.add(torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))),
-                                              torch.mul(1. - self.step_size, torch.eye(self.w * self.h).cuda())))
-
+                           torch.add(torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))),
+                                     torch.mul(1. - self.step_size, torch.eye(self.w * self.h, device=d))))
                 out[b, :, :, :] = y.view(self.emb, self.w, self.h)
-
             x = out.view(self.bs, self.emb, -1)
 
             # print('self.training', self.training)
 
             if self.training and c.embedding_loss['on'] and not self.val:
-                lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy())).cuda()
+                lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
                 loss = self.criterion(out, lab_in_)
 
-                if c.cuda['use_mult']:
-                    loss = scaling_loss(loss, self.bs, c.cuda['use_devices'].__len__())
-                else:
-                    loss = (loss / self.bs) * c.embedding_loss['scaling'] * (1/(c.mean_shift['nb_iterations'] + 1))
+                loss = (loss / self.bs) * c.embedding_loss['scaling'] * (1/(c.mean_shift['nb_iterations'] + 1))
 
                 with torch.no_grad():
                     ret_loss = ret_loss + loss.detach()
@@ -325,8 +320,11 @@ def comp_similarity_matrix(input):
     :param input:
     :return: N x N x 1 x Bs
     """
+
+    d = torch.device('cuda:0')
+
     (bs, ch, w, h) = input.size()
-    out = torch.zeros((h * w, h * w, 1, bs)).cuda()
+    out = torch.zeros((h * w, h * w, 1, bs), device=d)
 
     for i in range(bs):
         sim = input[i].view(ch, w * h)
@@ -355,8 +353,10 @@ def compute_pre_weight_matrix(input):
     :return: tensor BatchSize x PixelX x PixelY with weighted pixels for every label (1/number of pixels with the same label
     """
 
+    d = torch.device('cuda:0')
+
     (bs, w, h) = input.size()
-    out = torch.zeros_like(input).cuda()
+    out = torch.zeros_like(input, device=d)
 
     for i in range(bs):
         with torch.no_grad():
@@ -365,7 +365,7 @@ def compute_pre_weight_matrix(input):
             unique_labels = torch.unique(input[i], sorted=False)
             for _, l in enumerate(unique_labels):
                 out[i] = torch.where(out[i] == l.float(), torch.div(torch.tensor(
-                    1.).cuda(), torch.tensor(((input[i] == l).nonzero().size(0)))), out[i])
+                    1., device=d), torch.tensor(((input[i] == l).nonzero().size(0)), device=d)), out[i])
     return out
 
 
@@ -381,9 +381,11 @@ def compute_weight_matrix(input):
     weight pairs for the computation of the loss function
     """
 
+    d = torch.device('cuda:0')
+
     (bs, w, h) = input.size()
 
-    out = torch.zeros((h * w, h * w, 1, bs)).cuda()
+    out = torch.zeros((h * w, h * w, 1, bs), device=d)
 
     for i in range(bs):
         sim = input[i].view(h * w, 1)
@@ -403,6 +405,8 @@ def compute_label_pair(input):
     positive pair, -1 if negative pair, 0 if repeating information
     """
 
+    d = torch.device('cuda:0')
+
     (bs, w, h) = input.size()
 
     if c.embedding_loss['include_background']:
@@ -411,44 +415,51 @@ def compute_label_pair(input):
     else:
         y = input.to(torch.float)
 
-    out = torch.zeros((h * w, h * w, 1, bs)).cuda()
+    out = torch.zeros((h * w, h * w, 1, bs), device=d)
 
     # 1 if positive pair, -1 if negative pair, 0 if repeating information
     for i in range(bs):
         sim = y[i].view(h * w, 1)
         out[:, :, 0, i] = torch.mm(sim, sim.t())
         out[:, :, 0, i] = torch.where(torch.sqrt(out[:, :, 0, i]) == torch.mm(sim, torch.ones_like(sim.t())),
-                                      torch.tensor(1.).cuda(), torch.tensor(-1.).cuda())
-        out[:, :, 0, i] = torch.where(torch.mm(sim, sim.t()) == 0., torch.tensor(0.).cuda(), out[:, :, 0, i])
+                                      torch.tensor(1., device=d), torch.tensor(-1., device=d))
+        out[:, :, 0, i] = torch.where(torch.mm(sim, sim.t()) == 0., torch.tensor(0., device=d), out[:, :, 0, i])
     return out
 
 
-def embedding_loss(emb, lab):
+def embedding_loss(emb, lab, use_subsampling=c.embedding_loss['use_subsampling'], subsample_size=c.embedding_loss['subsample_size']):
     """
     Method that exhaustively calculates the embedding loss of an embedding when given the labels
     :param embedding_matrix: matrix with the predicted embeddings Bs x Iter + 1 x C x PixelX x PixelY
     :param labels: torch tensor with the ground truth Bs x w x h
+    :param use_subsampling: Boolean wether to use subsampling or not
     :param dtype: dtype of the tensors
     :param device: device which cuda uses
     :return: the total loss
     """
 
+    d = torch.device('cuda:0')
+
     (bs, ch, w, h) = emb.size()
 
-    loss = torch.zeros(bs, w * h, w * h).cuda()
+    if use_subsampling:
+        emb, lab = h.emb_subsample(emb.clone(), lab.clone(), sub_size=subsample_size)
+        (bs, ch, w, h) = emb.size()
+
+    loss = torch.zeros(bs, w * h, w * h, device=d)
     weights = compute_weight_matrix(compute_pre_weight_matrix(lab))
     label_pairs = compute_label_pair(lab)
-
     sim_mat = comp_similarity_matrix(emb)
+
     for b in range(bs):
         loss[b] = torch.where(label_pairs[:, :, 0, b] == 1., torch.sub(1., sim_mat[:, :, 0, b]),
-                                 loss[b])
+                              loss[b])
         # correcting machine inaccuracies
-        loss[b] = torch.where(loss[b] < 0., torch.tensor(0.).cuda(), loss[b])
+        loss[b] = torch.where(loss[b] < 0., torch.tensor(0., device=d), loss[b])
         loss[b] = torch.where(label_pairs[:, :, 0, b] == -1.,
-                                 torch.where(sim_mat[:, :, 0, b] - c.embedding_loss['margin'] >= 0,
-                                             sim_mat[:, :, 0, b] - c.embedding_loss['margin'], torch.tensor(
-                                         0.).cuda()), loss[b])
+                              torch.where(sim_mat[:, :, 0, b] - c.embedding_loss['margin'] >= 0,
+                                          sim_mat[:, :, 0, b] - c.embedding_loss['margin'], torch.tensor(
+                                      0., device=d)), loss[b])
 
         loss[b] = torch.mul(1. / (w * h), torch.mul(weights[:, :, 0, b], loss[b].clone()))
 

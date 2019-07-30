@@ -29,6 +29,38 @@ img_size = c.training['img_size']
 
 
 
+# test = torch.rand((10, 3, 3), dtype=torch.double)
+# print(test)
+# print(corr.get_new_corr(test))
+#
+# transform_train = transforms.Compose([data.RandomCrop(img_size)])
+# train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+#                                              corr_sum_folder='data/corr_sum_img/',
+#                                              sum_folder='data/sum_img/',
+#                                              mask_folder='data/sum_masks/',
+#                                              transform=transform_train, device=device, dtype=dtype)
+# for i in range(train_dataset.__len__()):
+#     print(i, train_dataset[i]['image'][2])
+
+h.test(model_name='background')
+
+# h.val_score(model_name='bp3')
+
+# data.get_new_corr_img(nf_folder='data/training_data', device=device, dtype=torch.double)
+#
+# data.get_new_corr_img(nf_folder='data/test_data', corr_sum_folder='data/test_corr_sum_img', test=True, device=device,
+#                       dtype=torch.double)
+
+# data.generate_data(nf_folder='data/test_data', corr_path='data/test_corr/starmy/maxpool', slice_size=100,
+#                    sum_folder='data/test_sum_img', slicing=False, testset=True,
+#                    nb_corr_to_preserve=4, new_corr_img=True, corr_sum_folder='data/test_corr_sum_img')
+#
+# data.generate_data(nf_folder='data/training_data', corr_path='data/corr/starmy/maxpool', slice_size=100,
+#                    sum_folder='data/sum_img', slicing=False,
+#                    nb_corr_to_preserve=4, new_corr_img=True)
+
+
+
 # a = data.load_numpy_from_h5py('plot_data/test_optimal_th_f1_list_gzip.hkl').flatten()
 # b = data.load_numpy_from_h5py('plot_data/test_optimal_th_th_list_gzip.hkl').flatten()
 #

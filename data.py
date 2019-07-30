@@ -45,7 +45,7 @@ def toCoords(mask):
     try:
         unique = torch.unique(mask)
     except TypeError:
-        mask = torch.tensor(mask).cuda()
+        mask = torch.tensor(mask, device=torch.device('cuda:0'))
         unique = torch.unique(mask)
     coords = []
     for _, label in enumerate(unique):
@@ -185,7 +185,7 @@ class LabelledDataset(Dataset):
     def __getitem__(self, idx):
         if not self.test:
             sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.labels[idx].view(1, self.dims[0], self.dims[1]),
                                           self.imgs[idx]], dim=0)[
                                :, :self.x_bound, :self.y_bound],
@@ -193,7 +193,7 @@ class LabelledDataset(Dataset):
             # markdown
         else:
             sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.labels[idx].view(1, self.dims[0], self.dims[1]),
                                           self.imgs[idx]], dim=0)[
                                :, self.x_bound:, self.y_bound:],
@@ -273,6 +273,7 @@ class TestCombinedDataset(Dataset):
     """Test Combined Dataset with Correlations and Mean Summary image and Var Summary image"""
 
     def __init__(self, corr_path, sum_folder='data/test_sum_img', transform=None,
+                 corr_sum_folder='data/test_corr_sum_img/',
                  dtype=c.data['dtype'],
                  device=c.cuda['device']):
         """
@@ -286,6 +287,7 @@ class TestCombinedDataset(Dataset):
         self.folder_path = self.corr_path
         self.files = sorted(glob(self.corr_path + '*.hkl'))
         self.sum_img = sorted(glob(self.sum_folder + '*.hkl'))
+        self.corr_sum = sorted(glob(corr_sum_folder + '*.hkl'))
         self.transform = transform
 
         self.imgs = torch.tensor(
@@ -302,13 +304,18 @@ class TestCombinedDataset(Dataset):
             [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.sum_img if 'mean' not in f],
             dtype=dtype,
             device=device)
+        self.new_corr = torch.tensor(
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.corr_sum],
+            dtype=dtype,
+            device=device)
 
     def __len__(self):
         return self.len
 
     def __getitem__(self, idx):
         sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                      self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                      self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                      self.new_corr.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                       self.imgs[idx]], dim=0)[:, :, :]}
         if self.transform:
             sample = self.transform(sample)
@@ -319,6 +326,7 @@ class CombinedDataset(Dataset):
     """Combined Dataset with Correlations and Mean Summary image and Var Summary image"""
 
     def __init__(self, corr_path, sum_folder='data/sum_img/', mask_folder='data/sum_masks/', transform=None, test=False,
+                 corr_sum_folder='data/corr_sum_img/',
                  dtype=c.data['dtype'],
                  device=c.cuda['device']):
         """
@@ -332,6 +340,7 @@ class CombinedDataset(Dataset):
         self.files = sorted(glob(corr_path + '*.hkl'))
         self.masks = sorted(glob(mask_folder + '*.hkl'))
         self.sum_img = sorted(glob(sum_folder + '*.hkl'))
+        self.corr_sum = sorted(glob(corr_sum_folder + '*.hkl'))
 
         self.imgs = torch.tensor(
             [h.pad_nf(load_numpy_from_h5py(file_name=f)) for f in self.files if 'labels' not in f], dtype=dtype,
@@ -351,6 +360,10 @@ class CombinedDataset(Dataset):
             [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.sum_img if 'mean' not in f],
             dtype=dtype,
             device=device)
+        self.new_corr = torch.tensor(
+            [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.corr_sum],
+            dtype=dtype,
+            device=device)
         self.train_val_ratio = 0.75
         # self.x_bound = int(round(self.train_val_ratio * self.dims[0]))
         self.y_bound = int(round(self.train_val_ratio * self.dims[1]))
@@ -361,13 +374,15 @@ class CombinedDataset(Dataset):
     def __getitem__(self, idx):
         if not self.test:
             sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.new_corr.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.imgs[idx]], dim=0)[:, :, :self.y_bound],
                       'label': self.labels[idx][:, :self.y_bound]}
             # markdown
         else:
             sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          self.new_corr.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.imgs[idx]], dim=0)[:, :, self.y_bound:],
                       'label': self.labels[idx][:, self.y_bound:]}
             # print(sample['image'].size())
@@ -703,6 +718,13 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
     files = sorted(glob(neurofinder_path + '/images/*.tiff'))
     imgs = torch.tensor(array([imread(f) for f in files]).astype(np.float64), dtype=dtype,
                         device=device)
+
+    (N, w, h) = imgs.size()
+
+    print(imgs.size())
+    mp2d = torch.nn.MaxPool3d((5, 1, 1))
+    imgs = mp2d(imgs.view(1, N, w, h))[0]
+    print(imgs.size())
     dims = imgs.size()[1:]  # 512 x 512
     len = imgs.size(0)  # 3024
 
@@ -810,7 +832,8 @@ def normalize_summary_img(summary_img, device=c.cuda['device'], dtype=c.data['dt
 # print(a['correlations'].size(), a['labels'].size())
 
 
-def create_summary_img(nf_folder, sum_folder='data/sum_img', test=False, dtype=c.data['dtype'], device=c.cuda['device']):
+def create_summary_img(nf_folder, sum_folder='data/sum_img', test=False, dtype=c.data['dtype'], device=c.cuda['device'],
+                       use_maxpool=True):
     """
     Method that creates summary image of specified neurofinder folder
     :param nf_folder:
@@ -824,6 +847,12 @@ def create_summary_img(nf_folder, sum_folder='data/sum_img', test=False, dtype=c
 
     imgs = torch.tensor(array([imread(f) for f in files]).astype(np.float64), dtype=dtype,
                         device=device)
+
+    if use_maxpool:
+        (N, w, h) = imgs.size()
+
+        mp2d = torch.nn.MaxPool3d((5, 1, 1))
+        imgs = mp2d(imgs.view(1, N, w, h))[0]
 
     mean_summar = get_mean_img(imgs)
     h = imgs - mean_summar
@@ -862,8 +891,31 @@ def get_summary_img(nf_folder, sum_folder='data/sum_img', test=False, dtype=c.da
     pass
 
 
+def get_new_corr_img(nf_folder, corr_sum_folder='data/corr_sum_img', test=False, dtype=c.data['dtype'], device=c.cuda['device']):
+    dic = os.listdir(nf_folder)
+    print(dic)
+
+    for x in dic:
+        print('Corr Summarizing ' + str(x) + ' ...')
+
+        files = sorted(glob(str(nf_folder) + '/' + str(x) + '/images/*.tiff'))
+
+        imgs = torch.tensor(array([imread(f) for f in files]).astype(np.float64), dtype=dtype,
+                            device=torch.device('cpu'))
+
+        sum = corr.get_new_corr(imgs)
+
+        con = 0
+        if test:
+            con = 5
+        save_numpy_to_h5py(data_array=sum.detach().cpu().numpy(),
+                           file_name=str(x)[-(5 + con):],
+                           file_path=str(corr_sum_folder) + '/')
+    pass
+
+
 def generate_data(nf_folder, corr_path, slicing, slice_size, sum_folder, nb_corr_to_preserve, generate_summary=False,
-                  use_denoiser=False,
+                  use_denoiser=False, new_corr_img=False, corr_sum_folder='data/corr_sum_img',
                   testset=False):
     """
     Method to generate input data give the following settings
@@ -887,6 +939,10 @@ def generate_data(nf_folder, corr_path, slicing, slice_size, sum_folder, nb_corr
     if generate_summary:
         get_summary_img(nf_folder=nf_folder, sum_folder=sum_folder,
                         test=testset, device=cpu, dtype=torch.double)
+    if new_corr_img:
+        get_new_corr_img(nf_folder=nf_folder, corr_sum_folder=corr_sum_folder, test=testset, device=cpu,
+                         dtype=torch.double)
+
     preprocess_corr(corr_path=corr_path, nb_corr_to_preserve=nb_corr_to_preserve,
                     use_denoiser=use_denoiser, test=testset)
     pass

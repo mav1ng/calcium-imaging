@@ -17,9 +17,9 @@ mean_shift = dict(
 
 embedding_loss = dict(
     margin=0.5,
-    on=False,
-    include_background=False,
-    scaling=100.,
+    on=True,
+    include_background=True,
+    scaling=25.,
     use_subsampling=True,
     subsample_size=100,
 )
@@ -29,7 +29,7 @@ data = dict(
     use_compression=True,
     dtype=torch.float,
     snapshots='models/',
-    model_name='test',
+    model_name='new_trans_test',
     num_workers=0,
 )
 
@@ -41,7 +41,7 @@ corr = dict(
 training = dict(
     train=True,
     lr=0.002,
-    nb_epochs=100,
+    nb_epochs=1000,
     nb_samples=100,
     img_size=64,
     batch_size=1,
@@ -54,7 +54,7 @@ training = dict(
 )
 
 val = dict(
-    val_freq=1,
+    val_freq=10,
     th_nn=0.8,
     th_sl=1.,
 
@@ -74,15 +74,15 @@ cuda = dict(
 )
 
 tb = dict(
-    loss_name='test',
-    pre_train=True,
+    loss_name='new_trans_test',
+    pre_train=False,
     pre_train_name='background',
 )
 
 debug = dict(
     add_emb=False,
     umap_img=False,
-    print_img=True,
+    print_img=False,
     print_input=False,
     print_img_steps=20,
     print_grad_upd=False,

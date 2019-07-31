@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 import config as c
 import helpers as h
+import helpers as he
 
 
 def get_conv_layer(num_input, num_output):
@@ -443,7 +444,7 @@ def embedding_loss(emb, lab, use_subsampling=c.embedding_loss['use_subsampling']
     (bs, ch, w, h) = emb.size()
 
     if use_subsampling:
-        emb, lab = h.emb_subsample(emb.clone(), lab.clone(), sub_size=subsample_size)
+        emb, lab = he.emb_subsample(emb.clone(), lab.clone(), sub_size=subsample_size)
         (bs, ch, w, h) = emb.size()
 
     loss = torch.zeros(bs, w * h, w * h, device=d)

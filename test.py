@@ -27,7 +27,46 @@ dtype = c.data['dtype']
 device = torch.device('cpu')
 img_size = c.training['img_size']
 
-
+# transrandomrot = data.RandomRot(dim_of_corrs=[3, 4, 5, 6])
+#
+# train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+#                                              corr_sum_folder='data/corr_sum_img/',
+#                                              sum_folder='data/sum_img/',
+#                                              mask_folder='data/sum_masks/',
+#                                              device=device, dtype=dtype)
+#
+# # test = {'image': torch.rand(7, 12, 12), 'label': torch.randint(0, 3, (12, 12))}
+#
+# test = train_dataset[1]
+# test = data.RandomCrop(100)(test)
+#
+# transrandomcrop = data.RandomCrop(50)
+# transrandomrot = data.RandomRot(dim_of_corrs=[3, 4, 5, 6])
+# transrandomflip = data.RandomFlip(dim_corrs=[3, 4, 5, 6], vertical=True, prob=0.5)
+# transrandomfliph = data.RandomFlip(dim_corrs=[3, 4, 5, 6], vertical=False, prob=0.5)
+#
+# trans = transforms.Compose([transrandomcrop, transrandomrot, transrandomflip, transrandomfliph])
+# test2 = test.copy()
+# test2 = trans(test2)
+#
+# (c, w, h) = test['image'].size()
+#
+# l = test['label'].cpu().numpy()
+# l2 = test2['label'].cpu().numpy()
+#
+# for i in range(c):
+#     d = test['image'][i].cpu().numpy()
+#     d2 = test2['image'][i].cpu().numpy()
+#
+#     f, axarr = plt.subplots(2, 2)
+#     axarr[0, 0].imshow(d)
+#     axarr[1, 0].imshow(l)
+#     axarr[0, 1].imshow(d2)
+#     axarr[1, 1].imshow(l2)
+#
+#     plt.title('Predicted Background (upper) vs Ground Truth (lower)')
+#
+#     plt.show()
 
 # test = torch.rand((10, 3, 3), dtype=torch.double)
 # print(test)
@@ -42,7 +81,9 @@ img_size = c.training['img_size']
 # for i in range(train_dataset.__len__()):
 #     print(i, train_dataset[i]['image'][2])
 
-h.test(model_name='background')
+# h.val_score(th=0.8, model_name='background')
+# h.val_score(th=0.8, model_name='emb_test_sub')
+# h.test(model_name='emb_test_sub')
 
 # h.val_score(model_name='bp3')
 

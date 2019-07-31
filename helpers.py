@@ -56,6 +56,11 @@ class Setup:
             input = batch['image']
             label = batch['label']
 
+            if torch.sum(torch.isnan(input)) > 0.:
+                print('Nan in Input')
+                for i in range(input.size(0)):
+                    print(input[i])
+
             # measure data loading time
             data_time.update(time.time() - end)
 
@@ -301,12 +306,20 @@ class Setup:
         # cudnn.benchmark = True
 
         # preparing the training loader
-        transform_train = transforms.Compose([data.RandomCrop(img_size)])
+        dim_of_corrs = [3, 4, 5, 6]
+
+        transform_train = transforms.Compose([data.RandomCrop(img_size),
+                                              data.RandomRot(dim_of_corrs),
+                                              data.RandomFlip(True, dim_of_corrs, 0.5),
+                                              data.RandomFlip(False, dim_of_corrs, 0.5)
+                                              ])
+
         train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
                                              corr_sum_folder='data/corr_sum_img/',
                                              sum_folder='data/sum_img/',
                                              mask_folder='data/sum_masks/',
                                              transform=transform_train, device=device, dtype=dtype)
+
         random_sampler = torch.utils.data.RandomSampler(train_dataset, replacement=True,
                                                         num_samples=(nb_samples * batch_size))
 

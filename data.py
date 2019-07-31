@@ -579,6 +579,93 @@ class RandomCrop(object):
         return {'image': image, 'label': label}
 
 
+class RandomRot(object):
+    """Copied from Pytorch Documentation
+
+
+    Crop randomly the image in a sample.
+
+    Args:
+        dim_of_corrs list specifying the dimension of image in which the 4 correlations are stored
+    """
+
+    def __init__(self, dim_of_corrs):
+
+        self.dim_corrs = dim_of_corrs
+
+    def __call__(self, sample):
+        image, label = sample['image'], sample['label']
+
+        (ch, w, h) = image.size()
+
+        dim_list = np.arange(0, ch, 1)
+        nb_rot = np.random.randint(0, 4)
+
+        for dim in dim_list:
+            if dim not in self.dim_corrs:
+                # print('non corr dims', dim)
+                image[dim] = torch.rot90(image[dim], k=nb_rot, dims=(0, 1))
+        label = torch.rot90(label, k=nb_rot, dims=(0, 1))
+
+        perm = np.roll(np.array([0, 1, 2, 3]), shift=-nb_rot)
+
+        image_cop = image.clone()
+
+        for i, corr in enumerate(self.dim_corrs):
+            # print('old: ', corr, 'new: ', self.dim_corrs[perm[i]])
+            image[corr] = image_cop[self.dim_corrs[perm[i]]]
+
+        return {'image': image, 'label': label}
+
+
+class RandomFlip(object):
+    """Copied from Pytorch Documentation
+
+
+    Crop randomly the image in a sample.
+
+    Args:
+        prob float specifying the probability of the flip
+    """
+
+    def __init__(self, vertical, dim_corrs, prob):
+
+        self.flip = 0
+        if vertical:
+            self.flip = 2
+        else:
+            self.flip = 1
+        self.prob = prob
+        self.dim_corrs = dim_corrs
+
+    def __call__(self, sample):
+        image, label = sample['image'], sample['label']
+
+        (ch, w, h) = image.size()
+
+        if np.random.rand(1) < self.prob:
+            print('flip')
+            dim_list = np.arange(0, ch, 1)
+
+            for dim in dim_list:
+                if dim not in self.dim_corrs:
+                    # print('non corr dims', dim)
+                    image[dim] = torch.flip(image[dim].unsqueeze(0), dims=(0, self.flip)).squeeze(0)
+            label = torch.flip(label.unsqueeze(0), dims=(0, self.flip)).squeeze(0)
+
+            if self.flip == 2:
+                perm = np.array([2, 1, 0, 3])
+            else:
+                perm = np.array([0, 3, 2, 1])
+
+            image_cop = image.clone()
+            for i, corr in enumerate(self.dim_corrs):
+                # print('old: ', corr, 'new: ', self.dim_corrs[perm[i]])
+                image[corr] = image_cop[self.dim_corrs[perm[i]]]
+
+        return {'image': image, 'label': label}
+
+
 class CorrRandomCrop(object):
     """Copied from Pytorch Documentation
 

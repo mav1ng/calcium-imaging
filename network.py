@@ -197,10 +197,11 @@ class MS(nn.Module):
         self.w = None
         self.h = None
         self.val = False
+        self.test = False
 
         self.criterion = EmbeddingLoss().cuda()
 
-    def forward(self, x_in, lab_in=None):
+    def forward(self, x_in, lab_in=None, subsample_size=c.embedding_loss['subsample_size']):
         """
         :param x_in: flattened image in D x N , D embedding Dimension, N number of Pixels
         :param lab_in specify labels B x W x H if model is usd in training mode
@@ -210,16 +211,27 @@ class MS(nn.Module):
 
         d = torch.device('cuda:0')
 
-        with torch.no_grad():
-            self.bs = x_in.size(0)
-            self.emb = x_in.size(1)
-            self.w = x_in.size(2)
-            self.h = x_in.size(3)
+        (self.bs, self.emb, self.w, self.h) = x_in.size()
+        (self.sw, self.sh) = (self.w, self.h)
 
-        x = x_in.view(self.bs, self.emb, -1)
+        # with torch.no_grad():
+        #     self.bs = x_in.size(0)
+        #     self.emb = x_in.size(1)
+        #     self.w = x_in.size(2)
+        #     self.h = x_in.size(3)
 
-        y = torch.zeros(self.emb, self.w * self.h, device=d)
+        x = x_in.view(self.bs, self.emb, self.w, self.h)
         out = torch.zeros(self.bs, self.emb, self.w, self.h, device=d)
+        y = torch.zeros(self.emb, self.w * self.h, device=d)
+
+        if subsample_size is not None:
+            """SUBSAMPLING"""
+            emb, lab, ind = he.emb_subsample(x.clone(), lab_in.clone(), sub_size=subsample_size)
+            x = emb.view(self.bs, self.emb, -1)
+            y = torch.zeros(self.emb, subsample_size, device=d)
+            wurzel = int(np.sqrt(subsample_size))
+            self.sw = wurzel
+            self.sh = wurzel
 
         ret_loss = 0.
 
@@ -234,19 +246,35 @@ class MS(nn.Module):
                 y = x[b, :, :]
                 if t != 0:
                     kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(y.clone().t(), y.clone())))
-                    diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(self.w * self.h, 1, device=d))[:, 0],
+                    diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(self.sw * self.sh, 1, device=d))[:, 0],
                                           diagonal=0)
                     y = mm(y.clone(),
                            torch.add(torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))),
-                                     torch.mul(1. - self.step_size, torch.eye(self.w * self.h, device=d))))
-                out[b, :, :, :] = y.view(self.emb, self.w, self.h)
+                                     torch.mul(1. - self.step_size, torch.eye(self.sw * self.sh, device=d))))
+
+                if subsample_size is not None:
+                    out = out.view(self.bs, self.emb, -1)
+                    out[b, :, ind] = y
+                    out = out.view(self.bs, self.emb, self.w, self.h)
+                else:
+                    out[b, :, :, :] = y.view(self.emb, self.w, self.h)
             x = out.view(self.bs, self.emb, -1)
+            if subsample_size is not None:
+                x = out.view(self.bs, self.emb, -1)[:, :, ind]
 
             # print('self.training', self.training)
 
             if self.training and c.embedding_loss['on'] and not self.val:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
-                loss = self.criterion(out, lab_in_)
+
+                emb = out
+                lab = lab_in_
+
+                if subsample_size is not None:
+                    emb = out.view(self.bs, self.emb, -1)[:, :, ind].view(self.bs, self.emb, wurzel, wurzel)
+                    lab = lab_in_.view(self.bs, -1)[:, ind].view(self.bs, wurzel, wurzel)
+
+                loss = self.criterion(emb, lab)
 
                 loss = (loss / self.bs) * c.embedding_loss['scaling'] * (1/(c.mean_shift['nb_iterations'] + 1))
 
@@ -257,6 +285,22 @@ class MS(nn.Module):
                     loss.backward()
                 else:
                     loss.backward(retain_graph=True)
+            elif self.val and not self.test:
+                lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
+
+                emb = out
+                lab = lab_in_
+
+                if subsample_size is not None:
+                    emb = out.view(self.bs, self.emb, -1)[:, :, ind].view(self.bs, self.emb, wurzel, wurzel)
+                    lab = lab_in_.view(self.bs, -1)[:, ind].view(self.bs, wurzel, wurzel)
+
+                loss = self.criterion(emb, lab)
+
+                loss = (loss / self.bs) * c.embedding_loss['scaling'] * (1/(c.mean_shift['nb_iterations'] + 1))
+
+                with torch.no_grad():
+                    ret_loss = ret_loss + loss.detach()
 
         return out, ret_loss
 
@@ -270,18 +314,18 @@ class UNetMS(nn.Module):
         self.L2Norm = L2Norm()
         self.background_pred = background_pred
 
-    def forward(self, x, lab):
+    def forward(self, x, lab, subsample_size):
         if self.background_pred:
             x = self.UNet(x)
             x = self.L2Norm(x)
             x = x.clone()[:, :-2]
             y = x[:, -2:]
-            x, ret_loss = self.MS(x, lab)
+            x, ret_loss = self.MS(x, lab, subsample_size=subsample_size)
             return x, ret_loss, y
         else:
             x = self.UNet(x)
             x = self.L2Norm(x)
-            x, ret_loss = self.MS(x, lab)
+            x, ret_loss = self.MS(x, lab, subsample_size=subsample_size)
             return x, ret_loss
 
 
@@ -428,7 +472,7 @@ def compute_label_pair(input):
     return out
 
 
-def embedding_loss(emb, lab, use_subsampling=c.embedding_loss['use_subsampling'], subsample_size=c.embedding_loss['subsample_size']):
+def embedding_loss(emb, lab):
     """
     Method that exhaustively calculates the embedding loss of an embedding when given the labels
     :param embedding_matrix: matrix with the predicted embeddings Bs x Iter + 1 x C x PixelX x PixelY
@@ -442,10 +486,6 @@ def embedding_loss(emb, lab, use_subsampling=c.embedding_loss['use_subsampling']
     d = torch.device('cuda:0')
 
     (bs, ch, w, h) = emb.size()
-
-    if use_subsampling:
-        emb, lab = he.emb_subsample(emb.clone(), lab.clone(), sub_size=subsample_size)
-        (bs, ch, w, h) = emb.size()
 
     loss = torch.zeros(bs, w * h, w * h, device=d)
     weights = compute_weight_matrix(compute_pre_weight_matrix(lab))

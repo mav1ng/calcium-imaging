@@ -32,12 +32,57 @@ from PIL import Image
 
 
 class Setup:
-    def __init__(self, th_nn=c.val['th_nn']):
+    def __init__(self, model_name, input_channels=c.UNet['input_channels'],
+                embedding_dim=c.UNet['embedding_dim'],
+                background_pred=c.UNet['background_pred'],
+                mean_shift_on=c.mean_shift['nb_iterations'] > 0,
+                nb_iterations=c.mean_shift['nb_iterations'],
+                kernel_bandwidth=c.mean_shift['kernel_bandwidth'],
+                step_size=c.mean_shift['step_size'],
+                embedding_loss=c.embedding_loss['on'],
+                margin=c.embedding_loss['margin'],
+                include_background=c.embedding_loss['include_background'],
+                scaling=c.embedding_loss['scaling'],
+                subsample_size=c.embedding_loss['subsample_size'],
+                learning_rate=c.training['lr'],
+                nb_epochs=c.training['nb_epochs'],
+                pre_train=c.tb['pre_train'],
+                pre_train_name=c.tb['pre_train_name'],
+                th_nn=c.val['th_nn']):
+
         self.th_nn = th_nn
-        self.writer = SummaryWriter(log_dir='training_log/' + str(c.data['model_name']) + '/')
+        self.writer = SummaryWriter(log_dir='training_log/' + str(model_name) + '/')
         self.device = torch.device('cuda:0')
         self.nb_cpu_threads = c.cuda['nb_cpu_threads']
         self.epoch = 0
+
+        self.model_name=model_name
+        self.input_channels = input_channels
+        self.embedding_dim = embedding_dim
+        self.background_pred = background_pred
+        self.mean_shift_on = mean_shift_on
+        self.nb_iterations = nb_iterations
+        self.kernel_bandwidth = kernel_bandwidth
+        self.step_size = step_size
+        self.embedding_loss = embedding_loss
+        self.margin = margin
+        self.include_background = include_background
+        self.scaling = scaling
+        self.subsample_size = subsample_size
+        self.learning_rate = learning_rate
+        self.nb_epochs = nb_epochs
+        self.pre_train = pre_train
+        self.pre_train_name = pre_train_name
+
+        data.save_config(model_name=model_name, input_channels=input_channels, embedding_dim=embedding_dim,
+                         background_pred=background_pred,
+                         mean_shift_on=mean_shift_on, nb_iterations=nb_iterations, kernel_bandwidth=kernel_bandwidth,
+                         step_size=step_size,
+                         embedding_loss=embedding_loss, margin=margin, include_background=include_background,
+                         scaling=scaling,
+                         subsample_size=subsample_size, learning_rate=learning_rate, nb_epochs=nb_epochs,
+                         pre_train=pre_train,
+                         pre_train_name=pre_train_name)
 
     def train(self, train_loader, model, criterion, criterionCEL, optimizer, epoch):
         batch_time = AverageMeter()
@@ -82,8 +127,8 @@ class Setup:
             # zero the parameter gradients
             optimizer.zero_grad()
 
-            if c.UNet['background_pred']:
-                output, ret_loss, y = model(input, label)
+            if self.background_pred:
+                output, ret_loss, y = model(input, label, subsample_size=self.subsample_size)
 
                 '''Cross Entropy Loss on Background Prediction'''
                 cel_loss = torch.tensor(0., device=self.device)
@@ -102,7 +147,7 @@ class Setup:
                 if c.debug['print_img']:
                     v.plot_pred_back(y[0].detach(), label.detach())
             else:
-                output, ret_loss = model(input, label)
+                output, ret_loss = model(input, label, subsample_size=self.subsample_size)
 
             # measure performance and record loss
             try:
@@ -115,9 +160,9 @@ class Setup:
                 #                   color=label[0].detach().flatten())
                 # plt.show()
 
-                pred_labels = cl.label_embeddings(output[0].view(c.UNet['embedding_dim'], -1).t().detach(),
+                pred_labels = cl.label_embeddings(output[0].view(self.embedding_dim, -1).t().detach(),
                                                   th=c.val['th_nn'])
-                pred_labels2 = cl.label_emb_sl(output[0].view(c.UNet['embedding_dim'], -1).t().detach(),
+                pred_labels2 = cl.label_emb_sl(output[0].view(self.embedding_dim, -1).t().detach(),
                                                th=c.val['th_sl'])
 
                 print('There are ' + str(torch.unique(label).size(0)) + ' clusters.')
@@ -141,19 +186,21 @@ class Setup:
                   'Param ({param}))\t'.format(
                 epoch, loss=emb_losses, lossCEL=cel_losses, param=optimizer.param_groups[0]['lr']))
 
-
-    def validate(self, val_loader, model, model_name=c.data['model_name']):
+    def validate(self, val_loader, model, use_metric, criterionCEL):
 
         # nf_threshold = c.val['nf_threshold']
         # switch to evaluate mode
         model.eval()
         model.MS.val = True
+        model_name = self.model_name
 
         with torch.no_grad():
 
             end = time.time()
 
             f1_metric = 0.
+            total_CEL_loss = 0.
+            total_EMB_loss = 0.
             (recall, precision) = (0., 0.)
 
             for i, batch in enumerate(val_loader):
@@ -169,58 +216,77 @@ class Setup:
                     target_var.append(torch.autograd.Variable(label[j]))
 
                 # compute output
-                output, _, __ = model(input, label)
+                output, val_loss, y = model(input, label, subsample_size=self.subsample_size)
                 '''Write Clustering METHOD such that Embeddings get clustered
                 Write From Labels to Coordinates Method
                 Write Method that saves input and target data as Jason file appropriately'''
 
                 (bs, ch, w, h) = output.size()
-                # predict = cl.label_emb_sl(output.view(ch, -1).t(), th=.5)
-                predict = cl.label_embeddings(output.view(ch, -1).t(), th=self.th_nn)
-                predict = predict.reshape(bs, w, h)
 
-                f1_metric_ = 0.
-                (recall_, precision_) = (0., 0.)
+                '''LOSS CALCULATION'''
+                '''Cross Entropy Loss on Background Prediction'''
+                cel_loss = torch.tensor(0., device=self.device)
+                for b in range(y.size(0)):
+                    lab = torch.where(label[b].flatten().long() > 0,
+                                      torch.tensor(1, dtype=torch.long, device=self.device),
+                                      torch.tensor(0, dtype=torch.long, device=self.device))
+                    cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
+                cel_loss = cel_loss / y.size(0)
 
-                label = get_diff_labels(label.cpu().numpy())
+                total_CEL_loss += cel_loss
+                total_EMB_loss += val_loss
 
-                for b in range(bs):
-                    self.writer.add_image('Prediction Epoch ' + str(self.epoch), predict[b].reshape(1, w, h),
-                                          global_step=1)
+                if use_metric:
+                    # predict = cl.label_emb_sl(output.view(ch, -1).t(), th=.5)
+                    predict = cl.label_embeddings(output.view(ch, -1).t(), th=self.th_nn)
+                    predict = predict.reshape(bs, w, h)
 
-                if c.val['show_img']:
+                    f1_metric_ = 0.
+                    (recall_, precision_) = (0., 0.)
+
+                    label = get_diff_labels(label.cpu().numpy())
+
                     for b in range(bs):
-                        f, axarr = plt.subplots(2)
-                        axarr[0].imshow(predict[b])
-                        axarr[1].imshow(label[b])
+                        self.writer.add_image('Prediction Epoch ' + str(self.epoch), predict[b].reshape(1, w, h),
+                                              global_step=1)
 
-                        plt.title('Predicted Background (upper) vs Ground Truth (lower)')
-                        plt.show()
+                    if c.val['show_img']:
+                        for b in range(bs):
+                            f, axarr = plt.subplots(2)
+                            axarr[0].imshow(predict[b])
+                            axarr[1].imshow(label[b])
 
-                for k in range(bs):
-                    (mask_true, mask_predict) = (data.toCoords(label[k]), data.toCoords(predict[k]))
-                    data.write_to_json(mask_true, 'data/val_mask/mask_true_' + str(model_name) + '.json')
-                    data.write_to_json(mask_predict, 'data/val_mask/mask_predict_' + str(model_name) + '.json')
-                    true_mask = nf.load('data/val_mask/mask_true_' + str(model_name) + '.json')
-                    predict_mask = nf.load('data/val_mask/mask_predict_' + str(model_name) + '.json')
-                    recall_c, precision_c = nf.centers(true_mask, predict_mask)
-                    recall_ += recall_c
-                    precision_ += precision_c
-                    f1_metric_ = f1_metric_ + 2 * (recall_ * precision_) / (recall_ + precision_)
+                            plt.title('Predicted Background (upper) vs Ground Truth (lower)')
+                            plt.show()
 
-                f1_metric_ = f1_metric_ / bs
-                recall_ = recall_ / bs
-                precision_ = precision_ / bs
+                    for k in range(bs):
+                        (mask_true, mask_predict) = (data.toCoords(label[k]), data.toCoords(predict[k]))
+                        data.write_to_json(mask_true, 'data/val_mask/mask_true_' + str(model_name) + '.json')
+                        data.write_to_json(mask_predict, 'data/val_mask/mask_predict_' + str(model_name) + '.json')
+                        true_mask = nf.load('data/val_mask/mask_true_' + str(model_name) + '.json')
+                        predict_mask = nf.load('data/val_mask/mask_predict_' + str(model_name) + '.json')
+                        recall_c, precision_c = nf.centers(true_mask, predict_mask)
+                        recall_ += recall_c
+                        precision_ += precision_c
+                        f1_metric_ = f1_metric_ + 2 * (recall_ * precision_) / (recall_ + precision_)
 
-                f1_metric = f1_metric + f1_metric_
-                recall = recall + recall_
-                precision = precision + precision_
+                    f1_metric_ = f1_metric_ / bs
+                    recall_ = recall_ / bs
+                    precision_ = precision_ / bs
+
+                    f1_metric = f1_metric + f1_metric_
+                    recall = recall + recall_
+                    precision = precision + precision_
 
             count = val_loader.__len__()
 
             f1_metric = f1_metric / count
             recall = recall / count
             precision = precision / count
+
+            self.writer.add_scalar('Validation CEL', cel_loss.item() / bs)
+            self.writer.add_scalar('Validation EMB', val_loss / bs)
+            print('Average Validation Loss: EMB: ' + str(val_loss / bs) + '\tCEL: ' + str(cel_loss.item() / bs))
 
             print('* F1 Metric {f1:.4f}\t'
                   'Recall {recall}\t'
@@ -234,7 +300,6 @@ class Setup:
 
         return f1_metric
 
-
     def main(self):
 
         dtype = c.data['dtype']
@@ -242,19 +307,18 @@ class Setup:
         device = c.cuda['device']
 
         device_ids = c.cuda['use_devices']
-        lr = c.training['lr']
+        lr = self.learning_rate
         resume = c.training['resume']
         start_epoch = 0
         img_size = c.training['img_size']
         num_workers = c.data['num_workers']
         nb_samples = c.training['nb_samples']
-        nb_epochs = c.training['nb_epochs']
+        nb_epochs = self.nb_epochs
         val_freq = c.val['val_freq']
 
         torch.set_num_threads(self.nb_cpu_threads)
 
-        device = c.cuda['device']
-        model = n.UNetMS(background_pred=c.UNet['background_pred'])
+        model = n.UNetMS(background_pred=self.background_pred)
 
         model.to(device)
         model.type(dtype)
@@ -262,9 +326,9 @@ class Setup:
         # loading old weights
         try:
             if c.tb['pre_train']:
-                model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['pre_train_name']) + '.pt'))
+                model.load_state_dict(torch.load('model/model_weights_' + str(self.pre_train_name) + '.pt'))
             else:
-                model.load_state_dict(torch.load('model/model_weights_' + str(c.tb['loss_name']) + '.pt'))
+                model.load_state_dict(torch.load('model/model_weights_' + str(self.model_name) + '.pt'))
             print('Loaded Model!')
         except IOError:
             print('No Model to load from!')
@@ -306,7 +370,8 @@ class Setup:
         # cudnn.benchmark = True
 
         # preparing the training loader
-        dim_of_corrs = [3, 4, 5, 6]
+        dim_of_corrs = [2, 3, 4, 5]
+        # dim_of_corrs = [3, 4, 5, 6]
 
         transform_train = transforms.Compose([data.RandomCrop(img_size),
                                               data.RandomRot(dim_of_corrs),
@@ -348,7 +413,7 @@ class Setup:
             # evaluate on validation set
             if (epoch + 1) % val_freq == 0 and epoch != 0:
                 'rewrite THIS PART BECAUSE USING NEUROFINDER METRIC'
-                f1_metric = self.validate(val_loader, model)
+                f1_metric = self.validate(val_loader, model, criterionCEL=criterionCEL, use_metric=False)
 
                 # check patience
                 if f1_metric <= best_f1:
@@ -366,17 +431,17 @@ class Setup:
                     'optimizer': optimizer.state_dict(),
                     'valtrack': f1track,
                     'curr_val': f1_metric,
-                }, is_best)
+                }, is_best, model_name=self.model_name)
 
                 print('** Validation: %f (best) - %d (f1track)' % (best_f1, f1track))
 
             print('Saved Model After Epoch')
-            torch.save(model.state_dict(), 'model/model_weights_' + str(c.tb['loss_name']) + '.pt')
+            torch.save(model.state_dict(), 'model/model_weights_' + str(self.model_name) + '.pt')
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, model_name, filename='checkpoint.pth.tar'):
     snapshots = c.data['snapshots']
-    filename = snapshots + c.data['model_name'] +'_e%03d_v-%.3f.pth.tar' % (state['epoch'], state['best_val'])
+    filename = snapshots + model_name +'_e%03d_v-%.3f.pth.tar' % (state['epoch'], state['best_val'])
     if is_best:
         torch.save(state, filename)
 
@@ -554,7 +619,7 @@ def emb_subsample(embedding_tensor, label_tensor, sub_size=100):
     emb = embedding_tensor.view(bs, ch, -1)[:, :, ind].view(bs, ch, new_w, new_h)
     lab = label_tensor.view(bs, -1)[:, ind].view(bs, new_w, new_h)
 
-    return emb, lab
+    return emb, lab, ind
 
 
 def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/maxpool/transformed_4',
@@ -579,6 +644,7 @@ def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/max
 
     model.eval()
     model.MS.val = True
+    model.MS.test = True
 
     with torch.no_grad():
         for i, batch in enumerate(test_loader):
@@ -589,7 +655,7 @@ def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/max
                 input_var.append(torch.autograd.Variable(input[j]))
 
             # compute output
-            output, _, __ = model(input, None)
+            output, _, __ = model(input, None, subsample_size=None)
 
             (bs, ch, w, h) = output.size()
             predict = cl.label_embeddings(output.view(ch, -1).t(), th=th)
@@ -612,6 +678,7 @@ def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/max
             f.write(json.dumps(results))
 
         model.MS.val = False
+        model.MS.test = False
 
     pass
 
@@ -637,10 +704,10 @@ def val_score(iter=10, th=c.val['th_nn'], model_name=c.tb['pre_train_name'], bac
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, num_workers=0)
     print('Validation loader prepared.')
 
-    set = h.Setup(th_nn=th)
+    set = h.Setup(th_nn=th, model_name=model_name)
     f1_ = []
     for i in range(iter):
-        f1_metric = set.validate(val_loader, model, model_name=model_name)
+        f1_metric = set.validate(val_loader, model, use_metric=True, criterionCEL=nn.CrossEntropyLoss().cuda())
         f1_.append(f1_metric)
     ret = sum(f1_)/f1_.__len__()
     print('Average Val Score of model ' + str(model_name) + ':\t' + str(ret))

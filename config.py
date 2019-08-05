@@ -1,7 +1,7 @@
 import torch
 
 UNet = dict(
-    input_channels=7,                       # specifies the number of channels of the input image
+    input_channels=6,                       # specifies the number of channels of the input image
     embedding_dim=32,                       # sets the base embedding dimension of UNet
     dropout_rate=0.25,                      # sets the dropout rate in UNet Model
     background_pred=True,
@@ -11,7 +11,7 @@ mean_shift = dict(
     embedding_dim=32,
     kernel_bandwidth=None,                  # set to float if should be used, margin is now used to calculate bandwidth
     step_size=1.,                            # mean shift step size
-    nb_iterations=0,                            # number of iterations, if < 1 model UNet with Unit Sphere Normalization
+    nb_iterations=5,                            # number of iterations, if < 1 model UNet with Unit Sphere Normalization
     use_in_val=False,
 )
 
@@ -29,7 +29,7 @@ data = dict(
     use_compression=True,
     dtype=torch.float,
     snapshots='models/',
-    model_name='new_trans_test',
+    model_name='saving_config_test',
     num_workers=0,
 )
 
@@ -44,7 +44,7 @@ training = dict(
     nb_epochs=1000,
     nb_samples=100,
     img_size=64,
-    batch_size=1,
+    batch_size=20,
 
     aux_network=False,
 
@@ -54,7 +54,7 @@ training = dict(
 )
 
 val = dict(
-    val_freq=10,
+    val_freq=1,
     th_nn=0.8,
     th_sl=1.,
 
@@ -74,7 +74,7 @@ cuda = dict(
 )
 
 tb = dict(
-    loss_name='new_trans_test',
+    loss_name='saving_config_test',
     pre_train=False,
     pre_train_name='background',
 )

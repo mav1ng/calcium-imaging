@@ -45,8 +45,30 @@ import neurofinder as nf
 
 from torchsummary import summary
 
-set = h.Setup()
+set = h.Setup(model_name='test', nb_epochs=1000)
 set.main()
+
+# set = h.Setup(model_name='eve2', nb_epochs=2000)
+# set.main()
+
+# set = h.Setup(model_name='abram', nb_epochs=1000, learning_rate=0.002)
+# set.main()
+
+# """ABRAM"""
+# for i in range(100):
+#     cur_nb_epochs = np.random.randint(10, 101)
+#     cur_lr = np.random.randint(1, 10000) / 100000.
+#     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr)
+#     set = h.Setup(model_name='abram_' + str(cur_lr) + '_' + str(cur_nb_epochs), nb_epochs=cur_nb_epochs, learning_rate=cur_lr)
+#     set.main()
+
+# """EVE"""
+# for i in range(100):
+#     cur_nb_epochs = np.random.randint(10, 101)
+#     cur_lr = np.random.randint(1, 10000) / 100000.
+#     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr)
+#     set = h.Setup(model_name='eve_' + str(cur_lr) + '_' + str(cur_nb_epochs), nb_epochs=cur_nb_epochs, learning_rate=cur_lr)
+#     set.main()
 
 
 # writer = SummaryWriter(log_dir='training_log/' + str(c.tb['loss_name']) + '/')

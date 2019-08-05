@@ -160,7 +160,7 @@ def get_sliced_corr(input_video, corr_form=c.corr['corr_form'], slice_size=100, 
 
 def get_new_corr(input_video):
     """
-    Method that creates the additional correlation input version
+    Method that creates the additional normalized correlation input version
     :param input_video:
     :return:
     """

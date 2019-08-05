@@ -53,6 +53,51 @@ def toCoords(mask):
     return coords
 
 
+def save_config(model_name, input_channels=c.UNet['input_channels'],
+                embedding_dim=c.UNet['embedding_dim'],
+                background_pred=c.UNet['background_pred'],
+                mean_shift_on=c.mean_shift['nb_iterations'] > 0,
+                nb_iterations=c.mean_shift['nb_iterations'],
+                kernel_bandwidth=c.mean_shift['kernel_bandwidth'],
+                step_size=c.mean_shift['step_size'],
+                embedding_loss=c.embedding_loss['on'],
+                margin=c.embedding_loss['margin'],
+                include_background=c.embedding_loss['include_background'],
+                scaling=c.embedding_loss['scaling'],
+                subsample_size=c.embedding_loss['subsample_size'],
+                learning_rate=c.training['lr'],
+                nb_epochs=c.training['nb_epochs'],
+                pre_train=c.tb['pre_train'],
+                pre_train_name=c.tb['pre_train_name']):
+    data = {
+        'model_name' : str(model_name),
+        'input_channels': str(input_channels),
+        'embedding_dim': str(embedding_dim),
+        'background_pred': str(background_pred),
+        'Mean Shift On' : str(mean_shift_on),
+        'nb_iterations' : str(nb_iterations),
+        'kernel_bandwidth' : str(kernel_bandwidth),
+        'step_size': str(step_size),
+        'Embedding Loss': str(embedding_loss),
+        'margin' : str(margin),
+        'Include Background': str(include_background),
+        'scaling': str(scaling),
+        'subsample_size': str(subsample_size),
+        'Learning Rate': str(learning_rate),
+        'nb_epochs': str(nb_epochs),
+        'pre_train': str(pre_train),
+        'pre_train_name': str(pre_train_name),
+    }
+    write_to_json(data=data, path='config/' + str(model_name) + '.json')
+
+
+x = {
+  "name": "John",
+  "age": 30,
+  "city": "New York"
+}
+
+
 def write_to_json(data, path):
     """
     Method ro write to json File
@@ -315,7 +360,7 @@ class TestCombinedDataset(Dataset):
     def __getitem__(self, idx):
         sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                       self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                      self.new_corr.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                      # self.new_corr.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                       self.imgs[idx]], dim=0)[:, :, :]}
         if self.transform:
             sample = self.transform(sample)
@@ -375,14 +420,14 @@ class CombinedDataset(Dataset):
         if not self.test:
             sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.new_corr.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          # self.new_corr.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.imgs[idx]], dim=0)[:, :, :self.y_bound],
                       'label': self.labels[idx][:, :self.y_bound]}
             # markdown
         else:
             sample = {'image': torch.cat([self.sum_mean.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.sum_var.view(1, -1, self.dims[0], self.dims[1])[:, idx],
-                                          self.new_corr.view(1, -1, self.dims[0], self.dims[1])[:, idx],
+                                          # self.new_corr.view(1, -1, self.dims[0], self.dims[1])[:, idx],
                                           self.imgs[idx]], dim=0)[:, :, self.y_bound:],
                       'label': self.labels[idx][:, self.y_bound:]}
             # print(sample['image'].size())
@@ -644,7 +689,7 @@ class RandomFlip(object):
         (ch, w, h) = image.size()
 
         if np.random.rand(1) < self.prob:
-            print('flip')
+            # print('flip')
             dim_list = np.arange(0, ch, 1)
 
             for dim in dim_list:

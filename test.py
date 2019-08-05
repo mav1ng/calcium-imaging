@@ -27,7 +27,12 @@ dtype = c.data['dtype']
 device = torch.device('cpu')
 img_size = c.training['img_size']
 
-# transrandomrot = data.RandomRot(dim_of_corrs=[3, 4, 5, 6])
+h.val_score(3, 0.8, model_name='eve_with_7')
+
+# h.val_score(3, 0.8, model_name='abram')
+# h.test(model_name='eve')
+
+# transrandomrot = data.RandomRot(dim_of_corrs=[2, 3, 4, 5])
 #
 # train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
 #                                              corr_sum_folder='data/corr_sum_img/',
@@ -37,32 +42,32 @@ img_size = c.training['img_size']
 #
 # # test = {'image': torch.rand(7, 12, 12), 'label': torch.randint(0, 3, (12, 12))}
 #
-# test = train_dataset[1]
-# test = data.RandomCrop(100)(test)
+# test = train_dataset[0]
+# # test = data.RandomCrop(100)(test)
 #
-# transrandomcrop = data.RandomCrop(50)
-# transrandomrot = data.RandomRot(dim_of_corrs=[3, 4, 5, 6])
-# transrandomflip = data.RandomFlip(dim_corrs=[3, 4, 5, 6], vertical=True, prob=0.5)
-# transrandomfliph = data.RandomFlip(dim_corrs=[3, 4, 5, 6], vertical=False, prob=0.5)
-#
-# trans = transforms.Compose([transrandomcrop, transrandomrot, transrandomflip, transrandomfliph])
-# test2 = test.copy()
-# test2 = trans(test2)
+# # transrandomcrop = data.RandomCrop(50)
+# # transrandomrot = data.RandomRot(dim_of_corrs=[3, 4, 5, 6])
+# # transrandomflip = data.RandomFlip(dim_corrs=[3, 4, 5, 6], vertical=True, prob=0.5)
+# # transrandomfliph = data.RandomFlip(dim_corrs=[3, 4, 5, 6], vertical=False, prob=0.5)
+# #
+# # trans = transforms.Compose([transrandomcrop, transrandomrot, transrandomflip, transrandomfliph])
+# # test2 = test.copy()
+# # test2 = trans(test2)
 #
 # (c, w, h) = test['image'].size()
 #
 # l = test['label'].cpu().numpy()
-# l2 = test2['label'].cpu().numpy()
+# # l2 = test2['label'].cpu().numpy()
 #
 # for i in range(c):
 #     d = test['image'][i].cpu().numpy()
-#     d2 = test2['image'][i].cpu().numpy()
+#     # d2 = test2['image'][i].cpu().numpy()
 #
-#     f, axarr = plt.subplots(2, 2)
-#     axarr[0, 0].imshow(d)
-#     axarr[1, 0].imshow(l)
-#     axarr[0, 1].imshow(d2)
-#     axarr[1, 1].imshow(l2)
+#     f, axarr = plt.subplots(2)
+#     axarr[0].imshow(d)
+#     axarr[1].imshow(l)
+#     # axarr[0, 1].imshow(d2)
+#     # axarr[1, 1].imshow(l2)
 #
 #     plt.title('Predicted Background (upper) vs Ground Truth (lower)')
 #

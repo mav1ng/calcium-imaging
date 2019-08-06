@@ -11,7 +11,7 @@ mean_shift = dict(
     embedding_dim=32,
     kernel_bandwidth=None,                  # set to float if should be used, margin is now used to calculate bandwidth
     step_size=1.,                            # mean shift step size
-    nb_iterations=5,                            # number of iterations, if < 1 model UNet with Unit Sphere Normalization
+    nb_iterations=0,                            # number of iterations, if < 1 model UNet with Unit Sphere Normalization
     use_in_val=False,
 )
 
@@ -44,7 +44,7 @@ training = dict(
     nb_epochs=1000,
     nb_samples=100,
     img_size=64,
-    batch_size=20,
+    batch_size=1,
 
     aux_network=False,
 

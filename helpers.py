@@ -48,6 +48,7 @@ class Setup:
                 nb_epochs=c.training['nb_epochs'],
                 pre_train=c.tb['pre_train'],
                 pre_train_name=c.tb['pre_train_name'],
+                batch_size=c.training['batch_size'],
                 th_nn=c.val['th_nn']):
 
         self.th_nn = th_nn
@@ -73,6 +74,7 @@ class Setup:
         self.nb_epochs = nb_epochs
         self.pre_train = pre_train
         self.pre_train_name = pre_train_name
+        self.batch_size = batch_size
 
         data.save_config(model_name=model_name, input_channels=input_channels, embedding_dim=embedding_dim,
                          background_pred=background_pred,
@@ -81,10 +83,13 @@ class Setup:
                          embedding_loss=embedding_loss, margin=margin, include_background=include_background,
                          scaling=scaling,
                          subsample_size=subsample_size, learning_rate=learning_rate, nb_epochs=nb_epochs,
+                         batch_size=batch_size,
                          pre_train=pre_train,
                          pre_train_name=pre_train_name)
 
+
     def train(self, train_loader, model, criterion, criterionCEL, optimizer, epoch):
+
         batch_time = AverageMeter()
         data_time = AverageMeter()
         emb_losses = AverageMeter()
@@ -303,7 +308,7 @@ class Setup:
     def main(self):
 
         dtype = c.data['dtype']
-        batch_size = c.training['batch_size']
+        batch_size = self.batch_size
         device = c.cuda['device']
 
         device_ids = c.cuda['use_devices']
@@ -596,11 +601,12 @@ def pad_nf(array, img_size=512, labels=False):
         return np.pad(array, ((w_pad + w_, w_pad), (h_pad + h_, h_pad)), 'constant', constant_values=0)
 
 
-def emb_subsample(embedding_tensor, label_tensor, sub_size=100):
+def emb_subsample(embedding_tensor, label_tensor, backpred, sub_size=100):
     """
     Method that returns a subsampled amount of pixel to calculate the embedding loss
     :param embedding_tensor: Bs x Ch x w x h
     :param label_tensor: Bs x w x h
+    :param backpred: Bs x w x h, specifies probabilities of getting chosen
     :param sub_size: Parameter that specifies the number of pixels in subsampled image
     :return: subsampled embedding and labels
     """
@@ -609,15 +615,27 @@ def emb_subsample(embedding_tensor, label_tensor, sub_size=100):
 
     (bs, ch, w, h) = embedding_tensor.size()
     (new_w, new_h) = (int(np.sqrt(sub_size)), int(np.sqrt(sub_size)))
+    back_prob = 1 - (backpred * 0.5 + 0.5)
+    emb = torch.zeros(bs, ch, new_w, new_h, device=torch.device('cuda:0'))
+    lab = torch.zeros(bs, new_w, new_h, device=torch.device('cuda:0'))
 
-    while True:
-        ind = torch.unique(torch.randint(0, w * h, (sub_size * 2,)))
-        if ind.size(0) > sub_size:
-            ind = ind.clone()[:sub_size]
-            break
+    for b in range(bs):
 
-    emb = embedding_tensor.view(bs, ch, -1)[:, :, ind].view(bs, ch, new_w, new_h)
-    lab = label_tensor.view(bs, -1)[:, ind].view(bs, new_w, new_h)
+        while True:
+            ind = torch.unique(torch.randint(0, w * h, (sub_size * 2,), device=torch.device('cuda:0')))
+            drop = torch.rand(ind.size(), device=torch.device('cuda:0'))
+            prob = back_prob[b].view(-1)[ind]
+
+            ind = torch.where(prob > drop, ind, torch.tensor(-1, device=torch.device('cuda:0')))
+            ind = torch.where(ind == -1, torch.randint_like(ind, 0, w * h), ind)
+            ind = torch.unique(ind)
+
+            if ind.size(0) > sub_size:
+                ind = ind.clone()[:sub_size]
+                break
+
+        emb[b] = embedding_tensor[b].view(ch, -1)[:, ind].view(ch, new_w, new_h)
+        lab[b] = label_tensor[b].view(-1)[ind].view(new_w, new_h)
 
     return emb, lab, ind
 

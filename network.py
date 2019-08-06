@@ -201,7 +201,7 @@ class MS(nn.Module):
 
         self.criterion = EmbeddingLoss().cuda()
 
-    def forward(self, x_in, lab_in=None, subsample_size=c.embedding_loss['subsample_size']):
+    def forward(self, x_in, lab_in=None, background_pred=None, subsample_size=c.embedding_loss['subsample_size']):
         """
         :param x_in: flattened image in D x N , D embedding Dimension, N number of Pixels
         :param lab_in specify labels B x W x H if model is usd in training mode
@@ -226,7 +226,7 @@ class MS(nn.Module):
 
         if subsample_size is not None:
             """SUBSAMPLING"""
-            emb, lab, ind = he.emb_subsample(x.clone(), lab_in.clone(), sub_size=subsample_size)
+            emb, lab, ind = he.emb_subsample(x.clone(), lab_in.clone(), backpred=background_pred, sub_size=subsample_size)
             x = emb.view(self.bs, self.emb, -1)
             y = torch.zeros(self.emb, subsample_size, device=d)
             wurzel = int(np.sqrt(subsample_size))
@@ -320,7 +320,7 @@ class UNetMS(nn.Module):
             x = self.L2Norm(x)
             x = x.clone()[:, :-2]
             y = x[:, -2:]
-            x, ret_loss = self.MS(x, lab, subsample_size=subsample_size)
+            x, ret_loss = self.MS(x, lab, background_pred=y[:, 0], subsample_size=subsample_size)
             return x, ret_loss, y
         else:
             x = self.UNet(x)

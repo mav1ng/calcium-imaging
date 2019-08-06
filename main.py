@@ -45,8 +45,11 @@ import neurofinder as nf
 
 from torchsummary import summary
 
-set = h.Setup(model_name='test', nb_epochs=1000)
-set.main()
+# set = h.Setup(model_name='test', nb_epochs=1000)
+# set.main()
+
+# set = h.Setup(model_name='abram2', nb_epochs=5000)
+# set.main()
 
 # set = h.Setup(model_name='eve2', nb_epochs=2000)
 # set.main()
@@ -55,12 +58,24 @@ set.main()
 # set.main()
 
 # """ABRAM"""
-# for i in range(100):
-#     cur_nb_epochs = np.random.randint(10, 101)
+# for i in range(1, 101):
+#     cur_nb_epochs = np.random.randint(10, 251)
 #     cur_lr = np.random.randint(1, 10000) / 100000.
-#     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr)
-#     set = h.Setup(model_name='abram_' + str(cur_lr) + '_' + str(cur_nb_epochs), nb_epochs=cur_nb_epochs, learning_rate=cur_lr)
+#     cur_bs = int(np.ceil(i / 10))
+#     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
+#     set = h.Setup(model_name='abram_' + str(cur_lr) + '_' + str(cur_nb_epochs) + '_' + str(cur_bs),
+#                   nb_epochs=cur_nb_epochs, learning_rate=cur_lr, batch_size=cur_bs)
 #     set.main()
+
+"""AZRAEL"""
+for i in range(1, 101):
+    cur_nb_epochs = np.random.randint(10, 251)
+    cur_lr = np.random.randint(1, 10000) / 100000.
+    cur_bs = int(np.ceil(i / 10))
+    print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
+    set = h.Setup(model_name='azrael_' + str(cur_lr) + '_' + str(cur_nb_epochs) + '_' + str(cur_bs),
+                  nb_epochs=cur_nb_epochs, learning_rate=cur_lr, batch_size=cur_bs)
+    set.main()
 
 # """EVE"""
 # for i in range(100):

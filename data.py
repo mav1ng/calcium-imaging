@@ -67,6 +67,7 @@ def save_config(model_name, input_channels=c.UNet['input_channels'],
                 subsample_size=c.embedding_loss['subsample_size'],
                 learning_rate=c.training['lr'],
                 nb_epochs=c.training['nb_epochs'],
+                batch_size=c.training['batch_size'],
                 pre_train=c.tb['pre_train'],
                 pre_train_name=c.tb['pre_train_name'],
                 batch_size=c.training['batch_size']):

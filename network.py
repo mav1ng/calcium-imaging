@@ -45,12 +45,14 @@ class UNet(nn.Module):
     H height of image
     """
 
-    def __init__(self, input_channels=c.UNet['input_channels'], background_pred=False):
+    def __init__(self, input_channels=c.UNet['input_channels'], embedding_dim=c.UNet['embedding_dim'],
+                 dropout_rate=c.UNet['dropout_rate'], background_pred=False):
         super(UNet, self).__init__()
 
         self.input_channels = input_channels
-        self.embedding_dim = c.UNet['embedding_dim']
-        self.dropout_rate = c.UNet['dropout_rate']
+        self.embedding_dim = embedding_dim
+        self.dropout_rate = dropout_rate
+        self.background_pred = background_pred
 
         self.conv_layer_1 = get_conv_layer(self.input_channels, self.embedding_dim)
         self.conv_layer_2 = get_conv_layer(self.embedding_dim, self.embedding_dim)
@@ -93,7 +95,7 @@ class UNet(nn.Module):
 
         self.conv_layer_17 = get_conv_layer(self.embedding_dim * 2, self.embedding_dim)
         self.conv_layer_18 = get_conv_layer(self.embedding_dim, self.embedding_dim)
-        if background_pred:
+        if self.background_pred:
             self.conv_layer_end = nn.Conv2d(self.embedding_dim, self.embedding_dim + 2, 1)
         else:
             self.conv_layer_end = nn.Conv2d(self.embedding_dim, self.embedding_dim, 1)
@@ -181,27 +183,39 @@ class UNet(nn.Module):
 
 class MS(nn.Module):
 
-    def __init__(self):
+    def __init__(self, embedding_dim=c.mean_shift['embedding_dim'], kernel_bandwidth=c.mean_shift['kernel_bandwidth'],
+                 margin=c.embedding_loss['margin'], step_size=c.mean_shift['step_size'],
+                 nb_iterations=c.mean_shift['nb_iterations'], use_in_val=c.mean_shift['use_in_val'],
+                 use_embedding_loss=c.embedding_loss['on'], scaling=c.embedding_loss['scaling'],
+                 use_background_pred=c.UNet['background_pred'],
+                 include_background=c.embedding_loss['include_background']):
         super(MS, self).__init__()
 
-        self.emb = c.mean_shift['embedding_dim']
-        # setting kernel bandwidth
-        if c.mean_shift['kernel_bandwidth'] is not None:
-            self.kernel_bandwidth = c.mean_shift['kernel_bandwidth']
-        else:
-            #self.kernel_bandwidth = 1. / (1. - c.embedding_loss['margin']) / 3.
-            self.kernel_bandwidth = 3. / (1. - c.embedding_loss['margin'])
-        self.step_size = c.mean_shift['step_size']
-        self.iter = c.mean_shift['nb_iterations']
+        self.emb = embedding_dim
+        self.margin = margin
+        self.scaling = scaling
+        self.include_background = include_background
+
+        self.kernel_bandwidth = kernel_bandwidth
+        if self.kernel_bandwidth is None:
+            self.kernel_bandwidth = 3. / (1. - self.margin)
+        self.step_size = step_size
+        self.nb_iterations = nb_iterations
+        self.iter = nb_iterations
+
+        self.use_in_val = use_in_val
+        self.use_embedding_loss = use_embedding_loss
+        self.use_background_pred = use_background_pred
+
         self.bs = None
         self.w = None
         self.h = None
         self.val = False
         self.test = False
 
-        self.criterion = EmbeddingLoss().cuda()
+        self.criterion = EmbeddingLoss(margin=self.margin, include_background=self.include_background).cuda()
 
-    def forward(self, x_in, lab_in=None, background_pred=None, subsample_size=c.embedding_loss['subsample_size']):
+    def forward(self, x_in, lab_in, subsample_size, background_pred=None):
         """
         :param x_in: flattened image in D x N , D embedding Dimension, N number of Pixels
         :param lab_in specify labels B x W x H if model is usd in training mode
@@ -235,10 +249,10 @@ class MS(nn.Module):
 
         ret_loss = 0.
 
-        if not c.mean_shift['use_in_val'] and (not self.training or self.val):
+        if not self.use_in_val and (not self.training or self.val):
             self.iter = 0
         elif self.iter == 0:
-            self.iter = c.mean_shift['nb_iterations']
+            self.iter = self.nb_iterations
 
         for t in range(self.iter + 1):
             # iterating over all samples in the batch
@@ -264,7 +278,7 @@ class MS(nn.Module):
 
             # print('self.training', self.training)
 
-            if self.training and c.embedding_loss['on'] and not self.val:
+            if self.training and self.use_embedding_loss and not self.val:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
 
                 emb = out
@@ -276,12 +290,12 @@ class MS(nn.Module):
 
                 loss = self.criterion(emb, lab)
 
-                loss = (loss / self.bs) * c.embedding_loss['scaling'] * (1/(c.mean_shift['nb_iterations'] + 1))
+                loss = (loss / self.bs) * self.scaling * (1/(self.iter + 1))
 
                 with torch.no_grad():
                     ret_loss = ret_loss + loss.detach()
 
-                if t == self.iter and not c.UNet['background_pred'] and not t == 0:
+                if t == self.iter and not self.use_background_pred and not t == 0:
                     loss.backward()
                 else:
                     loss.backward(retain_graph=True)
@@ -291,13 +305,14 @@ class MS(nn.Module):
                 emb = out
                 lab = lab_in_
 
-                if subsample_size is not None:
-                    emb = out.view(self.bs, self.emb, -1)[:, :, ind].view(self.bs, self.emb, wurzel, wurzel)
-                    lab = lab_in_.view(self.bs, -1)[:, ind].view(self.bs, wurzel, wurzel)
+                # if subsample_size is not None:
+                #     emb = out.view(self.bs, self.emb, -1)[:, :, ind].view(self.bs, self.emb, wurzel, wurzel)
+                #     lab = lab_in_.view(self.bs, -1)[:, ind].view(self.bs, wurzel, wurzel)
 
-                loss = self.criterion(emb, lab)
+                val_criterion = EmbeddingLoss(margin=0.5, include_background=True).cuda()
+                loss = val_criterion(emb, lab)
 
-                loss = (loss / self.bs) * c.embedding_loss['scaling'] * (1/(c.mean_shift['nb_iterations'] + 1))
+                loss = (loss / self.bs) * (1/(self.iter + 1))
 
                 with torch.no_grad():
                     ret_loss = ret_loss + loss.detach()
@@ -306,26 +321,56 @@ class MS(nn.Module):
 
 
 class UNetMS(nn.Module):
-    def __init__(self, input_channels=c.UNet['input_channels'], background_pred=False):
+    def __init__(self, input_channels=c.UNet['input_channels'], embedding_dim=c.UNet['embedding_dim'],
+                 dropout_rate=c.UNet['dropout_rate'], kernel_bandwidth=c.mean_shift['kernel_bandwidth'],
+                 margin=c.embedding_loss['margin'], step_size=c.mean_shift['step_size'],
+                 nb_iterations=c.mean_shift['nb_iterations'], use_in_val=c.mean_shift['use_in_val'],
+                 use_embedding_loss=c.embedding_loss['on'], scaling=c.embedding_loss['scaling'],
+                 use_background_pred=c.UNet['background_pred'], subsample_size=c.embedding_loss['subsample_size'],
+                 include_background=c.embedding_loss['include_background']):
         super(UNetMS, self).__init__()
 
-        self.UNet = UNet(background_pred=background_pred, input_channels=input_channels)
-        self.MS = MS()
-        self.L2Norm = L2Norm()
-        self.background_pred = background_pred
+        # instantializing class parameters
+        self.embedding_dim = embedding_dim
+        self.dropout_rate = dropout_rate
+        self.input_channels = input_channels
 
-    def forward(self, x, lab, subsample_size):
+        self.margin = margin
+        self.include_background = include_background
+
+        self.step_size = step_size
+        self.kernel_bandwidth = kernel_bandwidth
+        self.nb_iterations = nb_iterations
+
+        self.subsample_size = subsample_size
+
+        self.use_in_val = use_in_val
+        self.use_embedding_loss = use_embedding_loss
+        self.scaling = scaling
+        self.use_background_pred = use_background_pred
+
+        # instantializing class models
+        self.UNet = UNet(background_pred=self.use_background_pred, input_channels=self.input_channels,
+                         embedding_dim=self.embedding_dim, dropout_rate=self.dropout_rate)
+        self.MS = MS(embedding_dim=self.embedding_dim, margin=self.margin, step_size=self.step_size,
+                     kernel_bandwidth=self.kernel_bandwidth, nb_iterations=self.nb_iterations,
+                     include_background=self.include_background, use_in_val=self.use_in_val,
+                     use_embedding_loss=self.use_embedding_loss,
+                     scaling=self.scaling, use_background_pred=self.use_background_pred)
+        self.L2Norm = L2Norm()
+
+    def forward(self, x, lab):
         if self.background_pred:
             x = self.UNet(x)
             x = self.L2Norm(x)
             x = x.clone()[:, :-2]
             y = x[:, -2:]
-            x, ret_loss = self.MS(x, lab, background_pred=y[:, 0], subsample_size=subsample_size)
+            x, ret_loss = self.MS(x, lab, background_pred=y[:, 0], subsample_size=self.subsample_size)
             return x, ret_loss, y
         else:
             x = self.UNet(x)
             x = self.L2Norm(x)
-            x, ret_loss = self.MS(x, lab, subsample_size=subsample_size)
+            x, ret_loss = self.MS(x, lab, subsample_size=self.subsample_size)
             return x, ret_loss
 
 
@@ -346,8 +391,11 @@ class L2Norm(nn.Module):
 
 
 class EmbeddingLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, margin, include_background):
         super(EmbeddingLoss, self).__init__()
+
+        self.margin = margin
+        self.include_background = include_background
 
     def forward(self, emb, lab):
         """
@@ -355,7 +403,7 @@ class EmbeddingLoss(nn.Module):
         :param lab: bs x w x h
         :return: scalar loss
         """
-        return embedding_loss(emb, lab)
+        return embedding_loss(emb, lab, margin=self.margin, include_background=self.include_background)
 
 
 def comp_similarity_matrix(input):
@@ -439,7 +487,7 @@ def compute_weight_matrix(input):
     return out
 
 
-def compute_label_pair(input):
+def compute_label_pair(input, include_background):
     """
     Method that computes whether a pixel pair is of the same label or not
     :param input: tensor matrix with the ground truth labels Bs x PixelX x PixelY
@@ -454,7 +502,7 @@ def compute_label_pair(input):
 
     (bs, w, h) = input.size()
 
-    if c.embedding_loss['include_background']:
+    if include_background:
         # +1 such that background has label != 0 such that following computation works
         y = torch.add(input.to(torch.float), 1.)
     else:
@@ -472,7 +520,7 @@ def compute_label_pair(input):
     return out
 
 
-def embedding_loss(emb, lab):
+def embedding_loss(emb, lab, margin, include_background):
     """
     Method that exhaustively calculates the embedding loss of an embedding when given the labels
     :param embedding_matrix: matrix with the predicted embeddings Bs x Iter + 1 x C x PixelX x PixelY
@@ -489,7 +537,7 @@ def embedding_loss(emb, lab):
 
     loss = torch.zeros(bs, w * h, w * h, device=d)
     weights = compute_weight_matrix(compute_pre_weight_matrix(lab))
-    label_pairs = compute_label_pair(lab)
+    label_pairs = compute_label_pair(lab, include_background)
     sim_mat = comp_similarity_matrix(emb)
 
     for b in range(bs):
@@ -498,8 +546,8 @@ def embedding_loss(emb, lab):
         # correcting machine inaccuracies
         loss[b] = torch.where(loss[b] < 0., torch.tensor(0., device=d), loss[b])
         loss[b] = torch.where(label_pairs[:, :, 0, b] == -1.,
-                              torch.where(sim_mat[:, :, 0, b] - c.embedding_loss['margin'] >= 0,
-                                          sim_mat[:, :, 0, b] - c.embedding_loss['margin'], torch.tensor(
+                              torch.where(sim_mat[:, :, 0, b] - margin >= 0,
+                                          sim_mat[:, :, 0, b] - margin, torch.tensor(
                                       0., device=d)), loss[b])
 
         loss[b] = torch.mul(1. / (w * h), torch.mul(weights[:, :, 0, b], loss[b].clone()))

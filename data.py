@@ -69,8 +69,7 @@ def save_config(model_name, input_channels=c.UNet['input_channels'],
                 nb_epochs=c.training['nb_epochs'],
                 batch_size=c.training['batch_size'],
                 pre_train=c.tb['pre_train'],
-                pre_train_name=c.tb['pre_train_name'],
-                batch_size=c.training['batch_size']):
+                pre_train_name=c.tb['pre_train_name']):
     data = {
         'model_name' : str(model_name),
         'input_channels': str(input_channels),
@@ -92,13 +91,6 @@ def save_config(model_name, input_channels=c.UNet['input_channels'],
         'pre_train_name': str(pre_train_name),
     }
     write_to_json(data=data, path='config/' + str(model_name) + '.json')
-
-
-x = {
-  "name": "John",
-  "age": 30,
-  "city": "New York"
-}
 
 
 def write_to_json(data, path):

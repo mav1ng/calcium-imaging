@@ -213,7 +213,9 @@ class MS(nn.Module):
         self.val = False
         self.test = False
 
-        self.criterion = EmbeddingLoss(margin=self.margin, include_background=self.include_background).cuda()
+        self.prefer_cell = 0.5
+
+        self.criterion = EmbeddingLoss(margin=self.margin).cuda()
 
     def forward(self, x_in, lab_in, subsample_size, background_pred=None):
         """
@@ -240,7 +242,8 @@ class MS(nn.Module):
 
         if subsample_size is not None:
             """SUBSAMPLING"""
-            emb, lab, ind = he.emb_subsample(x.clone(), lab_in.clone(), backpred=background_pred, sub_size=subsample_size)
+            emb, lab, ind = he.emb_subsample(x.clone(), lab_in.clone(), include_background=self.include_background,
+                                             backpred=background_pred, prefer_cell=self.prefer_cell, sub_size=subsample_size)
             x = emb.view(self.bs, self.emb, -1)
             y = torch.zeros(self.emb, subsample_size, device=d)
             wurzel = int(np.sqrt(subsample_size))
@@ -309,7 +312,7 @@ class MS(nn.Module):
                 #     emb = out.view(self.bs, self.emb, -1)[:, :, ind].view(self.bs, self.emb, wurzel, wurzel)
                 #     lab = lab_in_.view(self.bs, -1)[:, ind].view(self.bs, wurzel, wurzel)
 
-                val_criterion = EmbeddingLoss(margin=0.5, include_background=True).cuda()
+                val_criterion = EmbeddingLoss(margin=0.5).cuda()
                 loss = val_criterion(emb, lab)
 
                 loss = (loss / self.bs) * (1/(self.iter + 1))
@@ -360,16 +363,14 @@ class UNetMS(nn.Module):
         self.L2Norm = L2Norm()
 
     def forward(self, x, lab):
-        if self.background_pred:
-            x = self.UNet(x)
-            x = self.L2Norm(x)
+        x = self.UNet(x)
+        x = self.L2Norm(x)
+        if self.use_background_pred:
             x = x.clone()[:, :-2]
             y = x[:, -2:]
             x, ret_loss = self.MS(x, lab, background_pred=y[:, 0], subsample_size=self.subsample_size)
             return x, ret_loss, y
         else:
-            x = self.UNet(x)
-            x = self.L2Norm(x)
             x, ret_loss = self.MS(x, lab, subsample_size=self.subsample_size)
             return x, ret_loss
 
@@ -391,11 +392,10 @@ class L2Norm(nn.Module):
 
 
 class EmbeddingLoss(nn.Module):
-    def __init__(self, margin, include_background):
+    def __init__(self, margin):
         super(EmbeddingLoss, self).__init__()
 
         self.margin = margin
-        self.include_background = include_background
 
     def forward(self, emb, lab):
         """
@@ -403,7 +403,7 @@ class EmbeddingLoss(nn.Module):
         :param lab: bs x w x h
         :return: scalar loss
         """
-        return embedding_loss(emb, lab, margin=self.margin, include_background=self.include_background)
+        return embedding_loss(emb, lab, margin=self.margin)
 
 
 def comp_similarity_matrix(input):
@@ -487,7 +487,7 @@ def compute_weight_matrix(input):
     return out
 
 
-def compute_label_pair(input, include_background):
+def compute_label_pair(input):
     """
     Method that computes whether a pixel pair is of the same label or not
     :param input: tensor matrix with the ground truth labels Bs x PixelX x PixelY
@@ -502,11 +502,8 @@ def compute_label_pair(input, include_background):
 
     (bs, w, h) = input.size()
 
-    if include_background:
-        # +1 such that background has label != 0 such that following computation works
-        y = torch.add(input.to(torch.float), 1.)
-    else:
-        y = input.to(torch.float)
+    # +1 such that background has label != 0 such that following computation works
+    y = torch.add(input.to(torch.float), 1.)
 
     out = torch.zeros((h * w, h * w, 1, bs), device=d)
 
@@ -520,7 +517,7 @@ def compute_label_pair(input, include_background):
     return out
 
 
-def embedding_loss(emb, lab, margin, include_background):
+def embedding_loss(emb, lab, margin):
     """
     Method that exhaustively calculates the embedding loss of an embedding when given the labels
     :param embedding_matrix: matrix with the predicted embeddings Bs x Iter + 1 x C x PixelX x PixelY
@@ -537,7 +534,7 @@ def embedding_loss(emb, lab, margin, include_background):
 
     loss = torch.zeros(bs, w * h, w * h, device=d)
     weights = compute_weight_matrix(compute_pre_weight_matrix(lab))
-    label_pairs = compute_label_pair(lab, include_background)
+    label_pairs = compute_label_pair(lab)
     sim_mat = comp_similarity_matrix(emb)
 
     for b in range(bs):

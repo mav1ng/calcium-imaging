@@ -132,7 +132,7 @@ class Setup:
             optimizer.zero_grad()
 
             if self.background_pred:
-                output, ret_loss, y = model(input, label, subsample_size=self.subsample_size)
+                output, ret_loss, y = model(input, label)
 
                 '''Cross Entropy Loss on Background Prediction'''
                 cel_loss = torch.tensor(0., device=self.device)
@@ -151,7 +151,7 @@ class Setup:
                 if c.debug['print_img']:
                     v.plot_pred_back(y[0].detach(), label.detach())
             else:
-                output, ret_loss = model(input, label, subsample_size=self.subsample_size)
+                output, ret_loss = model(input, label)
 
             # measure performance and record loss
             try:
@@ -351,7 +351,7 @@ class Setup:
 
         optimizer = optim.Adam(model.parameters(), lr=lr)
 
-        criterion = n.EmbeddingLoss(margin=self.margin, include_background=self.include_background).cuda()
+        criterion = n.EmbeddingLoss(margin=self.margin).cuda()
         criterionCEL = nn.CrossEntropyLoss().cuda()
 
         # # creating different parameter groups
@@ -606,37 +606,63 @@ def pad_nf(array, img_size=512, labels=False):
         return np.pad(array, ((w_pad + w_, w_pad), (h_pad + h_, h_pad)), 'constant', constant_values=0)
 
 
-def emb_subsample(embedding_tensor, label_tensor, backpred, sub_size=100):
+def emb_subsample(embedding_tensor, label_tensor, backpred, include_background, prefer_cell, sub_size=100):
     """
     Method that returns a subsampled amount of pixel to calculate the embedding loss
     :param embedding_tensor: Bs x Ch x w x h
-    :param label_tensor: Bs x w x h
+    :param label_tensor: Bs x w x h, zeroes and ones
     :param backpred: Bs x w x h, specifies probabilities of getting chosen
+    :param include_background: Boolean whether to allow background pixels to be in the subsample
+    :param prefer_cell: value in [0, 1] on how strongly to prefer foreground pixels, 0 no preference, 1 full preference
     :param sub_size: Parameter that specifies the number of pixels in subsampled image
     :return: subsampled embedding and labels
     """
 
     assert np.sqrt(sub_size) % 2 == 0, 'Sub Size needs to be a valid Image size, e.g 10 x 10 = 100'
 
+    device = torch.device('cuda:0')
+
     (bs, ch, w, h) = embedding_tensor.size()
     (new_w, new_h) = (int(np.sqrt(sub_size)), int(np.sqrt(sub_size)))
-    back_prob = 1 - (backpred * 0.5 + 0.5)
-    emb = torch.zeros(bs, ch, new_w, new_h, device=torch.device('cuda:0'))
-    lab = torch.zeros(bs, new_w, new_h, device=torch.device('cuda:0'))
+
+    back_prob = torch.ones(bs, w, h, device=device) * 2
+    if backpred is not None:
+        back_prob = 1 - (backpred * 0.5 + 0.5) * prefer_cell
+
+    emb = torch.zeros(bs, ch, new_w, new_h, device=device)
+    lab = torch.zeros(bs, new_w, new_h, device=device)
 
     for b in range(bs):
 
+        sub_pool_size = 2
         while True:
-            ind = torch.unique(torch.randint(0, w * h, (sub_size * 2,), device=torch.device('cuda:0')))
-            drop = torch.rand(ind.size(), device=torch.device('cuda:0'))
+            ind = torch.unique(torch.randint(0, w * h, (sub_size * sub_pool_size,), device=device))
+            drop = torch.rand(ind.size(), device=device)
             prob = back_prob[b].view(-1)[ind]
+            ind = torch.where(prob > drop, ind, torch.tensor(-1, device=device))
 
-            ind = torch.where(prob > drop, ind, torch.tensor(-1, device=torch.device('cuda:0')))
+            if not include_background:
+                ind = torch.where(label_tensor[b].view(-1)[ind] == 0., torch.tensor(-1, device=device), ind)
+
             ind = torch.where(ind == -1, torch.randint_like(ind, 0, w * h), ind)
             ind = torch.unique(ind)
 
             if ind.size(0) > sub_size:
                 ind = ind.clone()[:sub_size]
+                break
+
+            sub_pool_size += 1
+
+            # Breaking Condition/Threshold
+            if sub_size * sub_pool_size >= w * h:
+                print('Not enough Cell pixels in input image, filling up with background pixels! '
+                      '\nTaking random sub pixels!')
+
+                while True:
+                    ind = torch.unique(torch.randint(0, w * h, (sub_size * 2,), device=device))
+                    if ind.size(0) > sub_size:
+                        ind = ind.clone()[:sub_size]
+                        break
                 break
 
         emb[b] = embedding_tensor[b].view(ch, -1)[:, ind].view(ch, new_w, new_h)

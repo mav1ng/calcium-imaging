@@ -240,10 +240,22 @@ class MS(nn.Module):
         out = torch.zeros(self.bs, self.emb, self.w, self.h, device=d)
         y = torch.zeros(self.emb, self.w * self.h, device=d)
 
-        if subsample_size is not None:
-            """SUBSAMPLING"""
+        if self.val and not self.test:
+            """Validation SUBSAMPLING"""
+            val_sub_size = 100 * 100
+            emb, lab, ind = he.emb_subsample(x.clone(), lab_in.clone(), include_background=True,
+                                             backpred=None, prefer_cell=0.5,
+                                             sub_size=val_sub_size)
+            x = emb.view(self.bs, self.emb, -1)
+            y = torch.zeros(self.emb, val_sub_size, device=d)
+            wurzel = int(np.sqrt(val_sub_size))
+            self.sw = wurzel
+            self.sh = wurzel
+        elif subsample_size is not None:
+            """Training SUBSAMPLING"""
             emb, lab, ind = he.emb_subsample(x.clone(), lab_in.clone(), include_background=self.include_background,
-                                             backpred=background_pred, prefer_cell=self.prefer_cell, sub_size=subsample_size)
+                                             backpred=background_pred, prefer_cell=self.prefer_cell,
+                                             sub_size=subsample_size)
             x = emb.view(self.bs, self.emb, -1)
             y = torch.zeros(self.emb, subsample_size, device=d)
             wurzel = int(np.sqrt(subsample_size))
@@ -308,14 +320,14 @@ class MS(nn.Module):
                 emb = out
                 lab = lab_in_
 
-                # if subsample_size is not None:
-                #     emb = out.view(self.bs, self.emb, -1)[:, :, ind].view(self.bs, self.emb, wurzel, wurzel)
-                #     lab = lab_in_.view(self.bs, -1)[:, ind].view(self.bs, wurzel, wurzel)
+                if subsample_size is not None:
+                    emb = out.view(self.bs, self.emb, -1)[:, :, ind].view(self.bs, self.emb, wurzel, wurzel)
+                    lab = lab_in_.view(self.bs, -1)[:, ind].view(self.bs, wurzel, wurzel)
 
                 val_criterion = EmbeddingLoss(margin=0.5).cuda()
                 loss = val_criterion(emb, lab)
 
-                loss = (loss / self.bs) * (1/(self.iter + 1))
+                loss = (loss / self.bs) * 25 * (1/(self.iter + 1))
 
                 with torch.no_grad():
                     ret_loss = ret_loss + loss.detach()

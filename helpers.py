@@ -222,7 +222,7 @@ class Setup:
                     target_var.append(torch.autograd.Variable(label[j]))
 
                 # compute output
-                output, val_loss, y = model(input, label, subsample_size=self.subsample_size)
+                output, val_loss, y = model(input, label)
 
                 (bs, ch, w, h) = output.size()
 
@@ -286,7 +286,6 @@ class Setup:
             f1_metric = f1_metric / count
             recall = recall / count
             precision = precision / count
-
             self.writer.add_scalar('Validation CEL', cel_loss.item() / bs)
             self.writer.add_scalar('Validation EMB', val_loss / bs)
             print('Average Validation Loss: EMB: ' + str(val_loss / bs) + '\tCEL: ' + str(cel_loss.item() / bs))
@@ -618,7 +617,7 @@ def emb_subsample(embedding_tensor, label_tensor, backpred, include_background, 
     :return: subsampled embedding and labels
     """
 
-    assert np.sqrt(sub_size) % 2 == 0, 'Sub Size needs to be a valid Image size, e.g 10 x 10 = 100'
+    assert np.sqrt(sub_size) % 1 == 0, 'Sub Size needs to be a valid Image size, e.g 10 x 10 = 100'
 
     device = torch.device('cuda:0')
 

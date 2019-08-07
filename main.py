@@ -45,7 +45,7 @@ import neurofinder as nf
 
 from torchsummary import summary
 
-set = h.Setup(model_name='test', nb_epochs=1000)
+set = h.Setup(model_name='test2', nb_epochs=1000)
 set.main()
 
 # set = h.Setup(model_name='abram2', nb_epochs=5000)

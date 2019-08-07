@@ -46,6 +46,7 @@ class Setup:
                 subsample_size=c.embedding_loss['subsample_size'],
                 learning_rate=c.training['lr'],
                 nb_epochs=c.training['nb_epochs'],
+                batch_size=c.training['batch_size'],
                 pre_train=c.tb['pre_train'],
                 pre_train_name=c.tb['pre_train_name'],
                 th_nn=c.val['th_nn']):
@@ -71,6 +72,7 @@ class Setup:
         self.subsample_size = subsample_size
         self.learning_rate = learning_rate
         self.nb_epochs = nb_epochs
+        self.batch_size = batch_size
         self.pre_train = pre_train
         self.pre_train_name = pre_train_name
 
@@ -82,7 +84,7 @@ class Setup:
                          scaling=scaling,
                          subsample_size=subsample_size, learning_rate=learning_rate, nb_epochs=nb_epochs,
                          pre_train=pre_train,
-                         pre_train_name=pre_train_name)
+                         pre_train_name=pre_train_name, batch_size=batch_size)
 
     def train(self, train_loader, model, criterion, criterionCEL, optimizer, epoch):
         batch_time = AverageMeter()
@@ -194,6 +196,8 @@ class Setup:
         model.MS.val = True
         model_name = self.model_name
 
+        '''PARAMETERS FOR EMBEDDING LOSS ARE FIXED IN NETWORK FORWARD'''
+
         with torch.no_grad():
 
             end = time.time()
@@ -217,9 +221,6 @@ class Setup:
 
                 # compute output
                 output, val_loss, y = model(input, label, subsample_size=self.subsample_size)
-                '''Write Clustering METHOD such that Embeddings get clustered
-                Write From Labels to Coordinates Method
-                Write Method that saves input and target data as Jason file appropriately'''
 
                 (bs, ch, w, h) = output.size()
 
@@ -302,30 +303,37 @@ class Setup:
 
     def main(self):
 
-        dtype = c.data['dtype']
-        batch_size = c.training['batch_size']
-        device = c.cuda['device']
-
+        dtype = torch.float
+        device = torch.device('cuda:0')
         device_ids = c.cuda['use_devices']
+
+        batch_size = self.batch_size
         lr = self.learning_rate
+        nb_epochs = self.nb_epochs
+        pre_train = self.pre_train
+
         resume = c.training['resume']
         start_epoch = 0
         img_size = c.training['img_size']
         num_workers = c.data['num_workers']
         nb_samples = c.training['nb_samples']
-        nb_epochs = self.nb_epochs
         val_freq = c.val['val_freq']
 
         torch.set_num_threads(self.nb_cpu_threads)
 
-        model = n.UNetMS(background_pred=self.background_pred)
+        model = n.UNetMS(input_channels=self.input_channels, embedding_dim=self.embedding_dim,
+                         kernel_bandwidth=self.kernel_bandwidth,
+                         margin=self.margin, step_size=self.step_size, nb_iterations=self.nb_iterations,
+                         use_embedding_loss=self.embedding_loss, scaling=self.scaling,
+                         use_background_pred=self.background_pred, subsample_size=self.subsample_size,
+                         include_background=self.include_background)
 
         model.to(device)
         model.type(dtype)
 
         # loading old weights
         try:
-            if c.tb['pre_train']:
+            if self.pre_train:
                 model.load_state_dict(torch.load('model/model_weights_' + str(self.pre_train_name) + '.pt'))
             else:
                 model.load_state_dict(torch.load('model/model_weights_' + str(self.model_name) + '.pt'))
@@ -341,7 +349,7 @@ class Setup:
 
         optimizer = optim.Adam(model.parameters(), lr=lr)
 
-        criterion = n.EmbeddingLoss().cuda()
+        criterion = n.EmbeddingLoss(margin=self.margin, include_background=self.include_background).cuda()
         criterionCEL = nn.CrossEntropyLoss().cuda()
 
         # # creating different parameter groups
@@ -622,12 +630,12 @@ def emb_subsample(embedding_tensor, label_tensor, sub_size=100):
     return emb, lab, ind
 
 
-def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/maxpool/transformed_4',
+def test(model_name, corr_path='data/test_corr/starmy/maxpool/transformed_4',
          corr_sum_folder='data/test_corr_sum_img/',
          th=c.val['th_nn'], bp=c.UNet['background_pred']):
-    dtype = c.data['dtype']
-    device = c.cuda['device']
-    model = n.UNetMS(background_pred=bp)
+    dtype = torch.float
+    device = torch.device('cuda:0')
+    model = n.UNetMS(use_background_pred=bp)
 
     results = []
     result_dict = {'dataset': None, 'regions': None}
@@ -683,7 +691,7 @@ def test(model_name=c.tb['pre_train_name'], corr_path='data/test_corr/starmy/max
     pass
 
 
-def val_score(iter=10, th=c.val['th_nn'], model_name=c.tb['pre_train_name'], background_pred=c.UNet['background_pred']):
+def val_score(model_name, iter=10, th=c.val['th_nn'], background_pred=c.UNet['background_pred']):
     """
     Method to quantify the overall performance of a model
     :param iter: the more iterations the more accurate
@@ -692,8 +700,8 @@ def val_score(iter=10, th=c.val['th_nn'], model_name=c.tb['pre_train_name'], bac
     :background_pred: wether model uses background pred
     :return: Overall Score of the current model
     """
-    dtype = c.data['dtype']
-    device = c.cuda['device']
+    dtype = torch.float
+    device = torch.device('cuda:0')
     model = n.UNetMS(background_pred=background_pred)
 
     model.to(device)
@@ -714,10 +722,10 @@ def val_score(iter=10, th=c.val['th_nn'], model_name=c.tb['pre_train_name'], bac
     return ret
 
 
-def test_th(np_arange=(0.005, 2.05, 0.005), model_name=c.tb['pre_train_name'], iter=10):
-    dtype = c.data['dtype']
-    device = c.cuda['device']
-    model = n.UNetMS(background_pred=c.UNet['background_pred'])
+def test_th(model_name, background_pred, np_arange=(0.005, 2.05, 0.005), iter=10):
+    dtype = torch.float
+    device = torch.device('cuda:0')
+    model = n.UNetMS(use_background_pred=background_pred)
 
     model.to(device)
     model.type(dtype)

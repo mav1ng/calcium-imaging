@@ -221,20 +221,24 @@ class Setup:
                 for j in range(len(label)):
                     target_var.append(torch.autograd.Variable(label[j]))
 
+                cel_loss = torch.tensor(0., device=self.device)
+
                 # compute output
-                output, val_loss, y = model(input, label)
+                if self.background_pred:
+                    output, val_loss, y = model(input, label)
+
+                    '''LOSS CALCULATION'''
+                    '''Cross Entropy Loss on Background Prediction'''
+                    for b in range(y.size(0)):
+                        lab = torch.where(label[b].flatten().long() > 0,
+                                          torch.tensor(1, dtype=torch.long, device=self.device),
+                                          torch.tensor(0, dtype=torch.long, device=self.device))
+                        cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
+                    cel_loss = cel_loss / y.size(0)
+                else:
+                    output, val_loss = model(input, label)
 
                 (bs, ch, w, h) = output.size()
-
-                '''LOSS CALCULATION'''
-                '''Cross Entropy Loss on Background Prediction'''
-                cel_loss = torch.tensor(0., device=self.device)
-                for b in range(y.size(0)):
-                    lab = torch.where(label[b].flatten().long() > 0,
-                                      torch.tensor(1, dtype=torch.long, device=self.device),
-                                      torch.tensor(0, dtype=torch.long, device=self.device))
-                    cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
-                cel_loss = cel_loss / y.size(0)
 
                 total_CEL_loss += cel_loss
                 total_EMB_loss += val_loss
@@ -731,7 +735,7 @@ def test(model_name, corr_path='data/test_corr/starmy/maxpool/transformed_4',
     pass
 
 
-def val_score(model_name, iter=10, th=c.val['th_nn'], background_pred=c.UNet['background_pred']):
+def val_score(model_name, background_pred, iter=10, th=c.val['th_nn']):
     """
     Method to quantify the overall performance of a model
     :param iter: the more iterations the more accurate
@@ -742,12 +746,15 @@ def val_score(model_name, iter=10, th=c.val['th_nn'], background_pred=c.UNet['ba
     """
     dtype = torch.float
     device = torch.device('cuda:0')
-    model = n.UNetMS(background_pred=background_pred)
+    model = n.UNetMS(use_background_pred=background_pred)
 
     model.to(device)
     model.type(dtype)
     model.load_state_dict(torch.load('model/model_weights_' + str(model_name) + '.pt'))
-    val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/sliced/slice_size_100/transformed_4/',
+    val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+                                       corr_sum_folder='data/corr_sum_img/',
+                                       sum_folder='data/sum_img/',
+                                       mask_folder='data/sum_masks/',
                                        transform=None, device=device, dtype=dtype, test=True)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, num_workers=0)
     print('Validation loader prepared.')

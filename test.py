@@ -27,9 +27,7 @@ dtype = c.data['dtype']
 device = torch.device('cpu')
 img_size = c.training['img_size']
 
-for i in range(1, 101):
-    cur_bs = int(np.ceil(i / 10))
-    print(cur_bs)
+h.val_score('test', background_pred=True, th=0.8)
 
 # h.val_score(3, 0.8, model_name='eve_with_7')
 

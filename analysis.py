@@ -163,6 +163,8 @@ def analyse_lr_nbep_bs(analysis_name):
 
     optimized_parameters = ['Learning Rate', 'Number of Epochs', 'Batch Size']
 
+    ret = np.where(ret == -1., np.nan, ret)
+
     return ret, ana_param, optimized_parameters
 
 
@@ -176,7 +178,7 @@ def normalize_score(input):
     d_ = np.nanmean(input)
     d_n = input - d_
     d_n_ = np.sqrt(np.nansum(d_n ** 2))
-    ret = d_n / d_n_
+    ret = np.where(d_n_ == 0., 0., d_n / d_n_)
 
     return ret
 
@@ -201,22 +203,23 @@ def plot_lr_nbep_bs(analysis_name):
     z = data[2]
     c = ((data[4] + data[5]) / 2)
 
-    img = ax.scatter(x, y, z, c=c, cmap=plt.hot())
+    img = ax.scatter(x, y, z, c=c, cmap=plt.cool())
     fig.colorbar(img)
+    plt.ylim(0, 250)
     plt.show()
 
 
-def find_optimal_params(data):
-    data[4] = normalize_score(data[4])
-    data[5] = normalize_score(data[5])
-
-    ind = np.argmax((data[4] + data[5]) / 2)
+def find_optimal_params(data, score_ind):
+    (i, j) = score_ind
+    data[i] = normalize_score(data[i])
+    data[j] = normalize_score(data[j])
+    ind = np.nanargmax((data[i] + data[j]) / 2)
 
     return ind
 
 
-def print_results(data, ana_params, optimized_parameters):
-    ind = find_optimal_params(data)
+def print_results(data, ana_params, optimized_parameters, score_ind):
+    ind = find_optimal_params(data, score_ind)
 
     print('The following Parameters were the default:')
     pprint(vars(ana_params))
@@ -233,4 +236,4 @@ def analysis(analysis, analysis_name):
     if str(analysis) == 'lr_ep_bs':
         data, ana_param, optimized_parameters = analyse_lr_nbep_bs(analysis_name)
         plot_lr_nbep_bs(analysis_name)
-        print_results(data, ana_param, optimized_parameters)
+        print_results(data, ana_param, optimized_parameters, (4, 5))

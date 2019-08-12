@@ -32,7 +32,7 @@ from PIL import Image
 
 
 class Setup:
-    def __init__(self, model_name, input_channels=c.UNet['input_channels'],
+    def __init__(self, model_name, save_config, input_channels=c.UNet['input_channels'],
                 embedding_dim=c.UNet['embedding_dim'],
                 background_pred=c.UNet['background_pred'],
                 mean_shift_on=c.mean_shift['nb_iterations'] > 0,
@@ -76,15 +76,16 @@ class Setup:
         self.pre_train = pre_train
         self.pre_train_name = pre_train_name
 
-        data.save_config(model_name=model_name, input_channels=input_channels, embedding_dim=embedding_dim,
-                         background_pred=background_pred,
-                         mean_shift_on=mean_shift_on, nb_iterations=nb_iterations, kernel_bandwidth=kernel_bandwidth,
-                         step_size=step_size,
-                         embedding_loss=embedding_loss, margin=margin, include_background=include_background,
-                         scaling=scaling,
-                         subsample_size=subsample_size, learning_rate=learning_rate, nb_epochs=nb_epochs,
-                         pre_train=pre_train,
-                         pre_train_name=pre_train_name, batch_size=batch_size)
+        if save_config:
+            data.save_config(model_name=model_name, input_channels=input_channels, embedding_dim=embedding_dim,
+                             background_pred=background_pred,
+                             mean_shift_on=mean_shift_on, nb_iterations=nb_iterations, kernel_bandwidth=kernel_bandwidth,
+                             step_size=step_size,
+                             embedding_loss=embedding_loss, margin=margin, include_background=include_background,
+                             scaling=scaling,
+                             subsample_size=subsample_size, learning_rate=learning_rate, nb_epochs=nb_epochs,
+                             pre_train=pre_train,
+                             pre_train_name=pre_train_name, batch_size=batch_size)
 
 
     def train(self, train_loader, model, criterion, criterionCEL, optimizer, epoch):
@@ -751,7 +752,20 @@ def val_score(model_name, background_pred, use_metric, iter=10, th=c.val['th_nn'
     """
     dtype = torch.float
     device = torch.device('cuda:0')
-    model = n.UNetMS(use_background_pred=background_pred)
+
+    dic = data.read_from_json('config/' + str(model_name) + '.json')
+
+    model = n.UNetMS(input_channels=int(dic['input_channels']),
+                     embedding_dim=int(dic['embedding_dim']),
+                     use_background_pred=dic['background_pred'] == 'True',
+                     nb_iterations=int(dic['nb_iterations']),
+                     kernel_bandwidth=dic['kernel_bandwidth'],
+                     step_size=float(dic['step_size']),
+                     use_embedding_loss=dic['Embedding Loss'] == 'True',
+                     margin=float(dic['margin']),
+                     include_background=dic['Include Background'] == 'True',
+                     scaling=float(dic['scaling']),
+                     subsample_size=int(dic['subsample_size']))
 
     model.to(device)
     model.type(dtype)
@@ -764,7 +778,17 @@ def val_score(model_name, background_pred, use_metric, iter=10, th=c.val['th_nn'
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, num_workers=0)
     print('Validation loader prepared.')
 
-    set = h.Setup(th_nn=th, model_name=model_name)
+    set = h.Setup(th_nn=th, model_name=model_name, save_config=False, input_channels=int(dic['input_channels']),
+                  embedding_dim=int(dic['embedding_dim']),
+                  background_pred=dic['background_pred'] == 'True',
+                  nb_iterations=int(dic['nb_iterations']),
+                  kernel_bandwidth=dic['kernel_bandwidth'],
+                  step_size=float(dic['step_size']),
+                  embedding_loss=dic['Embedding Loss'] == 'True',
+                  margin=float(dic['margin']),
+                  include_background=dic['Include Background'] == 'True',
+                  scaling=float(dic['scaling']),
+                  subsample_size=int(dic['subsample_size']))
     f1_ = []
     emb_loss = []
     cel_loss = []
@@ -801,7 +825,7 @@ def test_th(model_name, background_pred, np_arange=(0.005, 2.05, 0.005), iter=10
     f1_ind_list = []
     for th in list:
         f1_ = []
-        set = h.Setup(th_nn=th)
+        set = h.Setup(th_nn=th, save_config=False)
         print('Threshold = ' + str(th))
         for i in range(iter):
             f1_metric = set.validate(val_loader, model)

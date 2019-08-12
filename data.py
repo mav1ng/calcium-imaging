@@ -93,6 +93,50 @@ def save_config(model_name, input_channels=c.UNet['input_channels'],
     write_to_json(data=data, path='config/' + str(model_name) + '.json')
 
 
+def save_config_score(model_name, val_score, emb_score, cel_score, input_channels,
+                      embedding_dim,
+                      background_pred,
+                      mean_shift_on,
+                      nb_iterations,
+                      kernel_bandwidth,
+                      step_size,
+                      embedding_loss,
+                      margin,
+                      include_background,
+                      scaling,
+                      subsample_size,
+                      learning_rate,
+                      nb_epochs,
+                      batch_size,
+                      pre_train,
+                      pre_train_name,
+                      ):
+    data = {
+        'model_name' : str(model_name),
+        'input_channels': str(input_channels),
+        'embedding_dim': str(embedding_dim),
+        'background_pred': str(background_pred),
+        'Mean Shift On' : str(mean_shift_on),
+        'nb_iterations' : str(nb_iterations),
+        'kernel_bandwidth' : str(kernel_bandwidth),
+        'step_size': str(step_size),
+        'Embedding Loss': str(embedding_loss),
+        'margin': str(margin),
+        'Include Background': str(include_background),
+        'scaling': str(scaling),
+        'subsample_size': str(subsample_size),
+        'Learning Rate': str(learning_rate),
+        'nb_epochs': str(nb_epochs),
+        'batch_size': str(batch_size),
+        'pre_train': str(pre_train),
+        'pre_train_name': str(pre_train_name),
+        'val_score': str(val_score),
+        'emb_score': str(emb_score),
+        'cel_score': str(cel_score),
+    }
+    write_to_json(data=data, path='config/' + str(model_name) + '.json')
+
+
 def write_to_json(data, path):
     """
     Method ro write to json File
@@ -103,6 +147,12 @@ def write_to_json(data, path):
     with open(path, 'w') as outfile:
         json.dump(data, outfile)
     pass
+
+
+def read_from_json(json_file):
+    with open(json_file) as f:
+        d = json.load(f)
+    return d
 
 
 def get_summarized_masks(masks_path):

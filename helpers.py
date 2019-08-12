@@ -290,9 +290,13 @@ class Setup:
             f1_metric = f1_metric / count
             recall = recall / count
             precision = precision / count
-            self.writer.add_scalar('Validation CEL', cel_loss.item() / bs)
-            self.writer.add_scalar('Validation EMB', val_loss / bs)
-            print('Average Validation Loss: EMB: ' + str(val_loss / bs) + '\tCEL: ' + str(cel_loss.item() / bs))
+
+            ret_cel = cel_loss.item() / bs
+            ret_emb = val_loss.item() / bs
+
+            self.writer.add_scalar('Validation CEL', ret_cel)
+            self.writer.add_scalar('Validation EMB', ret_emb)
+            print('Average Validation Loss: EMB: ' + str(ret_emb) + '\tCEL: ' + str(ret_cel))
 
             print('* F1 Metric {f1:.4f}\t'
                   'Recall {recall}\t'
@@ -304,7 +308,8 @@ class Setup:
             self.writer.add_scalar('Recall', recall)
             self.writer.add_scalar('Precision', precision)
 
-        return f1_metric
+        return f1_metric, ret_emb, ret_cel
+
 
     def main(self):
 
@@ -426,7 +431,7 @@ class Setup:
             # evaluate on validation set
             if (epoch + 1) % val_freq == 0 and epoch != 0:
                 'rewrite THIS PART BECAUSE USING NEUROFINDER METRIC'
-                f1_metric = self.validate(val_loader, model, criterionCEL=criterionCEL, use_metric=False)
+                f1_metric, _, __ = self.validate(val_loader, model, criterionCEL=criterionCEL, use_metric=False)
 
                 # check patience
                 if f1_metric <= best_f1:
@@ -735,7 +740,7 @@ def test(model_name, corr_path='data/test_corr/starmy/maxpool/transformed_4',
     pass
 
 
-def val_score(model_name, background_pred, iter=10, th=c.val['th_nn']):
+def val_score(model_name, background_pred, use_metric, iter=10, th=c.val['th_nn']):
     """
     Method to quantify the overall performance of a model
     :param iter: the more iterations the more accurate
@@ -761,12 +766,21 @@ def val_score(model_name, background_pred, iter=10, th=c.val['th_nn']):
 
     set = h.Setup(th_nn=th, model_name=model_name)
     f1_ = []
+    emb_loss = []
+    cel_loss = []
     for i in range(iter):
-        f1_metric = set.validate(val_loader, model, use_metric=True, criterionCEL=nn.CrossEntropyLoss().cuda())
+        f1_metric, emb_loss_, cel_loss_ = set.validate(val_loader, model, use_metric=use_metric,
+                                                       criterionCEL=nn.CrossEntropyLoss().cuda())
         f1_.append(f1_metric)
-    ret = sum(f1_)/f1_.__len__()
-    print('Average Val Score of model ' + str(model_name) + ':\t' + str(ret))
-    return ret
+        emb_loss.append(emb_loss_)
+        cel_loss.append(cel_loss_)
+
+    ret_f1 = sum(f1_) / f1_.__len__()
+    ret_emb = sum(emb_loss) / emb_loss.__len__()
+    ret_cel = sum(cel_loss)/cel_loss.__len__()
+    print('Average Val Score of model ' + str(model_name) + ':\t' + str(ret_f1) + '\n '
+            'Average Emb Score/Average CEL Score: \t' + str(ret_emb) + '/' + str(ret_cel))
+    return ret_f1, ret_emb, ret_cel
 
 
 def test_th(model_name, background_pred, np_arange=(0.005, 2.05, 0.005), iter=10):

@@ -76,6 +76,8 @@ class Setup:
         self.pre_train = pre_train
         self.pre_train_name = pre_train_name
 
+        self.breaking = False
+
         if save_config:
             data.save_config(model_name=model_name, input_channels=input_channels, embedding_dim=embedding_dim,
                              background_pred=background_pred,
@@ -191,6 +193,12 @@ class Setup:
                   'Param ({param}))\t'.format(
                 epoch, loss=emb_losses, lossCEL=cel_losses, param=optimizer.param_groups[0]['lr']))
 
+            if ret_loss != ret_loss:
+                print('Exploding Gradients! Stopped Training.')
+                self.breaking = True
+                break
+
+
     def validate(self, val_loader, model, use_metric, criterionCEL):
 
         # nf_threshold = c.val['nf_threshold']
@@ -226,11 +234,7 @@ class Setup:
 
                 # compute output
                 if self.background_pred:
-                    plt.imshow(input[0, 0].detach().cpu().numpy())
-                    plt.show()
                     output, val_loss, y = model(input, label)
-                    plt.imshow(output[0, 0].detach().cpu().numpy())
-                    plt.show()
 
                     '''LOSS CALCULATION'''
                     '''Cross Entropy Loss on Background Prediction'''
@@ -460,6 +464,9 @@ class Setup:
 
             print('Saved Model After Epoch')
             torch.save(model.state_dict(), 'model/model_weights_' + str(self.model_name) + '.pt')
+
+            if self.breaking:
+                break
 
 
 def save_checkpoint(state, is_best, model_name, filename='checkpoint.pth.tar'):

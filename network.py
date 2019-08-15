@@ -333,9 +333,6 @@ class MS(nn.Module):
                 with torch.no_grad():
                     ret_loss = ret_loss + loss.detach()
 
-            plt.imshow(out[0, 0].detach().cpu().numpy())
-            plt.show()
-
         return out, ret_loss
 
 

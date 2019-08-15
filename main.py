@@ -40,7 +40,7 @@ import neurofinder as nf
 from torchsummary import summary
 
 
-# set = h.Setup(model_name='abram_opt', nb_epochs=250, learning_rate=0.0005, batch_size=4, save_config=True,
+# set = h.Setup(model_name='abram_opt_2', nb_epochs=250, learning_rate=0.0005, batch_size=4, save_config=True,
 #               background_pred=True, embedding_loss=False)
 # set.main()
 
@@ -48,7 +48,7 @@ from torchsummary import summary
 #               background_pred=True, embedding_loss=False)
 # set.main()
 
-h.val_score(model_name='abram_opt', use_metric=True, iter=2, th=0.8)
+h.val_score(model_name='abram_opt_2', use_metric=True, iter=10, th=0.8)
 # h.test(model_name='abram_opt')
 
 # ana.analysis(analysis='lr_ep_bs', analysis_name='eve_1.')
@@ -64,7 +64,7 @@ h.val_score(model_name='abram_opt', use_metric=True, iter=2, th=0.8)
 # """ABRAM OPT ROUND 1"""
 # for i in range(1, 101):
 #     cur_nb_epochs = np.random.randint(10, 251)
-#     cur_lr = np.random.randint(1, 10000) / 100000.
+#     cur_lr = np.random.randint(1, 10001) / 100000.
 #     cur_bs = int(np.ceil(i / 10))
 #     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
 #     set = h.Setup(model_name='abram_' + str(cur_lr) + '_' + str(cur_nb_epochs) + '_' + str(cur_bs),

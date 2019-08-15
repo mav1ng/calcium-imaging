@@ -226,7 +226,11 @@ class Setup:
 
                 # compute output
                 if self.background_pred:
+                    plt.imshow(input[0, 0].detach().cpu().numpy())
+                    plt.show()
                     output, val_loss, y = model(input, label)
+                    plt.imshow(output[0, 0].detach().cpu().numpy())
+                    plt.show()
 
                     '''LOSS CALCULATION'''
                     '''Cross Entropy Loss on Background Prediction'''
@@ -655,6 +659,7 @@ def emb_subsample(embedding_tensor, label_tensor, backpred, include_background, 
 
             ind = torch.where(ind == -1, torch.randint_like(ind, 0, w * h), ind)
             ind = torch.unique(ind)
+            ind = ind[torch.randint(0, ind.size(0), (ind.size(0),))]
 
             if ind.size(0) > sub_size:
                 ind = ind.clone()[:sub_size]
@@ -680,28 +685,43 @@ def emb_subsample(embedding_tensor, label_tensor, backpred, include_background, 
     return emb, lab, ind
 
 
-def test(model_name, corr_path='data/test_corr/starmy/maxpool/transformed_4',
-         corr_sum_folder='data/test_corr_sum_img/',
-         th=c.val['th_nn'], bp=c.UNet['background_pred']):
+def test(model_name):
+
     dtype = torch.float
     device = torch.device('cuda:0')
-    model = n.UNetMS(use_background_pred=bp)
+
+    dic = data.read_from_json('config/' + str(model_name) + '.json')
+
+    model = n.UNetMS(input_channels=int(dic['input_channels']),
+                     embedding_dim=int(dic['embedding_dim']),
+                     use_background_pred=dic['background_pred'] == 'True',
+                     nb_iterations=int(dic['nb_iterations']),
+                     kernel_bandwidth=dic['kernel_bandwidth'],
+                     step_size=float(dic['step_size']),
+                     use_embedding_loss=dic['Embedding Loss'] == 'True',
+                     margin=float(dic['margin']),
+                     include_background=dic['Include Background'] == 'True',
+                     scaling=float(dic['scaling']),
+                     subsample_size=int(dic['subsample_size']))
+
+    model.to(device)
+    model.type(dtype)
+    model.load_state_dict(torch.load('model/model_weights_' + str(model_name) + '.pt'))
 
     results = []
     result_dict = {'dataset': None, 'regions': None}
     namelist = ['00.00.test', '00.01.test', '01.00.test', '01.01.test', '02.00.test', '02.01.test', '03.00.test',
                 '04.00.test', '04.01.test']
 
-    model.to(device)
-    model.type(dtype)
-    model.load_state_dict(torch.load('model/model_weights_' + str(model_name) + '.pt'))
-    test_dataset = data.TestCombinedDataset(corr_path=corr_path, corr_sum_folder=corr_sum_folder, device=device,
-                                            dtype=dtype)
+    test_dataset = data.TestCombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+                                       corr_sum_folder='data/corr_sum_img/',
+                                       sum_folder='data/sum_img/',
+                                       transform=None, device=device, dtype=dtype)
+
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0)
     print('Test loader prepared.')
 
     model.eval()
-    model.MS.val = True
     model.MS.test = True
 
     with torch.no_grad():
@@ -713,10 +733,10 @@ def test(model_name, corr_path='data/test_corr/starmy/maxpool/transformed_4',
                 input_var.append(torch.autograd.Variable(input[j]))
 
             # compute output
-            output, _, __ = model(input, None, subsample_size=None)
+            output, _, __ = model(input, None)
 
             (bs, ch, w, h) = output.size()
-            predict = cl.label_embeddings(output.view(ch, -1).t(), th=th)
+            predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.8)
             predict = predict.reshape(bs, w, h)
             if c.test['show_img']:
                 for b in range(bs):
@@ -741,7 +761,7 @@ def test(model_name, corr_path='data/test_corr/starmy/maxpool/transformed_4',
     pass
 
 
-def val_score(model_name, background_pred, use_metric, iter=10, th=c.val['th_nn']):
+def val_score(model_name, use_metric, iter=10, th=c.val['th_nn']):
     """
     Method to quantify the overall performance of a model
     :param iter: the more iterations the more accurate

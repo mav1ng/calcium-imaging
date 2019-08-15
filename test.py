@@ -27,37 +27,38 @@ dtype = c.data['dtype']
 device = torch.device('cpu')
 img_size = c.training['img_size']
 
-train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
-                                             corr_sum_folder='data/corr_sum_img/',
-                                             sum_folder='data/sum_img/',
-                                             mask_folder='data/sum_masks/',
-                                             device=device, dtype=dtype)
 
-dim_of_corrs = [2, 3, 4, 5]
-nb_samples = 1000000
+# for margin in range(1, 10):
+#     print(margin / 10)
+#
+# train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+#                                              corr_sum_folder='data/corr_sum_img/',
+#                                              sum_folder='data/sum_img/',
+#                                              mask_folder='data/sum_masks/',
+#                                              device=device, dtype=dtype)
+#
+# dim_of_corrs = [2, 3, 4, 5]
+# nb_samples = 100
+#
+# transform_train = transforms.Compose([data.RandomCrop(img_size),
+#                                       data.RandomRot(dim_of_corrs),
+#                                       data.RandomFlip(True, dim_of_corrs, 0.5),
+#                                       data.RandomFlip(False, dim_of_corrs, 0.5)
+#                                       ])
+#
+# train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+#                                              corr_sum_folder='data/corr_sum_img/',
+#                                              sum_folder='data/sum_img/',
+#                                              mask_folder='data/sum_masks/',
+#                                              transform=transform_train, device=device, dtype=dtype)
+#
+# random_sampler = torch.utils.data.RandomSampler(train_dataset, replacement=True,
+#                                                         num_samples=(nb_samples * 1))
+#
+# train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1000, sampler=random_sampler,
+#                                                    num_workers=0)
 
-transform_train = transforms.Compose([data.RandomCrop(img_size),
-                                      data.RandomRot(dim_of_corrs),
-                                      data.RandomFlip(True, dim_of_corrs, 0.5),
-                                      data.RandomFlip(False, dim_of_corrs, 0.5)
-                                      ])
 
-train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
-                                             corr_sum_folder='data/corr_sum_img/',
-                                             sum_folder='data/sum_img/',
-                                             mask_folder='data/sum_masks/',
-                                             transform=transform_train, device=device, dtype=dtype)
-
-random_sampler = torch.utils.data.RandomSampler(train_dataset, replacement=True,
-                                                        num_samples=(nb_samples * 1))
-
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1000, sampler=random_sampler,
-                                                   num_workers=0)
-
-for i, input in enumerate(train_loader):
-    print(i)
-    if torch.sum(torch.isnan(input['image'])) != 0:
-        print(i, torch.sum(torch.isnan(input['image'])))
 
 # h.val_score('test', background_pred=True, th=0.8)
 

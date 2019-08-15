@@ -246,12 +246,13 @@ class MS(nn.Module):
             emb, lab, ind = he.emb_subsample(x.clone(), lab_in.clone(), include_background=True,
                                              backpred=None, prefer_cell=0.5,
                                              sub_size=val_sub_size)
+
             x = emb.view(self.bs, self.emb, -1)
             y = torch.zeros(self.emb, val_sub_size, device=d)
             wurzel = int(np.sqrt(val_sub_size))
             self.sw = wurzel
             self.sh = wurzel
-        elif subsample_size is not None:
+        elif subsample_size is not None and not self.test:
             """Training SUBSAMPLING"""
             emb, lab, ind = he.emb_subsample(x.clone(), lab_in.clone(), include_background=self.include_background,
                                              backpred=background_pred, prefer_cell=self.prefer_cell,
@@ -281,14 +282,14 @@ class MS(nn.Module):
                            torch.add(torch.mul(self.step_size, mm(kernel_mat, torch.inverse(diag_mat))),
                                      torch.mul(1. - self.step_size, torch.eye(self.sw * self.sh, device=d))))
 
-                if subsample_size is not None:
+                if subsample_size is not None and not self.test:
                     out = out.view(self.bs, self.emb, -1)
                     out[b, :, ind] = y
                     out = out.view(self.bs, self.emb, self.w, self.h)
                 else:
                     out[b, :, :, :] = y.view(self.emb, self.w, self.h)
             x = out.view(self.bs, self.emb, -1)
-            if subsample_size is not None:
+            if subsample_size is not None and not self.test:
                 x = out.view(self.bs, self.emb, -1)[:, :, ind]
 
             # print('self.training', self.training)
@@ -331,6 +332,9 @@ class MS(nn.Module):
 
                 with torch.no_grad():
                     ret_loss = ret_loss + loss.detach()
+
+            plt.imshow(out[0, 0].detach().cpu().numpy())
+            plt.show()
 
         return out, ret_loss
 

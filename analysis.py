@@ -168,6 +168,49 @@ def analyse_lr_nbep_bs(analysis_name):
     return ret, ana_param, optimized_parameters
 
 
+def analyse_ed_ma_sc(analysis_name):
+    ana_list = get_analysis(analysis_name)
+
+    ana_param = ana_list[0]
+
+    ret = np.zeros((6, ana_list.__len__()))
+
+    for i, ana in enumerate(ana_list):
+        ret[0, i] = float(ana.embedding_dim)
+        ret[1, i] = float(ana.margin)
+        ret[2, i] = float(ana.scaling)
+        ret[3, i] = float(ana.val_score)
+        ret[4, i] = float(ana.emb_score)
+        ret[5, i] = float(ana.cel_score)
+
+    optimized_parameters = ['Embedding Dimension', 'Margin', 'Scaling']
+
+    ret = np.where(ret == -1., np.nan, ret)
+
+    return ret, ana_param, optimized_parameters
+
+
+def analyse_ed_ma(analysis_name):
+    ana_list = get_analysis(analysis_name)
+
+    ana_param = ana_list[0]
+
+    ret = np.zeros((5, ana_list.__len__()))
+
+    for i, ana in enumerate(ana_list):
+        ret[0, i] = float(ana.embedding_dim)
+        ret[1, i] = float(ana.margin)
+        ret[2, i] = float(ana.val_score)
+        ret[3, i] = float(ana.emb_score)
+        ret[4, i] = float(ana.cel_score)
+
+    optimized_parameters = ['Embedding Dimension', 'Margin']
+
+    ret = np.where(ret == -1., np.nan, ret)
+
+    return ret, ana_param, optimized_parameters
+
+
 def normalize_score(input):
     """
     Method that normalizes the 1D input array
@@ -208,12 +251,68 @@ def plot_lr_nbep_bs(analysis_name):
     plt.ylim(0, 250)
     plt.show()
 
+    plt.scatter(x, c)
+    plt.show()
+    plt.scatter(y, c)
+    plt.xlim(0, 250)
+    plt.show()
+    plt.scatter(z, c)
+    plt.show()
+
+def plot_ed_ma_sc(analysis_name):
+    """
+    Method that visualizes the Perfomance of a model depending on Embdding Dim, Margin and Scaling
+    in a 4D graph by normalizing and weighting embedding and cel score perhaps not smart
+    :param analysis_name:
+    :return:
+    """
+    data, ana_param, _ = analyse_ed_ma_sc(analysis_name)
+
+    data[4] = normalize_score(data[4])
+    data[5] = normalize_score(data[5])
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x = data[0]
+    y = data[1]
+    z = data[2]
+    c = ((data[4] + data[5]) / 2)
+
+    img = ax.scatter(x, y, z, c=c, cmap=plt.cool())
+    fig.colorbar(img)
+    plt.show()
+
+
+def plot_ed_ma(analysis_name):
+    """
+    Method that visualizes the Perfomance of a model depending on Embedding Dim an Margin
+    in a 4D graph by normalizing and weighting embedding and cel score perhaps not smart
+    :param analysis_name:
+    :return:
+    """
+    data, ana_param, _ = analyse_ed_ma(analysis_name)
+
+    data[3] = normalize_score(data[3])
+    data[4] = normalize_score(data[4])
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x = data[0]
+    y = data[1]
+    z = ((data[3] + data[4]) / 2)
+
+    img = ax.scatter(x, y, z)
+    img.show()
+    plt.show()
+
 
 def find_optimal_params(data, score_ind):
     (i, j) = score_ind
     data[i] = normalize_score(data[i])
     data[j] = normalize_score(data[j])
-    ind = np.nanargmax((data[i] + data[j]) / 2)
+    ind = np.nanargmin((data[i] + data[j]) / 2)
 
     return ind
 
@@ -224,7 +323,7 @@ def print_results(data, ana_params, optimized_parameters, score_ind):
     print('The following Parameters were the default:')
     pprint(vars(ana_params))
 
-    print('\nThe following Combination of Paramters was the optimal one:')
+    print('\nThe following Combination of Parameters was the optimal one:')
 
     for i in range(data.shape[0] - 3):
         print(str(i) + ' Optimal ' + str(optimized_parameters[i]) + ' in Training: \t' + str(data[i, ind]))
@@ -237,3 +336,13 @@ def analysis(analysis, analysis_name):
         data, ana_param, optimized_parameters = analyse_lr_nbep_bs(analysis_name)
         plot_lr_nbep_bs(analysis_name)
         print_results(data, ana_param, optimized_parameters, (4, 5))
+    elif str(analysis) == 'ed_ma_sc':
+        data, ana_param, optimized_parameters = analyse_ed_ma_sc(analysis_name)
+        plot_ed_ma_sc(analysis_name)
+        print_results(data, ana_param, optimized_parameters, (4, 5))
+    elif str(analysis) == 'ed_ma':
+        data, ana_param, optimized_parameters = analyse_ed_ma(analysis_name)
+        plot_ed_ma(analysis_name)
+        print_results(data, ana_param, optimized_parameters, (3, 4))
+    else:
+        print('Analysis Name is not known!')

@@ -49,18 +49,19 @@ from torchsummary import summary
 # set.main()
 
 # h.val_score(model_name='abram_opt_2', use_metric=True, iter=100, th=0.8)
-# h.test(model_name='abram_opt')
+# h.test(model_name='abram_opt_2')
 
 # ana.analysis(analysis='lr_ep_bs', analysis_name='azrael2_')
 # ana.analysis(analysis='ed_ma_sc', analysis_name='adam2_')
 # ana.analysis(analysis='ed_ma', analysis_name='ezekiel2_')
+# ana.analysis(analysis='ss', analysis_name='azrael3_')
 
-# ana.score('abram_')
-# ana.score('adam2_')
+# ana.score('abram_t_')
+# ana.score('adam3')
 #
-# ana.score('azrael2_')
-# ana.score('eve2_')
-# ana.score('ezekiel2_')
+# ana.score('azrael3_')
+# ana.score('eve3_')
+# ana.score('ezekiel3_')
 
 
 # """ABRAM OPT ROUND 1"""

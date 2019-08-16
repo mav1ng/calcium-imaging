@@ -48,17 +48,19 @@ from torchsummary import summary
 #               background_pred=True, embedding_loss=False)
 # set.main()
 
-h.val_score(model_name='abram_opt_2', use_metric=True, iter=10, th=0.8)
+# h.val_score(model_name='abram_opt_2', use_metric=True, iter=100, th=0.8)
 # h.test(model_name='abram_opt')
 
-# ana.analysis(analysis='lr_ep_bs', analysis_name='eve_1.')
+# ana.analysis(analysis='lr_ep_bs', analysis_name='azrael2_')
+# ana.analysis(analysis='ed_ma_sc', analysis_name='adam2_')
+# ana.analysis(analysis='ed_ma', analysis_name='ezekiel2_')
 
 # ana.score('abram_')
-# ana.score('adam_')
+# ana.score('adam2_')
 #
-# ana.score('azrael_')
-# ana.score('eve_')
-# ana.score('ezekiel_')
+# ana.score('azrael2_')
+# ana.score('eve2_')
+# ana.score('ezekiel2_')
 
 
 # """ABRAM OPT ROUND 1"""
@@ -136,6 +138,26 @@ h.val_score(model_name='abram_opt_2', use_metric=True, iter=10, th=0.8)
 #                       nb_iterations=0, embedding_loss=True)
 #         set.main()
 
+
+# """AZRAEL OPT ROUND 3.0"""
+# """Taking Parameters from Optimisation Round 1"""
+# nb_epochs = 250
+# lr = 0.001
+# bs = 3
+# emb_dim = 64
+# margin = 0.5
+# for t in (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32):
+#     subsample_size = t ** 2
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin:', margin, 'Learning Rate: ', lr,
+#           'Batch Size: ', bs)
+#     set = h.Setup(model_name='azrael3_' + str(subsample_size),
+#                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, nb_epochs=nb_epochs,
+#                   save_config=True, learning_rate=lr,
+#                   batch_size=bs, include_background=True,
+#                   background_pred=False,
+#                   nb_iterations=0, embedding_loss=True)
+#     set.main()
+
 # """EZEKIEL OPT ROUND 1"""
 # for i in range(1, 101):
 #     cur_nb_epochs = np.random.randint(10, 251)
@@ -175,6 +197,26 @@ h.val_score(model_name='abram_opt_2', use_metric=True, iter=10, th=0.8)
 #                       background_pred=False,
 #                       nb_iterations=0, embedding_loss=True)
 #         set.main()
+
+
+# """EZEKIEL OPT ROUND 3.0"""
+# """Taking Parameters from Optimisation Round 1"""
+# nb_epochs = 250
+# lr = 0.001
+# bs = 3
+# emb_dim = 64
+# margin = 0.5
+# for t in (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32):
+#     subsample_size = t ** 2
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin:', margin, 'Learning Rate: ', lr,
+#           'Batch Size: ', bs)
+#     set = h.Setup(model_name='ezekiel3_' + str(subsample_size),
+#                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, nb_epochs=nb_epochs,
+#                   save_config=True, learning_rate=lr,
+#                   batch_size=bs, include_background=False,
+#                   background_pred=False,
+#                   nb_iterations=0, embedding_loss=True)
+#     set.main()
 
 
 # """EVE OPT ROUND 1"""
@@ -218,6 +260,25 @@ h.val_score(model_name='abram_opt_2', use_metric=True, iter=10, th=0.8)
 #                   nb_iterations=0, embedding_loss=True)
 #     set.main()
 
+# """EVE OPT ROUND 3"""
+# nb_epochs = 250
+# lr = 0.00045
+# bs = 4
+# emb_dim = 64
+# margin = 0.6
+# scaling = 25
+# for t in (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32):
+#     subsample_size = t ** 2
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(model_name='eve3_' + str(subsample_size),
+#                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#                   nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=True,
+#                   background_pred=True,
+#                   nb_iterations=0, embedding_loss=True)
+#     set.main()
+
 # """ADAM OPT ROUND 1"""
 # for i in range(1, 101):
 #     cur_nb_epochs = np.random.randint(10, 251)
@@ -255,6 +316,25 @@ h.val_score(model_name='abram_opt_2', use_metric=True, iter=10, th=0.8)
 #           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
 #     set = h.Setup(model_name='adam2_' + str(cur_emb_dim) + '_' + str(cur_margin) + '_' + str(cur_scaling),
 #                   embedding_dim=cur_emb_dim, margin=cur_margin, scaling=cur_scaling,
+#                   nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#                   background_pred=True,
+#                   nb_iterations=0, embedding_loss=True)
+#     set.main()
+
+# """ADAM OPT ROUND 3"""
+# nb_epochs = 250
+# lr = 0.001
+# bs = 10
+# emb_dim = 64
+# margin = 0.6
+# scaling = 25
+# for t in (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32):
+#     subsample_size = t ** 2
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(model_name='adam3_' + str(subsample_size),
+#                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
 #                   nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
 #                   background_pred=True,
 #                   nb_iterations=0, embedding_loss=True)

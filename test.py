@@ -27,6 +27,8 @@ dtype = c.data['dtype']
 device = torch.device('cpu')
 img_size = c.training['img_size']
 
+for t in range(2, 34, 2):
+    print(t)
 
 # for margin in range(1, 10):
 #     print(margin / 10)

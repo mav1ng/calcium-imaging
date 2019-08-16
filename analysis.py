@@ -124,8 +124,7 @@ def val_score_analysis(analysis_list):
     ret = {}
     for ana in analysis_list:
         print('Evaluating ' + str(ana.model_name))
-        (val, emb, cel) = h.val_score(model_name=str(ana.model_name), iter=10, th=0.8,
-                                    background_pred=ana.background_pred, use_metric=False)
+        (val, emb, cel) = h.val_score(model_name=str(ana.model_name), iter=10, th=0.8, use_metric=False)
         ret[str(ana.model_name)] = (val, emb, cel)
     return ret
 
@@ -259,6 +258,7 @@ def plot_lr_nbep_bs(analysis_name):
     plt.scatter(z, c)
     plt.show()
 
+
 def plot_ed_ma_sc(analysis_name):
     """
     Method that visualizes the Perfomance of a model depending on Embdding Dim, Margin and Scaling
@@ -283,6 +283,12 @@ def plot_ed_ma_sc(analysis_name):
     fig.colorbar(img)
     plt.show()
 
+    plt.scatter(x, c)
+    plt.show()
+    plt.scatter(y, c)
+    plt.show()
+    plt.scatter(z, c)
+    plt.show()
 
 def plot_ed_ma(analysis_name):
     """
@@ -304,7 +310,11 @@ def plot_ed_ma(analysis_name):
     z = ((data[3] + data[4]) / 2)
 
     img = ax.scatter(x, y, z)
-    img.show()
+    plt.show()
+
+    plt.scatter(x, z)
+    plt.show()
+    plt.scatter(y, z)
     plt.show()
 
 

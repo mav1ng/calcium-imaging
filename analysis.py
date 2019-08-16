@@ -230,6 +230,26 @@ def analyse_ss(analysis_name):
     return ret, ana_param, optimized_parameters
 
 
+def analyse_lr(analysis_name):
+    ana_list = get_analysis(analysis_name)
+
+    ana_param = ana_list[0]
+
+    ret = np.zeros((4, ana_list.__len__()))
+
+    for i, ana in enumerate(ana_list):
+        ret[0, i] = float(ana.learning_rate)
+        ret[1, i] = float(ana.val_score)
+        ret[2, i] = float(ana.emb_score)
+        ret[3, i] = float(ana.cel_score)
+
+    optimized_parameters = ['Learning Rate']
+
+    ret = np.where(ret == -1., np.nan, ret)
+
+    return ret, ana_param, optimized_parameters
+
+
 def normalize_score(input):
     """
     Method that normalizes the 1D input array
@@ -361,6 +381,28 @@ def plot_ss(analysis_name):
     plt.show()
 
 
+def plot_lr(analysis_name):
+    """
+    Method that visualizes the Perfomance of a model depending on Learning Rate
+    in a 4D graph by normalizing and weighting embedding and cel score perhaps not smart
+    :param analysis_name:
+    :return:
+    """
+    data, ana_param, _ = analyse_ed_ma(analysis_name)
+
+    data[2] = normalize_score(data[2])
+    data[3] = normalize_score(data[3])
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x = data[0]
+    z = ((data[2] + data[3]) / 2)
+
+    img = ax.scatter(x, z)
+    plt.show()
+
+
 def find_optimal_params(data, score_ind):
     (i, j) = score_ind
     data[i] = normalize_score(data[i])
@@ -400,6 +442,10 @@ def analysis(analysis, analysis_name):
     elif str(analysis) == 'ss':
         data, ana_param, optimized_parameters = analyse_ss(analysis_name)
         plot_ss(analysis_name)
+        print_results(data, ana_param, optimized_parameters, (2, 3))
+    elif str(analysis) == 'lr':
+        data, ana_param, optimized_parameters = analyse_lr(analysis_name)
+        plot_lr(analysis_name)
         print_results(data, ana_param, optimized_parameters, (2, 3))
     else:
         print('Analysis Name is not known!')

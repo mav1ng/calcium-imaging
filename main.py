@@ -340,3 +340,16 @@ from torchsummary import summary
 #                   background_pred=True,
 #                   nb_iterations=0, embedding_loss=True)
 #     set.main()
+
+
+# """ABEL OPT ROUND 1"""
+# for i in range(1, 101):
+#     cur_nb_epochs = np.random.randint(10, 251)
+#     cur_lr = np.random.randint(1, 10001) / 100000.
+#     cur_bs = int(np.ceil(i / 10))
+#     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
+#     set = h.Setup(model_name='abel_' + str(cur_lr) + '_' + str(cur_nb_epochs) + '_' + str(cur_bs),
+#                   nb_epochs=cur_nb_epochs, save_config=True, learning_rate=cur_lr, batch_size=cur_bs, include_background=True,
+#                   background_pred=True,
+#                   nb_iterations=3, kernel_bandwidth=None, step_size=1., embedding_loss=True)
+#     set.main()

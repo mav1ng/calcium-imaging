@@ -48,13 +48,38 @@ from torchsummary import summary
 #               background_pred=True, embedding_loss=False)
 # set.main()
 
+# set = h.Setup(model_name='azrael_opt', nb_epochs=250, learning_rate=0.001, batch_size=3, embedding_dim=64, margin=0.5,
+#               subsample_size=196,
+#               save_config=True,
+#               include_background=True, background_pred=False,
+#               nb_iterations=0, embedding_loss=True)
+# set.main()
+#
+# set = h.Setup(model_name='ezekiel_opt', nb_epochs=250, learning_rate=0.001, batch_size=3, embedding_dim=64, margin=0.5,
+#               save_config=True, subsample_size=196,
+#               include_background=False, background_pred=False,
+#               nb_iterations=0, embedding_loss=True)
+# set.main()
+#
+# set = h.Setup(model_name='eve_opt', nb_epochs=250, learning_rate=0.00045, batch_size=4, embedding_dim=64, margin=0.6,
+#               save_config=True, scaling=25, subsample_size=1024,
+#               background_pred=True, include_background=True,
+#               nb_iterations=0, embedding_loss=True)
+# set.main()
+#
+# set = h.Setup(model_name='adam_opt', nb_epochs=250, learning_rate=0.00045, batch_size=4, embedding_dim=64, margin=0.6,
+#               save_config=True, scaling=25, subsample_size=784,
+#               background_pred=True, include_background=False,
+#               nb_iterations=0, embedding_loss=True)
+# set.main()
+
 # h.val_score(model_name='abram_opt_2', use_metric=True, iter=100, th=0.8)
 # h.test(model_name='abram_opt_2')
 
 # ana.analysis(analysis='lr_ep_bs', analysis_name='azrael2_')
 # ana.analysis(analysis='ed_ma_sc', analysis_name='adam2_')
 # ana.analysis(analysis='ed_ma', analysis_name='ezekiel2_')
-# ana.analysis(analysis='ss', analysis_name='azrael3_')
+# ana.analysis(analysis='ss', analysis_name='adam3')
 
 # ana.score('abram_t_')
 # ana.score('adam3')
@@ -151,7 +176,7 @@ from torchsummary import summary
 #     subsample_size = t ** 2
 #     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin:', margin, 'Learning Rate: ', lr,
 #           'Batch Size: ', bs)
-#     set = h.Setup(model_name='azrael3_' + str(subsample_size),
+#     set = h.Setup(model_name='azrael3.1_' + str(subsample_size),
 #                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, nb_epochs=nb_epochs,
 #                   save_config=True, learning_rate=lr,
 #                   batch_size=bs, include_background=True,
@@ -211,7 +236,7 @@ from torchsummary import summary
 #     subsample_size = t ** 2
 #     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin:', margin, 'Learning Rate: ', lr,
 #           'Batch Size: ', bs)
-#     set = h.Setup(model_name='ezekiel3_' + str(subsample_size),
+#     set = h.Setup(model_name='ezekiel3.1_' + str(subsample_size),
 #                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, nb_epochs=nb_epochs,
 #                   save_config=True, learning_rate=lr,
 #                   batch_size=bs, include_background=False,
@@ -273,7 +298,7 @@ from torchsummary import summary
 #     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
 #           'Number epochs: ',
 #           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
-#     set = h.Setup(model_name='eve3_' + str(subsample_size),
+#     set = h.Setup(model_name='eve3.1_' + str(subsample_size),
 #                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
 #                   nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=True,
 #                   background_pred=True,
@@ -334,7 +359,7 @@ from torchsummary import summary
 #     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
 #           'Number epochs: ',
 #           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
-#     set = h.Setup(model_name='adam3_' + str(subsample_size),
+#     set = h.Setup(model_name='adam3.3_' + str(subsample_size),
 #                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
 #                   nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
 #                   background_pred=True,

@@ -366,7 +366,7 @@ def plot_ss(analysis_name):
     :param analysis_name:
     :return:
     """
-    data, ana_param, _ = analyse_ed_ma(analysis_name)
+    data, ana_param, _ = analyse_ss(analysis_name)
 
     data[2] = normalize_score(data[2])
     data[3] = normalize_score(data[3])

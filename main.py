@@ -39,6 +39,9 @@ import neurofinder as nf
 
 from torchsummary import summary
 
+# h.val_score(model_name='abram_opt_2', use_metric=True, iter=100, th=0.8)
+# h.test(model_name='adam_opt')
+
 
 # set = h.Setup(model_name='abram_opt_2', nb_epochs=250, learning_rate=0.0005, batch_size=4, save_config=True,
 #               background_pred=True, embedding_loss=False)
@@ -76,7 +79,7 @@ from torchsummary import summary
 # h.val_score(model_name='abram_opt_2', use_metric=True, iter=100, th=0.8)
 # h.test(model_name='abram_opt_2')
 
-# ana.analysis(analysis='lr_ep_bs', analysis_name='azrael2_')
+# ana.analysis(analysis='lr_ep_bs', analysis_name='abram_t_')
 # ana.analysis(analysis='ed_ma_sc', analysis_name='adam2_')
 # ana.analysis(analysis='ed_ma', analysis_name='ezekiel2_')
 # ana.analysis(analysis='ss', analysis_name='adam3')
@@ -87,6 +90,9 @@ from torchsummary import summary
 # ana.score('azrael3_')
 # ana.score('eve3_')
 # ana.score('ezekiel3_')
+
+ana.score_metric('adam')
+
 
 
 # """ABRAM OPT ROUND 1"""

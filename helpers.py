@@ -253,6 +253,7 @@ class Setup:
                 total_EMB_loss += val_loss
 
                 if use_metric:
+
                     # predict = cl.label_emb_sl(output.view(ch, -1).t(), th=.5)
                     predict = cl.label_embeddings(output.view(ch, -1).t(), th=self.th_nn)
                     predict = predict.reshape(bs, w, h)
@@ -739,11 +740,15 @@ def test(model_name):
             for j in range(len(input)):
                 input_var.append(torch.autograd.Variable(input[j]))
 
+
             # compute output
-            output, _, __ = model(input, None)
+            if model.use_background_pred:
+                output, _, __ = model(input, None)
+            else:
+                output, _ = model(input, None)
 
             (bs, ch, w, h) = output.size()
-            predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.8)
+            predict = cl.label_embeddings(output.view(ch, -1).t(), th=.8)
             predict = predict.reshape(bs, w, h)
             if c.test['show_img']:
                 for b in range(bs):

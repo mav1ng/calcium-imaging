@@ -129,14 +129,38 @@ def val_score_analysis(analysis_list):
     return ret
 
 
+def val_score_metric_analysis(analysis_list):
+    ret = {}
+    for ana in analysis_list:
+        print('Evaluating ' + str(ana.model_name))
+        (val, emb, cel) = h.val_score(model_name=str(ana.model_name), iter=1, th=0.8, use_metric=True)
+        ret[str(ana.model_name)] = (val, emb, cel)
+    return ret
+
+
 def score(analysis_name):
     ana_list = get_analysis(analysis_name)
     score_list = val_score_analysis(ana_list)
 
     for ana in ana_list:
-        ana.val_score = score_list[ana.model_name][0]
+        # ana.val_score = score_list[ana.model_name][0]
         ana.emb_score = score_list[ana.model_name][1]
         ana.cel_score = score_list[ana.model_name][2]
+        data.save_config_score(ana.model_name, ana.val_score, ana.emb_score, ana.cel_score, ana.input_channels,
+                               ana.embedding_dim, ana.background_pred, ana.mean_shift_on, ana.nb_iterations,
+                               ana.kernel_bandwidth, ana.step_size, ana.embedding_loss, ana.margin,
+                               ana.include_background, ana.scaling, ana.subsample_size, ana.learning_rate,
+                               ana.nb_epochs, ana.batch_size, ana.pre_train, ana.pre_train_name)
+    pass
+
+
+def score_metric(analysis_name):
+    ana_list = get_analysis(analysis_name)
+    score_list = val_score_metric_analysis(ana_list)
+
+    for ana in ana_list:
+        print(ana.model_name)
+        ana.val_score = score_list[ana.model_name][0]
         data.save_config_score(ana.model_name, ana.val_score, ana.emb_score, ana.cel_score, ana.input_channels,
                                ana.embedding_dim, ana.background_pred, ana.mean_shift_on, ana.nb_iterations,
                                ana.kernel_bandwidth, ana.step_size, ana.embedding_loss, ana.margin,

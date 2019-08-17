@@ -289,7 +289,7 @@ def normalize_score(input):
     return ret
 
 
-def plot_lr_nbep_bs(analysis_name):
+def plot_lr_nbep_bs(analysis_name, use_metric):
     """
     Method that visualizes the Perfomance of a model depending on Learning Rate, Number of Epochs and Batch size
     in a 4D graph by normalizing and weighting embedding and cel score perhaps not smart
@@ -307,7 +307,11 @@ def plot_lr_nbep_bs(analysis_name):
     x = data[0]
     y = data[1]
     z = data[2]
-    c = ((data[4] + data[5]) / 2)
+
+    if use_metric:
+        c = data[3]
+    else:
+        c = ((data[4] + data[5]) / 2)
 
     img = ax.scatter(x, y, z, c=c, cmap=plt.cool())
     fig.colorbar(img)
@@ -323,7 +327,7 @@ def plot_lr_nbep_bs(analysis_name):
     plt.show()
 
 
-def plot_ed_ma_sc(analysis_name):
+def plot_ed_ma_sc(analysis_name, use_metric):
     """
     Method that visualizes the Perfomance of a model depending on Embdding Dim, Margin and Scaling
     in a 4D graph by normalizing and weighting embedding and cel score perhaps not smart
@@ -341,7 +345,11 @@ def plot_ed_ma_sc(analysis_name):
     x = data[0]
     y = data[1]
     z = data[2]
-    c = ((data[4] + data[5]) / 2)
+
+    if use_metric:
+        c = data[3]
+    else:
+        c = ((data[4] + data[5]) / 2)
 
     img = ax.scatter(x, y, z, c=c, cmap=plt.cool())
     fig.colorbar(img)
@@ -355,7 +363,7 @@ def plot_ed_ma_sc(analysis_name):
     plt.show()
 
 
-def plot_ed_ma(analysis_name):
+def plot_ed_ma(analysis_name, use_metric):
     """
     Method that visualizes the Perfomance of a model depending on Embedding Dim an Margin
     in a 4D graph by normalizing and weighting embedding and cel score perhaps not smart
@@ -372,7 +380,11 @@ def plot_ed_ma(analysis_name):
 
     x = data[0]
     y = data[1]
-    z = ((data[3] + data[4]) / 2)
+
+    if use_metric:
+        z = data[2]
+    else:
+        z = ((data[3] + data[4]) / 2)
 
     img = ax.scatter(x, y, z)
     plt.show()
@@ -383,7 +395,7 @@ def plot_ed_ma(analysis_name):
     plt.show()
 
 
-def plot_ss(analysis_name):
+def plot_ss(analysis_name, use_metric):
     """
     Method that visualizes the Perfomance of a model depending on Subsample Size
     in a 4D graph by normalizing and weighting embedding and cel score perhaps not smart
@@ -399,13 +411,17 @@ def plot_ss(analysis_name):
     ax = fig.add_subplot(111, projection='3d')
 
     x = data[0]
-    z = ((data[2] + data[3]) / 2)
+
+    if use_metric:
+        z = data[1]
+    else:
+        z = ((data[2] + data[3]) / 2)
 
     img = ax.scatter(x, z)
     plt.show()
 
 
-def plot_lr(analysis_name):
+def plot_lr(analysis_name, use_metric):
     """
     Method that visualizes the Perfomance of a model depending on Learning Rate
     in a 4D graph by normalizing and weighting embedding and cel score perhaps not smart
@@ -421,23 +437,31 @@ def plot_lr(analysis_name):
     ax = fig.add_subplot(111, projection='3d')
 
     x = data[0]
-    z = ((data[2] + data[3]) / 2)
+
+    if use_metric:
+        z = data[1]
+    else:
+        z = ((data[2] + data[3]) / 2)
 
     img = ax.scatter(x, z)
     plt.show()
 
 
-def find_optimal_params(data, score_ind):
+def find_optimal_params(data, score_ind, use_metric):
     (i, j) = score_ind
-    data[i] = normalize_score(data[i])
-    data[j] = normalize_score(data[j])
-    ind = np.nanargmin((data[i] + data[j]) / 2)
+
+    if use_metric:
+        ind = np.nanargmax((data[i - 1]))
+    else:
+        data[i] = normalize_score(data[i])
+        data[j] = normalize_score(data[j])
+        ind = np.nanargmin((data[i] + data[j]) / 2)
 
     return ind
 
 
-def print_results(data, ana_params, optimized_parameters, score_ind):
-    ind = find_optimal_params(data, score_ind)
+def print_results(data, ana_params, optimized_parameters, score_ind, use_metric):
+    ind = find_optimal_params(data, score_ind, use_metric)
 
     print('The following Parameters were the default:')
     pprint(vars(ana_params))
@@ -450,26 +474,26 @@ def print_results(data, ana_params, optimized_parameters, score_ind):
     pass
 
 
-def analysis(analysis, analysis_name):
+def analysis(analysis, analysis_name, use_metric):
     if str(analysis) == 'lr_ep_bs':
         data, ana_param, optimized_parameters = analyse_lr_nbep_bs(analysis_name)
-        plot_lr_nbep_bs(analysis_name)
-        print_results(data, ana_param, optimized_parameters, (4, 5))
+        plot_lr_nbep_bs(analysis_name, use_metric)
+        print_results(data, ana_param, optimized_parameters, (4, 5), use_metric)
     elif str(analysis) == 'ed_ma_sc':
         data, ana_param, optimized_parameters = analyse_ed_ma_sc(analysis_name)
-        plot_ed_ma_sc(analysis_name)
-        print_results(data, ana_param, optimized_parameters, (4, 5))
+        plot_ed_ma_sc(analysis_name, use_metric)
+        print_results(data, ana_param, optimized_parameters, (4, 5), use_metric)
     elif str(analysis) == 'ed_ma':
         data, ana_param, optimized_parameters = analyse_ed_ma(analysis_name)
-        plot_ed_ma(analysis_name)
-        print_results(data, ana_param, optimized_parameters, (3, 4))
+        plot_ed_ma(analysis_name, use_metric)
+        print_results(data, ana_param, optimized_parameters, (3, 4), use_metric)
     elif str(analysis) == 'ss':
         data, ana_param, optimized_parameters = analyse_ss(analysis_name)
-        plot_ss(analysis_name)
-        print_results(data, ana_param, optimized_parameters, (2, 3))
+        plot_ss(analysis_name, use_metric)
+        print_results(data, ana_param, optimized_parameters, (2, 3), use_metric)
     elif str(analysis) == 'lr':
         data, ana_param, optimized_parameters = analyse_lr(analysis_name)
-        plot_lr(analysis_name)
-        print_results(data, ana_param, optimized_parameters, (2, 3))
+        plot_lr(analysis_name, use_metric)
+        print_results(data, ana_param, optimized_parameters, (2, 3), use_metric)
     else:
         print('Analysis Name is not known!')

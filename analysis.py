@@ -124,7 +124,7 @@ def val_score_analysis(analysis_list, include_metric):
     ret = {}
     for ana in analysis_list:
         print('Evaluating ' + str(ana.model_name))
-        (val, emb, cel) = h.val_score(model_name=str(ana.model_name), iter=10, th=0.8, use_metric=include_metric)
+        (val, emb, cel) = h.val_score(model_name=str(ana.model_name), iter=1, th=0.8, use_metric=include_metric)
         ret[str(ana.model_name)] = (val, emb, cel)
     return ret
 

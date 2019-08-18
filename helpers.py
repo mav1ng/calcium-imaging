@@ -252,9 +252,9 @@ class Setup:
                 total_CEL_loss += cel_loss
                 total_EMB_loss += val_loss
 
-                if use_metric:
-
+                if use_metric and torch.sum(torch.isnan(output)).item() == 0:
                     # predict = cl.label_emb_sl(output.view(ch, -1).t(), th=.5)
+
                     predict = cl.label_embeddings(output.view(ch, -1).t(), th=self.th_nn)
                     predict = predict.reshape(bs, w, h)
 

@@ -79,7 +79,7 @@ from torchsummary import summary
 # h.val_score(model_name='abram_opt_2', use_metric=True, iter=100, th=0.8)
 # h.test(model_name='abram_opt_2')
 
-# ana.analysis(analysis='lr_ep_bs', analysis_name='abram_t_')
+ana.analysis(analysis='lr_ep_bs', analysis_name='azrael_')
 # ana.analysis(analysis='ed_ma_sc', analysis_name='adam2_')
 # ana.analysis(analysis='ed_ma', analysis_name='ezekiel2_')
 # ana.analysis(analysis='ss', analysis_name='adam3')
@@ -91,7 +91,7 @@ from torchsummary import summary
 # ana.score('eve3_')
 # ana.score('ezekiel3_')
 
-ana.score_metric('adam')
+# ana.score_metric('eve')
 
 
 

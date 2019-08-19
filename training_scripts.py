@@ -138,6 +138,26 @@
 #     set.main()
 # ana.score('m_azrael3_', include_metric=True)
 
+# """Metric AZRAEL OPT ROUND 4.0"""
+# bs = 1
+# nb_epochs = 103
+# emb_dim = 32
+# margin = 0.9
+# subsample_size = 36
+# for lr in (0.00001, 0.000025, 0.00005, 0.000075, 0.0001, 0.00025, 0.0005, 0.00075, 0.001, 0.0025, 0.005, 0.0075, 0.01, 0.025, 0.05,
+# 0.075, 0.1):
+#     cur_lr = lr
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin:', margin, 'Learning Rate: ', cur_lr,
+#           'Batch Size: ', bs)
+#     set = h.Setup(model_name='m_azrael4_' + str(cur_lr),
+#                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, nb_epochs=nb_epochs,
+#                   save_config=True, learning_rate=cur_lr,
+#                   batch_size=bs, include_background=True,
+#                   background_pred=False,
+#                   nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('m_azrael4_', include_metric=True)
+
 
 # """EZEKIEL OPT ROUND 1"""
 # for i in range(1, 101):
@@ -235,6 +255,26 @@
 #     set.main()
 # ana.score('m_ezekiel3_', include_metric=True)
 
+# """Metric EZEKIEL OPT ROUND 4.0"""
+# bs = 1
+# nb_epochs = 180
+# emb_dim = 64
+# margin = 0.1
+# subsample_size = 100
+# for lr in (0.00001, 0.000025, 0.00005, 0.000075, 0.0001, 0.00025, 0.0005, 0.00075, 0.001, 0.0025, 0.005, 0.0075, 0.01, 0.025, 0.05,
+# 0.075, 0.1):
+#     cur_lr = lr
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin:', margin, 'Learning Rate: ', cur_lr,
+#           'Batch Size: ', bs)
+#     set = h.Setup(model_name='m_ezekiel4_' + str(cur_lr),
+#                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, nb_epochs=nb_epochs,
+#                   save_config=True, learning_rate=cur_lr,
+#                   batch_size=bs, include_background=False,
+#                   background_pred=False,
+#                   nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('m_ezekiel4_', include_metric=True)
+
 
 # """EVE OPT ROUND 1"""
 # for i in range(1, 101):
@@ -313,6 +353,26 @@
 #                   nb_iterations=0, embedding_loss=True)
 #     set.main()
 # ana.score('m_eve2_', include_metric=True)
+
+# """METRIC EVE OPT ROUND 3"""
+# nb_epochs = 27
+# lr = 0.047
+# bs = 1
+# emb_dim = 63
+# margin = 0.3
+# scaling = 800
+# for t in (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32):
+#     subsample_size = t ** 2
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(model_name='m_eve3_' + str(subsample_size),
+#                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#                   nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=True,
+#                   background_pred=True,
+#                   nb_iterations=0, embedding_loss=True)
+#     set.main()
+# # ana.score('m_eve3_', include_metric=True)
 
 
 # """ADAM OPT ROUND 1"""
@@ -394,14 +454,52 @@
 #     set.main()
 # ana.score('m_adam2_', include_metric=True)
 
-# """ABEL OPT ROUND 1"""
+# """METRIC ADAM OPT ROUND 3"""
+# nb_epochs = 42
+# lr = 0.1
+# bs = 1
+# emb_dim = 48
+# margin = 0.9
+# scaling = 415.7
+# # (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32)
+# for t in (18, 20, 22, 24, 26, 28, 30, 32):
+#     subsample_size = t ** 2
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(model_name='m_adam3_' + str(subsample_size),
+#                   subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#                   nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=True,
+#                   background_pred=True,
+#                   nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('m_adam3_', include_metric=True)
+
+
+# """METRIC CAIN OPT ROUND 1"""
 # for i in range(1, 101):
 #     cur_nb_epochs = np.random.randint(10, 251)
 #     cur_lr = np.random.randint(1, 10001) / 100000.
 #     cur_bs = int(np.ceil(i / 10))
 #     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
-#     set = h.Setup(model_name='abel_' + str(cur_lr) + '_' + str(cur_nb_epochs) + '_' + str(cur_bs),
-#                   nb_epochs=cur_nb_epochs, save_config=True, learning_rate=cur_lr, batch_size=cur_bs, include_background=True,
-#                   background_pred=True,
+#     set = h.Setup(model_name='m_cain_' + str(cur_lr) + '_' + str(cur_nb_epochs) + '_' + str(cur_bs), embedding_dim=32,
+#                   nb_epochs=cur_nb_epochs, save_config=True, learning_rate=cur_lr, batch_size=cur_bs,
+#                   include_background=True,
+#                   background_pred=False, margin=0.5,
 #                   nb_iterations=3, kernel_bandwidth=None, step_size=1., embedding_loss=True)
 #     set.main()
+# ana.score('m_cain_', include_metric=True)
+
+# """METRIC ABEL OPT ROUND 1"""
+# for i in range(1, 101):
+#     cur_nb_epochs = np.random.randint(10, 251)
+#     cur_lr = np.random.randint(1, 10001) / 100000.
+#     cur_bs = int(np.ceil(i / 10))
+#     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
+#     set = h.Setup(model_name='m_abel_' + str(cur_lr) + '_' + str(cur_nb_epochs) + '_' + str(cur_bs), embedding_dim=32,
+#                   nb_epochs=cur_nb_epochs, save_config=True, learning_rate=cur_lr, batch_size=cur_bs,
+#                   include_background=True,
+#                   background_pred=True, scaling=25, margin=0.5,
+#                   nb_iterations=3, kernel_bandwidth=None, step_size=1., embedding_loss=True)
+#     set.main()
+# ana.score('m_abel_', include_metric=True)

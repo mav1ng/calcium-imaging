@@ -428,7 +428,7 @@ def plot_lr(analysis_name, use_metric):
     :param analysis_name:
     :return:
     """
-    data, ana_param, _ = analyse_ed_ma(analysis_name)
+    data, ana_param, _ = analyse_lr(analysis_name)
 
     data[2] = normalize_score(data[2])
     data[3] = normalize_score(data[3])

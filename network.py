@@ -238,6 +238,7 @@ class MS(nn.Module):
 
         x = x_in.view(self.bs, self.emb, self.w, self.h)
         out = torch.zeros(self.bs, self.emb, self.w, self.h, device=d)
+        out = x_in.view(self.bs, self.emb, self.w, self.h)
         y = torch.zeros(self.emb, self.w * self.h, device=d)
 
         if self.val and not self.test:
@@ -265,7 +266,7 @@ class MS(nn.Module):
 
         ret_loss = 0.
 
-        if not self.use_in_val and (not self.training or self.val):
+        if (not self.use_in_val) and (not self.training or self.val):
             self.iter = 0
         elif self.iter == 0:
             self.iter = self.nb_iterations
@@ -288,6 +289,7 @@ class MS(nn.Module):
                     out = out.view(self.bs, self.emb, self.w, self.h)
                 else:
                     out[b, :, :, :] = y.view(self.emb, self.w, self.h)
+
             x = out.view(self.bs, self.emb, -1)
             if subsample_size is not None and not self.test:
                 x = out.view(self.bs, self.emb, -1)[:, :, ind]
@@ -332,6 +334,8 @@ class MS(nn.Module):
 
                 with torch.no_grad():
                     ret_loss = ret_loss + loss.detach()
+
+        out = x_in
 
         return out, ret_loss
 

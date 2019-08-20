@@ -234,6 +234,12 @@ class Setup:
 
                 # compute output
                 if self.background_pred:
+
+                    # plt.imshow(input[0, 0].detach().cpu().numpy())
+                    # plt.show()
+                    # plt.imshow(label[0].detach().cpu().numpy())
+                    # plt.show()
+
                     output, val_loss, y = model(input, label)
 
                     '''LOSS CALCULATION'''
@@ -248,6 +254,10 @@ class Setup:
                     output, val_loss = model(input, label)
 
                 (bs, ch, w, h) = output.size()
+
+                # for i in range(ch):
+                #     plt.imshow(output[0, i].detach().cpu().numpy())
+                #     plt.show()
 
                 total_CEL_loss += cel_loss
                 total_EMB_loss += val_loss
@@ -748,7 +758,12 @@ def test(model_name):
                 output, _ = model(input, None)
 
             (bs, ch, w, h) = output.size()
-            predict = cl.label_embeddings(output.view(ch, -1).t(), th=.8)
+
+            # for i in range(ch):
+            #     plt.imshow(output[0, i].detach().cpu().numpy())
+            #     plt.show()
+
+            predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.8)
             predict = predict.reshape(bs, w, h)
             if c.test['show_img']:
                 for b in range(bs):

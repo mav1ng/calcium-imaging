@@ -354,6 +354,26 @@
 #                   nb_iterations=0, embedding_loss=True)
 #     set.main()
 
+
+# """EVE OPT ROUND 4"""
+# nb_epochs = 250
+# lr = 0.00045
+# bs = 4
+# subsample_size = 1024
+# for i in range(1, 6):
+#     cur_emb_dim = np.random.randint(65, 128)
+#     cur_margin = np.random.randint(1, 10) / 10
+#     cur_scaling = 25
+#     print('Embedding Dim: ', cur_emb_dim, 'Margin: ', cur_margin, 'Scaling: ', cur_scaling, 'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(model_name='eve2_' + str(cur_emb_dim) + '_' + str(cur_margin) + '_' + str(cur_scaling),
+#                   embedding_dim=cur_emb_dim, margin=cur_margin, scaling=cur_scaling,
+#                   nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=True,
+#                   background_pred=True, subsample_size=subsample_size,
+#                   nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('eve2_', include_metric=True)
+
 # """Metric EVE OPT ROUND 2"""
 # nb_epochs = 27
 # lr = 0.047

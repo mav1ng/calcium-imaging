@@ -58,7 +58,7 @@ val = dict(
     th_nn=0.8,
     th_sl=1.,
 
-    show_img=True,
+    show_img=False,
 )
 
 test = dict(

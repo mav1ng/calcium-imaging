@@ -23,6 +23,43 @@ import hickle as hkl
 import config as c
 import helpers as h
 
+from os import listdir, remove
+from os.path import isfile, join, isdir
+import shutil
+
+
+
+def synchronise_folder():
+    config_list = [str(f)[:-5] for f in listdir('config/') if isfile(join('config/', f))]
+    model_list = [str(f)[14:-3] for f in listdir('model/') if isfile(join('model/', f))]
+    training_los_list = [str(f) for f in listdir('training_log/') if isdir(join('training_log/', f))]
+
+    model_name_list = np.unique(np.array([config_list + model_list + training_los_list]))
+
+    for name in model_name_list:
+        if name in config_list and name in model_list and name in training_los_list:
+            config_list.remove(name)
+            model_list.remove(name)
+            training_los_list.remove(name)
+        else:
+            print('Remove \t' + str(name))
+            try:
+                os.remove('config/' + str(name) + '.json')
+                print("Config File Removed!")
+            except FileNotFoundError:
+                pass
+            try:
+                os.remove('model/' + 'model_weights_' + str(name) + '.pt')
+                print("Model File Removed!")
+            except FileNotFoundError:
+                pass
+            try:
+                shutil.rmtree('training_log/' + str(name))
+                print("Directory Removed!")
+            except FileNotFoundError:
+                pass
+    pass
+
 
 def tomask(coords, dims):
     """

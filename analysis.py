@@ -6,6 +6,9 @@ from os.path import isfile, join
 
 import json
 import numpy as np
+import torch
+import network as n
+import clustering as cl
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -118,6 +121,149 @@ def get_analysis(analysis_name):
         print('config/' + str(file))
         ana_list.append(create_analysis('config/' + str(file)))
     return ana_list
+
+
+def plot_analysis(analysis_name, th):
+    ana_list = get_analysis(analysis_name=analysis_name)
+    val_score_list = []
+
+    for ana in ana_list:
+        val_score_list.append(float(ana.val_score))
+        if float(ana.val_score) >= th:
+            print('Model Name: ', ana.model_name)
+            print('Model Score: ', ana.val_score)
+            dtype = torch.float
+            device = torch.device('cuda:0')
+
+            dic = data.read_from_json('config/' + str(ana.model_name) + '.json')
+
+            model = n.UNetMS(input_channels=int(dic['input_channels']),
+                             embedding_dim=int(dic['embedding_dim']),
+                             use_background_pred=dic['background_pred'] == 'True',
+                             nb_iterations=int(dic['nb_iterations']),
+                             kernel_bandwidth=dic['kernel_bandwidth'],
+                             step_size=float(dic['step_size']),
+                             use_embedding_loss=dic['Embedding Loss'] == 'True',
+                             margin=float(dic['margin']),
+                             include_background=dic['Include Background'] == 'True',
+                             scaling=float(dic['scaling']),
+                             subsample_size=int(dic['subsample_size']))
+
+            model.to(device)
+            model.type(dtype)
+            model.load_state_dict(torch.load('model/model_weights_' + str(ana.model_name) + '.pt'))
+
+            test_dataset = data.TestCombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+                                                    corr_sum_folder='data/corr_sum_img/',
+                                                    sum_folder='data/sum_img/',
+                                                    transform=None, device=device, dtype=dtype)
+
+            test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0)
+            print('Test loader prepared.')
+
+            model.eval()
+            model.MS.test = True
+
+            with torch.no_grad():
+                for i, batch in enumerate(test_loader):
+                    input = batch['image']
+
+                    # compute output
+                    if model.use_background_pred:
+                        output, _, __ = model(input, None)
+                    else:
+                        output, _ = model(input, None)
+
+                    (bs, ch, w, h) = output.size()
+
+                    for i in range(ch):
+                        if i % 10 == 0:
+                            plt.imshow(output[0, i].detach().cpu().numpy())
+                            plt.show()
+                    break
+
+            model.MS.val = False
+            model.MS.test = False
+
+    print('Highest Val Score: ', max(val_score_list))
+
+    pass
+
+
+def save_images(analysis_name, th=0.):
+    ana_list = get_analysis(analysis_name=analysis_name)
+    val_score_list = []
+
+    for ana in ana_list:
+        val_score_list.append(float(ana.val_score))
+        if float(ana.val_score) >= th:
+            print('Model Name: ', ana.model_name)
+            print('Model Score: ', ana.val_score)
+            dtype = torch.float
+            device = torch.device('cuda:0')
+
+            dic = data.read_from_json('config/' + str(ana.model_name) + '.json')
+
+            model = n.UNetMS(input_channels=int(dic['input_channels']),
+                             embedding_dim=int(dic['embedding_dim']),
+                             use_background_pred=dic['background_pred'] == 'True',
+                             nb_iterations=int(dic['nb_iterations']),
+                             kernel_bandwidth=dic['kernel_bandwidth'],
+                             step_size=float(dic['step_size']),
+                             use_embedding_loss=dic['Embedding Loss'] == 'True',
+                             margin=float(dic['margin']),
+                             include_background=dic['Include Background'] == 'True',
+                             scaling=float(dic['scaling']),
+                             subsample_size=int(dic['subsample_size']))
+
+            model.to(device)
+            model.type(dtype)
+            model.load_state_dict(torch.load('model/model_weights_' + str(ana.model_name) + '.pt'))
+
+            test_dataset = data.TestCombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+                                                    corr_sum_folder='data/corr_sum_img/',
+                                                    sum_folder='data/sum_img/',
+                                                    transform=None, device=device, dtype=dtype)
+
+            test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0)
+            print('Test loader prepared.')
+
+            model.eval()
+            model.MS.test = True
+
+            with torch.no_grad():
+                for i, batch in enumerate(test_loader):
+                    input = batch['image']
+
+                    # compute output
+                    if model.use_background_pred:
+                        output, _, __ = model(input, None)
+                    else:
+                        output, _ = model(input, None)
+
+                    (bs, ch, w, h) = output.size()
+
+                    if torch.sum(torch.isnan(output)) > 0.:
+                        print('Output contains NaN')
+                        break
+
+                    predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.8)
+                    predict = predict.reshape(bs, w, h)
+
+                    for b in range(bs):
+                        plt.imshow(predict[b])
+                        plt.title(str(ana.model_name))
+                        plt.savefig('images/' + str(ana.model_name) + '.png')
+
+                    break
+
+            model.MS.val = False
+            model.MS.test = False
+
+    pass
+
+
+
 
 
 def val_score_analysis(analysis_list, include_metric):

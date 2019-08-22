@@ -176,7 +176,11 @@ class UNet(nn.Module):
         x = F.relu(x)
         x = self.conv_layer_end(x)
         'should really use softmax here?'
+        if torch.sum(torch.isnan(x)) > 0:
+            print('Nans before softmax')
         x = self.Softmax2d(x).clone()
+        if torch.sum(torch.isnan(x)) > 0:
+            print('Nans after softmax')
 
         return x
 

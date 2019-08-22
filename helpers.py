@@ -144,6 +144,11 @@ class Setup:
                                       torch.tensor(1, dtype=torch.long, device=self.device),
                                       torch.tensor(0, dtype=torch.long, device=self.device))
                     cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
+
+                    if cel_loss != cel_loss:
+                        print(y)
+                        print(torch.sum(torch.isnan(y)))
+
                 cel_loss = cel_loss / y.size(0)
 
                 self.writer.add_scalar('Cross Entropy Loss', cel_loss.item())
@@ -193,7 +198,7 @@ class Setup:
                   'Param ({param}))\t'.format(
                 epoch, loss=emb_losses, lossCEL=cel_losses, param=optimizer.param_groups[0]['lr']))
 
-            if ret_loss != ret_loss:
+            if ret_loss != ret_loss or cel_loss != cel_loss:
                 print('Exploding Gradients! Stopped Training.')
                 self.breaking = True
                 break

@@ -236,6 +236,7 @@ class MS(nn.Module):
         #     self.w = x_in.size(2)
         #     self.h = x_in.size(3)
 
+
         x = x_in.view(self.bs, self.emb, self.w, self.h)
         out = torch.zeros(self.bs, self.emb, self.w, self.h, device=d)
         out = x_in.view(self.bs, self.emb, self.w, self.h)
@@ -243,7 +244,8 @@ class MS(nn.Module):
 
         if self.val and not self.test:
             """Validation SUBSAMPLING"""
-            val_sub_size = 100 * 100
+            # val_sub_size = 100 * 100
+            val_sub_size = 91 * 91
             emb, lab, ind = he.emb_subsample(x.clone(), lab_in.clone(), include_background=True,
                                              backpred=None, prefer_cell=0.5,
                                              sub_size=val_sub_size)
@@ -439,10 +441,22 @@ def comp_similarity_matrix(input):
     for i in range(bs):
         sim = input[i].view(ch, w * h)
 
+        # if torch.sum(torch.isnan(sim)) > 0.:
+        #     print('NaN in Sim Input', torch.sum(torch.isnan(sim)))
+
         sim_ = torch.mean(sim, dim=0)
+
+        # if torch.sum(torch.isnan(sim_)) > 0.:
+        #     print('NaN in Sim Mean', torch.sum(torch.isnan(sim_)))
+
         sim_n = sim - sim_
         sim__ = torch.sqrt(torch.sum(sim_n ** 2, dim=0))
         sim = (sim_n / sim__).t()
+        sim = torch.where(torch.isnan(sim) != 1, sim, torch.zeros_like(sim, device=d))
+
+        # if torch.sum(torch.isnan(sim)) > 0.:
+        #     print('NaN in Sim output', torch.sum(torch.isnan(sim)))
+        #     print(torch.sum(sim__ == 0.))
 
         # sim_ = torch.mean(sim, dim=0)
         # sim_n = sim - sim_
@@ -554,6 +568,13 @@ def embedding_loss(emb, lab, margin):
     label_pairs = compute_label_pair(lab)
     sim_mat = comp_similarity_matrix(emb)
 
+    # if torch.sum(torch.isnan(weights)) > 0.:
+    #     print('NaN in weights', torch.sum(torch.isnan(weights)))
+    # if torch.sum(torch.isnan(label_pairs)) > 0.:
+    #     print('NaN in label pairs', torch.sum(torch.isnan(label_pairs)))
+    # if torch.sum(torch.isnan(sim_mat)) > 0.:
+    #     print('NaN in sim mat', torch.sum(torch.isnan(sim_mat)))
+
     for b in range(bs):
         loss[b] = torch.where(label_pairs[:, :, 0, b] == 1., torch.sub(1., sim_mat[:, :, 0, b]),
                               loss[b])
@@ -565,6 +586,10 @@ def embedding_loss(emb, lab, margin):
                                       0., device=d)), loss[b])
 
         loss[b] = torch.mul(1. / (w * h), torch.mul(weights[:, :, 0, b], loss[b].clone()))
+
+    # if torch.sum(torch.isnan(loss)) > 0.:
+    #     print('Nan in loss')
+    #     print('Nans in Loss: ', torch.sum(torch.isnan(loss)))
 
     return torch.sum(loss)
 

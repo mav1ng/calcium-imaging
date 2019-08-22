@@ -27,9 +27,14 @@ dtype = c.data['dtype']
 device = torch.device('cpu')
 img_size = c.training['img_size']
 
-for t in range(1):
-    print(t)
+a = np.linspace(0.1, 30, 300)
+print(a)
+scaling = np.random.choice(a)
+print(np.around(scaling, decimals=4))
 
+print(np.around((np.array([10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32]) ** 2), decimals=4))
+
+print(np.around(0.0302348234, decimals=5))
 # h.val_score(model_name='adam_opt', use_metric=True, iter=100, th=0.8)
 
 # for margin in range(1, 10):

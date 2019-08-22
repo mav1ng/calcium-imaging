@@ -145,9 +145,9 @@ class Setup:
                                       torch.tensor(0, dtype=torch.long, device=self.device))
                     cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
 
-                    if cel_loss != cel_loss:
-                        print(y)
-                        print(torch.sum(torch.isnan(y)))
+                    # if cel_loss != cel_loss:
+                    #     print(y)
+                    #     print(torch.sum(torch.isnan(y)))
 
                 cel_loss = cel_loss / y.size(0)
 
@@ -160,6 +160,7 @@ class Setup:
                     v.plot_pred_back(y[0].detach(), label.detach())
             else:
                 output, ret_loss = model(input, label)
+                cel_loss = torch.tensor(0., device=self.device)
 
             # measure performance and record loss
             try:

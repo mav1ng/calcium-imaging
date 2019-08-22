@@ -175,12 +175,6 @@ class UNet(nn.Module):
         x = self.conv_layer_18(x)
         x = F.relu(x)
         x = self.conv_layer_end(x)
-        'should really use softmax here?'
-        if torch.sum(torch.isnan(x)) > 0:
-            print('Nans before softmax')
-        x = self.Softmax2d(x).clone()
-        if torch.sum(torch.isnan(x)) > 0:
-            print('Nans after softmax')
 
         return x
 
@@ -384,16 +378,22 @@ class UNetMS(nn.Module):
                      use_embedding_loss=self.use_embedding_loss,
                      scaling=self.scaling, use_background_pred=self.use_background_pred)
         self.L2Norm = L2Norm()
+        self.SoftMax = nn.Softmax2d()
 
     def forward(self, x, lab):
         x = self.UNet(x)
-        x = self.L2Norm(x)
+        if torch.sum(torch.isnan(x)) > 0.:
+            print('NaNs after UNET')
         if self.use_background_pred:
             x = x.clone()[:, :-2]
+            x = self.SoftMax(x).clone()
+            x = self.L2Norm(x)
             y = x[:, -2:]
             x, ret_loss = self.MS(x, lab, background_pred=y[:, 0], subsample_size=self.subsample_size)
             return x, ret_loss, y
         else:
+            x = self.SoftMax(x).clone()
+            x = self.L2Norm(x)
             x, ret_loss = self.MS(x, lab, subsample_size=self.subsample_size)
             return x, ret_loss
 

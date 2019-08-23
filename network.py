@@ -384,11 +384,16 @@ class UNetMS(nn.Module):
         x = self.UNet(x)
         if torch.sum(torch.isnan(x)) > 0.:
             print('NaNs after UNET')
+
         if self.use_background_pred:
             x = x.clone()[:, :-2]
+            if torch.sum(torch.isnan(x)) > 0.:
+                print('NaNs in X')
             x = self.SoftMax(x).clone()
             x = self.L2Norm(x)
             y = x[:, -2:]
+            if torch.sum(torch.isnan(x)) > 0.:
+                print('NaNs in Y')
             x, ret_loss = self.MS(x, lab, background_pred=y[:, 0], subsample_size=self.subsample_size)
             return x, ret_loss, y
         else:

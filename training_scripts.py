@@ -9,7 +9,7 @@
 # for i in range(100):
 #     nb_epochs = np.random.randint(10, 251)
 #     scaling = np.around(np.random.choice(scaling_list), decimals=2)
-#     bs = np.random.randint(1, 11)
+#     bs = np.random.randint(1, 6)
 #     lr = np.around(np.random.choice(lr_list), decimals=5)
 #     subsample_size = np.random.choice(subsample_size_list)
 #
@@ -116,7 +116,37 @@
 # ana.save_images('adamx_')
 
 
-
+"""NOAH OPT ROUND X"""
+# margin = 0.5
+# nb_epochs = 125
+# nb_iter = 5
+# step_size = 1.
+#
+# kernel_bandwidth_list = np.linspace(2, 8, 1000)
+# scaling_list = np.linspace(1, 30, 300)
+# lr_list = np.linspace(0.0001, 0.1, 10000)
+# subsample_size_list = np.array([10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32]) ** 2
+#
+# for i in range(100):
+#     kernel_bandwidth = np.around(np.random.choice(kernel_bandwidth_list), decimals=2)
+#     emb_dim = np.random.randint(8, 33)
+#     scaling = np.around(np.random.choice(scaling_list), decimals=2)
+#     bs = np.random.randint(1, 11)
+#     lr = np.around(np.random.choice(lr_list), decimals=5)
+#     subsample_size = np.random.choice(subsample_size_list)
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+#     set = h.Setup(
+#         model_name='noahx_' + str(subsample_size) + '_' + str(lr) + '_' + str(bs) + '_' + str(scaling) + '_' + str(kernel_bandwidth),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+#     set.main()
+# ana.score('noahx_', include_metric=True)
+# ana.save_images('noahx_')
 
 
 

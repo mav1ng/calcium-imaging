@@ -766,9 +766,9 @@ def test(model_name):
 
             (bs, ch, w, h) = output.size()
 
-            # for i in range(ch):
-            #     plt.imshow(output[0, i].detach().cpu().numpy())
-            #     plt.show()
+            for i in range(ch):
+                plt.imshow(output[0, i].detach().cpu().numpy())
+                plt.show()
 
             predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.8)
             predict = predict.reshape(bs, w, h)
@@ -888,3 +888,68 @@ def test_th(model_name, background_pred, np_arange=(0.005, 2.05, 0.005), iter=10
         f1_ind_list.append(th)
     print('Best Possible Th:\t', np.array(f1_ind_list)[np.argmax(np.array(f1_list))], max(f1_list))
     return np.array(f1_list), np.array(f1_ind_list)
+
+
+def det_bandwidth(model_name):
+    dtype = torch.float
+    device = torch.device('cuda:0')
+
+    dic = data.read_from_json('config/' + str(model_name) + '.json')
+
+    model = n.UNetMS(input_channels=int(dic['input_channels']),
+                     embedding_dim=int(dic['embedding_dim']),
+                     use_background_pred=dic['background_pred'] == 'True',
+                     nb_iterations=int(dic['nb_iterations']),
+                     kernel_bandwidth=dic['kernel_bandwidth'],
+                     step_size=float(dic['step_size']),
+                     use_embedding_loss=dic['Embedding Loss'] == 'True',
+                     margin=float(dic['margin']),
+                     include_background=dic['Include Background'] == 'True',
+                     scaling=float(dic['scaling']),
+                     subsample_size=int(dic['subsample_size']))
+
+    model.to(device)
+    model.type(dtype)
+    model.load_state_dict(torch.load('model/model_weights_' + str(model_name) + '.pt'))
+    val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+                                       corr_sum_folder='data/corr_sum_img/',
+                                       sum_folder='data/sum_img/',
+                                       mask_folder='data/sum_masks/',
+                                       transform=None, device=device, dtype=dtype, test=True)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, num_workers=0)
+    print('Validation loader prepared.')
+
+    set = h.Setup(th_nn=0.8, model_name=model_name, save_config=False, input_channels=int(dic['input_channels']),
+                  embedding_dim=int(dic['embedding_dim']),
+                  background_pred=dic['background_pred'] == 'True',
+                  nb_iterations=int(dic['nb_iterations']),
+                  kernel_bandwidth=dic['kernel_bandwidth'],
+                  step_size=float(dic['step_size']),
+                  embedding_loss=dic['Embedding Loss'] == 'True',
+                  margin=float(dic['margin']),
+                  include_background=dic['Include Background'] == 'True',
+                  scaling=float(dic['scaling']),
+                  subsample_size=int(dic['subsample_size']))
+
+    model.eval()
+    model.MS.val = True
+
+    for i, batch in enumerate(val_loader):
+        input = batch['image']
+        label = batch['label']
+
+        output, val_loss, y = model(input, label)
+
+        np_label = label.detach().cpu().numpy()
+
+        for b in np.unique(np_label[0]):
+            if b != 0:
+                ind = np.argwhere(np_label[0] == b)
+                print(ind.shape, output.size())
+                print(output[0, :, ind[:, 0], ind[:, 1]].size())
+                emb_vectors = output[0, :, ind[:, 0], ind[:, 1]].t()
+                dist = torch.pdist(emb_vectors)
+                dist_ = torch.mean(dist)
+                print(dist_)
+
+

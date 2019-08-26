@@ -277,6 +277,8 @@ class MS(nn.Module):
                 y = x[b, :, :]
                 if t != 0:
                     kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(y.clone().t(), y.clone())))
+                    kernel_mat = torch.where(kernel_mat < 1., torch.tensor(0., device=d), kernel_mat)
+
                     diag_mat = torch.diag(mm(kernel_mat.t(), torch.ones(self.sw * self.sh, 1, device=d))[:, 0],
                                           diagonal=0)
                     y = mm(y.clone(),
@@ -382,18 +384,24 @@ class UNetMS(nn.Module):
 
     def forward(self, x, lab):
         x = self.UNet(x)
-        if torch.sum(torch.isnan(x)) > 0.:
-            print('NaNs after UNET')
+
+        # with torch.no_grad():
+        #     # if torch.sum(torch.isnan(x)) > 0.:
+        #     #     print('NaNs after UNET')
+        #     if torch.sum(torch.isnan(x[:, :-2])) > 0.:
+        #         print('NaNs in X')
+        #     if torch.sum(torch.isnan(x[:, -2:])) > 0.:
+        #         print('NaNs in Y')
 
         if self.use_background_pred:
             x = x.clone()[:, :-2]
-            if torch.sum(torch.isnan(x)) > 0.:
-                print('NaNs in X')
+            # if torch.sum(torch.isnan(x)) > 0.:
+            #     print('NaNs in X')
             x = self.SoftMax(x).clone()
             x = self.L2Norm(x)
             y = x[:, -2:]
-            if torch.sum(torch.isnan(x)) > 0.:
-                print('NaNs in Y')
+            # if torch.sum(torch.isnan(x)) > 0.:
+            #     print('NaNs in Y')
             x, ret_loss = self.MS(x, lab, background_pred=y[:, 0], subsample_size=self.subsample_size)
             return x, ret_loss, y
         else:

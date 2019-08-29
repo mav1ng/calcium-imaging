@@ -2,6 +2,8 @@ import torch
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import AgglomerativeClustering
+from skimage import morphology
+import matplotlib.pyplot as plt
 
 
 def label_emb_sl(data, th):
@@ -31,7 +33,7 @@ def label_embeddings(data, th):
         d = data.cpu().numpy()
     except AttributeError:
         d = data
-    out = np.zeros((data.shape[0], 1))
+    out = np.zeros((data.shape[0], 1), dtype=np.int)
     label = 0
     neigh = NearestNeighbors(radius=th)
     neigh.fit(d)
@@ -45,6 +47,35 @@ def label_embeddings(data, th):
         d = np.delete(d, ind, axis=0)
         label = label + 1
     return out
+
+
+def postprocess_label(prediction, background, th=-0.15, object_min_size=50):
+    """
+    Postprocessing of the Labelling
+    :param prediction: Bs x W x H
+    :param background: W x H -1 for neuron, + 1 for background
+    :return: Bx x W x H
+    """
+
+    print(prediction.shape)
+    print(background.shape)
+
+    if background is not None:
+        predict = np.where(background.detach().cpu().numpy() > th, 0, prediction)
+
+
+    # predict = morphology.remove_small_holes(predict, 10, connectivity=1)
+    #
+    # print(predict)
+
+    plt.imshow(predict)
+    plt.show()
+
+    predict = np.where(predict > 0, 1, 0)
+
+    predict = morphology.remove_small_objects(predict, object_min_size, connectivity=1)
+
+    return predict
 
 
 def cluster_kmean(data, tol=0.001, max_iter=10000):

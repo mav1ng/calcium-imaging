@@ -30,6 +30,8 @@ import numpy as np
 import neurofinder as nf
 from PIL import Image
 
+from skimage import morphology
+
 
 class Setup:
     def __init__(self, model_name, save_config, input_channels=c.UNet['input_channels'],
@@ -738,9 +740,9 @@ def test(model_name):
     namelist = ['00.00.test', '00.01.test', '01.00.test', '01.01.test', '02.00.test', '02.01.test', '03.00.test',
                 '04.00.test', '04.01.test']
 
-    test_dataset = data.TestCombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
-                                       corr_sum_folder='data/corr_sum_img/',
-                                       sum_folder='data/sum_img/',
+    test_dataset = data.TestCombinedDataset(corr_path='data/test_corr/starmy/maxpool/transformed_4/',
+                                       corr_sum_folder='data/test_corr_sum_img/',
+                                       sum_folder='data/test_sum_img/',
                                        transform=None, device=device, dtype=dtype)
 
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0)
@@ -760,26 +762,37 @@ def test(model_name):
 
             # compute output
             if model.use_background_pred:
-                output, _, __ = model(input, None)
+                output, _, background = model(input, None)
             else:
                 output, _ = model(input, None)
 
             (bs, ch, w, h) = output.size()
 
-            for i in range(ch):
-                plt.imshow(output[0, i].detach().cpu().numpy())
-                plt.show()
+            # for i in range(ch):
+            #     plt.imshow(output[0, i].detach().cpu().numpy())
+            #     plt.show()
+
+            # plt.imshow(__[0, 0].detach().cpu().numpy())
+            # plt.show()
 
             predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.8)
             predict = predict.reshape(bs, w, h)
+
+            for b in range(bs):
+                if model.use_background_pred:
+                    predict[b] = cl.postprocess_label(predict[b], background=background[b, 0])
+                else:
+                    predict[b] = cl.postprocess_label(predict[b], background=None)
+
             if c.test['show_img']:
                 for b in range(bs):
                     plt.imshow(predict[b])
                     plt.title('Predicted Background (upper) vs Ground Truth (lower)')
                     plt.show()
             for k in range(bs):
+                print(i)
                 mask_predict = data.toCoords(predict[k])
-                result_dict['dataset'] = namelist[k]
+                result_dict['dataset'] = namelist[i]
                 result_dict['regions'] = mask_predict
                 results.append(result_dict)
 

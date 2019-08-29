@@ -50,12 +50,16 @@ from torchsummary import summary
 #               nb_iterations=10, embedding_loss=True)
 # set.main()
 
+# data.get_summary_img(nf_folder='data/test_data', sum_folder='data/test_sum_img',
+#                        test=True, device=torch.device('cpu'), dtype=torch.double)
 
 
 # h.det_bandwidth(model_name='adamx_676_0.00286_2_13.68_182')
 
 
 
+# ana.score('adamx_', include_metric=True)
+# ana.save_images('adamx_')
 
 # data.synchronise_folder()
 
@@ -67,7 +71,7 @@ from torchsummary import summary
 # h.test(model_name='ezekiel_opt')
 
 # h.val_score('evex_484_0.00216_1_11.87_235', use_metric=True, th=0.8)
-h.test('evex_900_0.01388_9_12.47_89')
+h.test('noahx_900_0.01227_10_18.07_6.26')
 
 
 

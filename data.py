@@ -245,7 +245,6 @@ def get_summarized_masks(masks_path):
         save_numpy_to_h5py(data_array=summ, file_name=folder[:8], file_path='data/sum_masks/')
 
 
-
 def get_masks(nf_path):
 
     for index, folder in enumerate(sorted(os.listdir(nf_path))):

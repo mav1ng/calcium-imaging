@@ -778,23 +778,20 @@ def test(model_name):
             predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.8)
             predict = predict.reshape(bs, w, h)
 
-            for b in range(bs):
-                if model.use_background_pred:
-                    predict[b] = cl.postprocess_label(predict[b], background=background[b, 0])
-                else:
-                    predict[b] = cl.postprocess_label(predict[b], background=None)
+            if model.use_background_pred:
+                predict = cl.postprocess_label(predict[0], background=background[0, 0])
+            else:
+                predict = cl.postprocess_label(predict[0], background=None)
 
             if c.test['show_img']:
-                for b in range(bs):
-                    plt.imshow(predict[b])
-                    plt.title('Predicted Background (upper) vs Ground Truth (lower)')
-                    plt.show()
-            for k in range(bs):
-                print(i)
-                mask_predict = data.toCoords(predict[k])
-                result_dict['dataset'] = namelist[i]
-                result_dict['regions'] = mask_predict
-                results.append(result_dict)
+                plt.imshow(predict[0])
+                plt.title('Predicted Background (upper) vs Ground Truth (lower)')
+                plt.show()
+
+            mask_predict = data.toCoords(get_diff_labels(predict))
+            result_dict['dataset'] = namelist[i]
+            result_dict['regions'] = mask_predict[0]
+            results.append(result_dict)
 
         if not os.path.exists('data/test_results'):
             os.makedirs('data/test_results')
@@ -806,6 +803,10 @@ def test(model_name):
         model.MS.test = False
 
     pass
+
+
+
+
 
 
 def val_score(model_name, use_metric, iter=10, th=c.val['th_nn']):

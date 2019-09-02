@@ -71,21 +71,24 @@ from torchsummary import summary
 # h.test(model_name='ezekiel_opt')
 
 # h.val_score('evex_484_0.00216_1_11.87_235', use_metric=True, th=0.8)
-h.test('noahx_900_0.01227_10_18.07_6.26')
+h.test('adamy_784_0.00269_4_9.57_174_17')
 
 
 
-# ana.save_images('eve')
+# ana.save_images('adamy', postproc=True)
 
 # ana.plot_analysis('eve2_114_0.3_25', th=0)
 
-# ana.analysis(analysis='lr_ep_bs', analysis_name='m_abel', use_metric=False)
-# ana.analysis(analysis='ed_ma_sc', analysis_name='m_adam2_', use_metric=True)
+
+
+# ana.analysis(analysis='lr_ep_bs', analysis_name='adamy', use_metric=True)
+# ana.analysis(analysis='ed_ma_sc', analysis_name='evey', use_metric=True)
 # ana.analysis(analysis='ed_ma', analysis_name='m_azrael2_', use_metric=True)
-# ana.analysis(analysis='ss', analysis_name='m_eve3_', use_metric=True)
+# ana.analysis(analysis='ss', analysis_name='evey', use_metric=True)
 # ana.analysis(analysis='lr', analysis_name='m_adam4_', use_metric=True)
 
-# ana.score('eve', include_metric=True)
+# ana.score('adamy', include_metric=True, iter=3)
+
 # ana.score('cain', include_metric=True)
 # ana.score('adam3')
 #

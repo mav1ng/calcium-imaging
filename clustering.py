@@ -1,10 +1,13 @@
 import torch
+from torch.nn.functional import pdist
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import AgglomerativeClustering
 from skimage import morphology
 import matplotlib.pyplot as plt
-
+import helpers
+import visualization as v
+import network as n
 
 def label_emb_sl(data, th):
     """
@@ -49,7 +52,7 @@ def label_embeddings(data, th):
     return out
 
 
-def postprocess_label(prediction, background, th=-0.15, object_min_size=50):
+def postprocess_label(prediction, background, th=-0., object_min_size=18, embeddings=None):
     """
     Postprocessing of the Labelling
     :param prediction: Bs x W x H
@@ -57,25 +60,55 @@ def postprocess_label(prediction, background, th=-0.15, object_min_size=50):
     :return: Bx x W x H
     """
 
-    print(prediction.shape)
-    print(background.shape)
+    (bs, w, h) = prediction.shape
+    predict = prediction.copy()
 
-    if background is not None:
-        predict = np.where(background.detach().cpu().numpy() > th, 0, prediction)
+    for b in range(bs):
 
+        if background is not None:
+            predict[b] = np.where(background[b].detach().cpu().numpy() > th, 0, prediction[b])
 
-    # predict = morphology.remove_small_holes(predict, 10, connectivity=1)
-    #
-    # print(predict)
+        predict[b] = np.where(predict[b] > 0, 1, 0)
 
-    plt.imshow(predict)
-    plt.show()
+        predict[b] = morphology.remove_small_objects(predict[b].astype(bool), object_min_size, connectivity=2)
 
-    predict = np.where(predict > 0, 1, 0)
+        predict[b] = morphology.remove_small_holes(predict[b].astype(bool), 3, connectivity=1)
 
-    predict = morphology.remove_small_objects(predict, object_min_size, connectivity=1)
+        predict[b] = helpers.get_diff_labels(predict[b].reshape(1, w, h))
 
-    return predict
+        # for i in range(1):
+        #     lab_counter = np.unique(predict[b].shape[0]) + 1
+        #     if embeddings is not None:
+        #         for neuron in np.unique(predict[b]):
+        #             if neuron == 0:
+        #                 pass
+        #             else:
+        #                 current_ind = np.argwhere(predict[b] == neuron)
+        #
+        #                 current_emb = embeddings[b, :, current_ind[:, 0], current_ind[:, 1]]
+        #
+        #                 sim = current_emb
+        #                 sim_ = torch.mean(sim, dim=0)
+        #                 sim_n = sim - sim_
+        #                 sim__ = torch.sqrt(torch.sum(sim_n ** 2, dim=0))
+        #                 sim = (sim_n / sim__).t()
+        #                 sim = torch.where(torch.isnan(sim) != 1, sim, torch.zeros_like(sim, device=torch.device('cuda:0')))
+        #
+        #                 p_dist = torch.mm(sim, sim.t()) * 0.5 + 0.5
+        #                 p_dist = torch.where(p_dist == 1., torch.tensor(0., device=torch.device('cuda:0')), p_dist)
+        #
+        #                 print(torch.mean(p_dist))
+        #
+        #                 if torch.mean(p_dist) < 0.52:
+        #                     cur_pix = p_dist[torch.argmax(torch.sum(p_dist, dim=1)).item()]
+        #                     crit = (np.array(cur_pix.cpu().numpy()) > 0.5).astype(np.int)
+        #                     crit_ind = np.argwhere(crit == 1).flatten()
+        #                     lab = crit * (lab_counter - np.random.randint(1, 200))
+        #
+        #                     predict[b, current_ind[crit_ind][:, 0], current_ind[crit_ind][:, 1]] = lab[crit_ind]
+        #                     lab_counter += 1
+
+    return predict.reshape(bs, w, h)
 
 
 def cluster_kmean(data, tol=0.001, max_iter=10000):

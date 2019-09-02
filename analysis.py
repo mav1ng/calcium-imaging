@@ -190,7 +190,7 @@ def plot_analysis(analysis_name, th):
     pass
 
 
-def save_images(analysis_name, th=0.):
+def save_images(analysis_name, th=0., postproc=False):
     ana_list = get_analysis(analysis_name=analysis_name)
     val_score_list = []
 
@@ -237,7 +237,7 @@ def save_images(analysis_name, th=0.):
 
                     # compute output
                     if model.use_background_pred:
-                        output, _, __ = model(input, None)
+                        output, _, background = model(input, None)
                     else:
                         output, _ = model(input, None)
 
@@ -250,10 +250,19 @@ def save_images(analysis_name, th=0.):
                     predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.8)
                     predict = predict.reshape(bs, w, h)
 
+                    if postproc:
+                        if model.use_background_pred:
+                            predict = cl.postprocess_label(predict, background=background[:, 0])
+                        else:
+                            predict = cl.postprocess_label(predict, background=None)
+
                     for b in range(bs):
                         plt.imshow(predict[b])
                         plt.title(str(ana.model_name))
-                        plt.savefig('images/' + str(ana.model_name) + '.png')
+                        if not postproc:
+                            plt.savefig('images/' + str(ana.model_name) + '.png')
+                        else:
+                            plt.savefig('images_test/' + str(ana.model_name) + '.png')
 
                     break
 
@@ -266,27 +275,27 @@ def save_images(analysis_name, th=0.):
 
 
 
-def val_score_analysis(analysis_list, include_metric):
+def val_score_analysis(analysis_list, include_metric, iter=1):
     ret = {}
     for ana in analysis_list:
         print('Evaluating ' + str(ana.model_name))
-        (val, emb, cel) = h.val_score(model_name=str(ana.model_name), iter=1, th=0.8, use_metric=include_metric)
+        (val, emb, cel) = h.val_score(model_name=str(ana.model_name), iter=iter, th=0.8, use_metric=include_metric)
         ret[str(ana.model_name)] = (val, emb, cel)
     return ret
 
 
-def val_score_metric_analysis(analysis_list):
+def val_score_metric_analysis(analysis_list, iter=1):
     ret = {}
     for ana in analysis_list:
         print('Evaluating ' + str(ana.model_name))
-        (val, emb, cel) = h.val_score(model_name=str(ana.model_name), iter=1, th=0.8, use_metric=True)
+        (val, emb, cel) = h.val_score(model_name=str(ana.model_name), iter=iter, th=0.8, use_metric=True)
         ret[str(ana.model_name)] = (val, emb, cel)
     return ret
 
 
-def score(analysis_name, include_metric):
+def score(analysis_name, include_metric, iter=1):
     ana_list = get_analysis(analysis_name)
-    score_list = val_score_analysis(ana_list, include_metric=include_metric)
+    score_list = val_score_analysis(ana_list, include_metric=include_metric, iter=iter)
 
     for ana in ana_list:
         if include_metric:

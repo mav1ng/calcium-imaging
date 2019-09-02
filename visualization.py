@@ -65,17 +65,27 @@ def plot_emb_pca(data, labels):
     """
 
     pca = PCA(n_components=3)
+    l = labels
 
-    (c, w, h) = data.size()
+    try:
+        (c, w, h) = data.size()
 
-    l = labels.squeeze(0).cpu().numpy()
+        d_ = torch.mean(data, dim=0)
+        d_n = data - d_
+        d_n_ = torch.sqrt(torch.sum(d_n ** 2, dim=0))
+        d = d_n / d_n_
 
-    d_ = torch.mean(data, dim=0)
-    d_n = data - d_
-    d_n_ = torch.sqrt(torch.sum(d_n ** 2, dim=0))
-    d = d_n / d_n_
+        d = d.view(c, -1).t().cpu().numpy()
+    except (ValueError, TypeError):
+        (c, w, h) = data.shape
 
-    d = d.view(c, -1).t().cpu().numpy()
+        d_ = np.mean(data, axis=0)
+        d_n = data - d_
+        d_n_ = np.sqrt(np.sum(d_n ** 2, dim=0))
+        d = d_n / d_n_
+        d = np.where(np.isnan(d) != 1, d, 0.)
+        d = d.reshape(c, -1).T
+
     principalComponents = pca.fit_transform(d)
 
     pDf = principalComponents.reshape(w, h, 3)

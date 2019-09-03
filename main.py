@@ -42,6 +42,20 @@ from torchsummary import summary
 # data.synchronise_folder()
 
 
+
+
+# set = h.Setup(model_name='abram_opt',
+#               subsample_size=1024, embedding_dim=32, margin=0.5, nb_epochs=250,
+#               save_config=True, learning_rate=0.0005, scaling=25,
+#               batch_size=5, include_background=True, kernel_bandwidth=3., step_size=1.,
+#               background_pred=True,
+#               nb_iterations=10, embedding_loss=True)
+# set.main()
+
+
+# 
+
+
 # set = h.Setup(model_name='test',
 #               subsample_size=100, embedding_dim=32, margin=0.5, nb_epochs=2,
 #               save_config=True, learning_rate=0.001, scaling=25,
@@ -70,24 +84,27 @@ from torchsummary import summary
 # h.test(model_name='m_eve3_4')
 # h.test(model_name='ezekiel_opt')
 
-# h.val_score('evex_484_0.00216_1_11.87_235', use_metric=True, th=0.8)
-h.test('adamy_784_0.00269_4_9.57_174_17')
+# h.val_score('adamy_784_0.00117_4_13.63_157_17', use_metric=True, th=0.8)
+# h.test('adamy_1024_0.00184_4_8.01_234_18')
+
+# h.val_score('evey_676_0.00065_4_14.28_192_18', use_metric=True, th=0.8)
+# h.test('adamy_1024_0.00078_4_6.25_237_21')
 
 
 
-# ana.save_images('adamy', postproc=True)
+# ana.save_images('noahy', postproc=False)
 
 # ana.plot_analysis('eve2_114_0.3_25', th=0)
 
 
 
-# ana.analysis(analysis='lr_ep_bs', analysis_name='adamy', use_metric=True)
-# ana.analysis(analysis='ed_ma_sc', analysis_name='evey', use_metric=True)
-# ana.analysis(analysis='ed_ma', analysis_name='m_azrael2_', use_metric=True)
+# ana.analysis(analysis='lr_ep_bs', analysis_name='eve', use_metric=False)
+# ana.analysis(analysis='ed_ma_sc', analysis_name='eve', use_metric=False)
+# ana.analysis(analysis='ed_ma', analysis_name='abram', use_metric=False)
 # ana.analysis(analysis='ss', analysis_name='evey', use_metric=True)
 # ana.analysis(analysis='lr', analysis_name='m_adam4_', use_metric=True)
 
-# ana.score('adamy', include_metric=True, iter=3)
+# ana.score('noah', include_metric=False, iter=3)
 
 # ana.score('cain', include_metric=True)
 # ana.score('adam3')

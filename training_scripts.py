@@ -1,3 +1,19 @@
+"""ABRAM OPT ROUND Z"""
+# cur_nb_epochs = 250
+# lr_list = np.linspace(0.0001, 0.001, 10000)
+# cur_bs = 4
+#
+#
+# for i in range(100):
+#     cur_lr = np.around(np.random.choice(lr_list), decimals=5)
+#     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
+#     set = h.Setup(model_name='abramz' + '_' + str(cur_lr),
+#                   nb_epochs=cur_nb_epochs, save_config=True, learning_rate=cur_lr, batch_size=cur_bs, embedding_loss=False,
+#                   background_pred=True, nb_iterations=0)
+#     set.main()
+# ana.score('abramz_', include_metric=True)
+# ana.save_images('abramz_')
+
 """AZRAEL OPT ROUND X"""
 # emb_dim = 256
 # margin = 0.5
@@ -114,6 +130,33 @@
 # ana.score('evey_', include_metric=True)
 # ana.save_images('evey_')
 
+"""EVE OPT ROUND Z"""
+# margin = 0.5
+# nb_epochs = 250
+# bs = 4
+#
+# scaling_list = np.linspace(1, 10, 300)
+# lr_list = np.linspace(0.0001, 0.001, 10000)
+# subsample_size = 1024
+#
+# for i in range(100):
+#     emb_dim = np.random.randint(12, 24)
+#     scaling = np.around(np.random.choice(scaling_list), decimals=2)
+#     lr = np.around(np.random.choice(lr_list), decimals=5)
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(
+#         model_name='evez_' + '_' + str(lr) + '_' + str(scaling) + '_' + str(emb_dim),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=True,
+#         background_pred=True,
+#         nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('evez_', include_metric=True)
+# ana.save_images('evez_')
+
 
 """ADAM OPT ROUND X"""
 # emb_dim = 256
@@ -172,6 +215,33 @@
 #     set.main()
 # ana.score('adamy_', include_metric=True)
 # ana.save_images('adamy_')
+
+"""ADAM OPT ROUND Z"""
+# margin = 0.5
+# nb_epochs = 250
+# bs = 4
+#
+# scaling_list = np.linspace(1, 10, 300)
+# lr_list = np.linspace(0.0001, 0.001, 10000)
+# subsample_size = 1024
+#
+# for i in range(100):
+#     emb_dim = np.random.randint(12, 24)
+#     scaling = np.around(np.random.choice(scaling_list), decimals=2)
+#     lr = np.around(np.random.choice(lr_list), decimals=5)
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(
+#         model_name='adamz_' + '_' + str(lr) + '_' + str(scaling) + '_' + str(emb_dim),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('adamz_', include_metric=True)
+# ana.save_images('adamz_')
 
 """NOAH OPT ROUND X"""
 # margin = 0.5
@@ -237,6 +307,38 @@
 #     set.main()
 # ana.score('noahy_', include_metric=True)
 # ana.save_images('noahy_')
+
+"""NOAH OPT ROUND Z"""
+# margin = 0.5
+# nb_iter = 5
+#
+# kernel_bandwidth_list = np.linspace(4.5, 6.5, 1000)
+# scaling_list = np.linspace(10, 20, 300)
+# lr_list = np.linspace(0.0001, 0.003, 10000)
+# subsample_size = 1024
+# bs = 1
+#
+# for i in range(50):
+#     nb_epochs = np.random.randint(100, 200)
+#     step_size = np.random.choice([0.5, 1.])
+#     kernel_bandwidth = np.around(np.random.choice(kernel_bandwidth_list), decimals=2)
+#     emb_dim = np.random.randint(8, 33)
+#     scaling = np.around(np.random.choice(scaling_list), decimals=2)
+#     lr = np.around(np.random.choice(lr_list), decimals=5)
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+#     set = h.Setup(
+#         model_name='noahz_' + str(step_size) + '_' + str(lr) + '_' + str(bs) + '_' + str(scaling) + '_' + str(
+#             kernel_bandwidth) + '_' + str(emb_dim),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+#     set.main()
+# ana.score('noahz_', include_metric=True)
+# ana.save_images('noahz_')
 
 # set = h.Setup(model_name='m_abram_opt',
 #                   nb_epochs=250, save_config=True, learning_rate=0.051, batch_size=5, embedding_loss=False,

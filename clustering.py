@@ -52,7 +52,7 @@ def label_embeddings(data, th):
     return out
 
 
-def postprocess_label(prediction, background, th=-0., object_min_size=18, embeddings=None):
+def postprocess_label(prediction, background, th=0.2, object_min_size=18, embeddings=None):
     """
     Postprocessing of the Labelling
     :param prediction: Bs x W x H
@@ -76,6 +76,9 @@ def postprocess_label(prediction, background, th=-0., object_min_size=18, embedd
 
         predict[b] = helpers.get_diff_labels(predict[b].reshape(1, w, h))
 
+        # plt.imshow(predict[b])
+        # plt.show()
+        #
         # for i in range(1):
         #     lab_counter = np.unique(predict[b].shape[0]) + 1
         #     if embeddings is not None:
@@ -99,7 +102,7 @@ def postprocess_label(prediction, background, th=-0., object_min_size=18, embedd
         #
         #                 print(torch.mean(p_dist))
         #
-        #                 if torch.mean(p_dist) < 0.52:
+        #                 if torch.mean(p_dist) > 0.5:
         #                     cur_pix = p_dist[torch.argmax(torch.sum(p_dist, dim=1)).item()]
         #                     crit = (np.array(cur_pix.cpu().numpy()) > 0.5).astype(np.int)
         #                     crit_ind = np.argwhere(crit == 1).flatten()
@@ -107,6 +110,9 @@ def postprocess_label(prediction, background, th=-0., object_min_size=18, embedd
         #
         #                     predict[b, current_ind[crit_ind][:, 0], current_ind[crit_ind][:, 1]] = lab[crit_ind]
         #                     lab_counter += 1
+        #
+        # plt.imshow(predict[b])
+        # plt.show()
 
     return predict.reshape(bs, w, h)
 

@@ -27,10 +27,15 @@ dtype = c.data['dtype']
 device = torch.device('cpu')
 img_size = c.training['img_size']
 
-a = np.linspace(0.1, 30, 300)
+w = 10
+he = 10
 
-for i in range(100):
-    print(np.random.randint(0, 1))
+ret = torch.empty(2, w, he)
+x = np.linspace(0, 1, w)
+y = np.linspace(0, 1, he)
+
+print(np.meshgrid(x, y))
+ret[0] = torch.from_numpy(np.meshgrid(w, h, ))
 
 # h.val_score(model_name='adam_opt', use_metric=True, iter=100, th=0.8)
 

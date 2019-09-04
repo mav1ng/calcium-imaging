@@ -49,10 +49,27 @@ def label_embeddings(data, th):
         ind = np.append(ind, seed)
         d = np.delete(d, ind, axis=0)
         label = label + 1
+
     return out
 
 
-def postprocess_label(prediction, background, th=0.2, object_min_size=18, embeddings=None):
+def get_pos_mat(bs, w, h):
+    """
+    Constructs the Position Matrix
+    :param w:
+    :param h:
+    :return:
+    """
+    ret = torch.empty(bs, 2, w, h, device=torch.device('cuda:0'))
+    x = np.linspace(0, 1, w)
+    y = np.linspace(0, 1, h)
+    x_, y_ = np.meshgrid(x, y)
+    ret[:, 0] = torch.from_numpy(x_)
+    ret[:, 1] = torch.from_numpy(y_)
+
+    return ret * 1.5
+
+def postprocess_label(prediction, background, th=0., object_min_size=18, embeddings=None):
     """
     Postprocessing of the Labelling
     :param prediction: Bs x W x H
@@ -67,6 +84,9 @@ def postprocess_label(prediction, background, th=0.2, object_min_size=18, embedd
 
         if background is not None:
             predict[b] = np.where(background[b].detach().cpu().numpy() > th, 0, prediction[b])
+
+        plt.imshow(predict[b])
+        plt.show()
 
         predict[b] = np.where(predict[b] > 0, 1, 0)
 
@@ -221,7 +241,6 @@ def wss(data, cluster_indices, cluster_means):
         indices = (ci == i).nonzero()
         wss_tot = wss_tot + torch.sum((X[indices] - cm[i]) ** 2)
     return wss_tot
-
 
 
 # def group_pairwise(X, groups, device=0, fun=lambda r, c: pairwise_distance(r, c).cpu()):

@@ -784,6 +784,12 @@ def test(model_name):
             labels = np.ones((bs, w, h))
             v.plot_emb_pca(output[0], labels[0])
 
+            # pos_matrix = cl.get_pos_mat(bs, w, h)
+            # m = torch.cat([output, pos_matrix], dim=1)
+            #
+            # predict = cl.label_embeddings(m.view(ch + 2, -1).t(), th=0.8)
+            # predict = predict.reshape(bs, w, h)
+
             predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.8)
             predict = predict.reshape(bs, w, h)
 
@@ -963,9 +969,13 @@ def det_bandwidth(model_name):
 
         output, val_loss, y = model(input, label)
 
-        np_label = label.detach().cpu().numpy()
+        np_label = h.get_diff_labels(label.detach().cpu().numpy())
+
+        plt.imshow(np_label[0])
+        plt.show()
 
         for b in np.unique(np_label[0]):
+            print(b)
             if b != 0:
                 ind = np.argwhere(np_label[0] == b)
                 print(ind.shape, output.size())

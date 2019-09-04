@@ -42,18 +42,16 @@ from torchsummary import summary
 # data.synchronise_folder()
 
 
+set = h.Setup(model_name='mean_shift_test',
+              subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=250,
+              save_config=True, learning_rate=0.0005, scaling=0,
+              batch_size=4, include_background=False, kernel_bandwidth=None, step_size=1.,
+              background_pred=True,
+              nb_iterations=5, embedding_loss=True)
+set.main()
 
 
-# set = h.Setup(model_name='abram_opt',
-#               subsample_size=1024, embedding_dim=32, margin=0.5, nb_epochs=250,
-#               save_config=True, learning_rate=0.0005, scaling=25,
-#               batch_size=5, include_background=True, kernel_bandwidth=3., step_size=1.,
-#               background_pred=True,
-#               nb_iterations=10, embedding_loss=True)
-# set.main()
-
-
-# 
+#
 
 
 # set = h.Setup(model_name='test',
@@ -68,7 +66,7 @@ from torchsummary import summary
 #                        test=True, device=torch.device('cpu'), dtype=torch.double)
 
 
-# h.det_bandwidth(model_name='adamx_676_0.00286_2_13.68_182')
+# h.det_bandwidth(model_name='evey_1024_0.00072_4_8.16_208_22')
 
 
 
@@ -85,10 +83,10 @@ from torchsummary import summary
 # h.test(model_name='ezekiel_opt')
 
 # h.val_score('adamy_784_0.00117_4_13.63_157_17', use_metric=True, th=0.8)
-# h.test('adamy_1024_0.00184_4_8.01_234_18')
+# h.test('evey_900_0.00035_4_5.5_249_18')
 
 # h.val_score('evey_676_0.00065_4_14.28_192_18', use_metric=True, th=0.8)
-# h.test('adamy_1024_0.00078_4_6.25_237_21')
+h.test('evey_1024_0.00072_4_8.16_208_22')
 
 
 

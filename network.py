@@ -318,6 +318,7 @@ class MS(nn.Module):
                 if t == self.iter and not self.use_background_pred and not t == 0:
                     loss.backward()
                 else:
+                    print(loss.item())
                     loss.backward(retain_graph=True)
             elif self.val and not self.test:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
@@ -337,9 +338,7 @@ class MS(nn.Module):
                 with torch.no_grad():
                     ret_loss = ret_loss + loss.detach()
 
-        out = x_in
-
-        return out, ret_loss
+        return x_in, ret_loss
 
 
 class UNetMS(nn.Module):

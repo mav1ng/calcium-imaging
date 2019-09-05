@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import config as c
 import helpers as h
 import helpers as he
+import visualization as v
 
 
 def get_conv_layer(num_input, num_output):
@@ -100,7 +101,7 @@ class UNet(nn.Module):
         else:
             self.conv_layer_end = nn.Conv2d(self.embedding_dim, self.embedding_dim, 1)
 
-        self.Softmax2d = nn.Softmax2d()
+        # self.Softmax2d = nn.Softmax2d()
 
     def forward(self, x):
         x = self.conv_layer_1(x)
@@ -318,7 +319,7 @@ class MS(nn.Module):
                 if t == self.iter and not self.use_background_pred and not t == 0:
                     loss.backward()
                 else:
-                    print(loss.item())
+                    # print(loss.item())
                     loss.backward(retain_graph=True)
             elif self.val and not self.test:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
@@ -379,7 +380,7 @@ class UNetMS(nn.Module):
                      use_embedding_loss=self.use_embedding_loss,
                      scaling=self.scaling, use_background_pred=self.use_background_pred)
         self.L2Norm = L2Norm()
-        self.SoftMax = nn.Softmax2d()
+        # self.SoftMax = nn.Softmax2d()
 
     def forward(self, x, lab):
         x = self.UNet(x)
@@ -396,7 +397,9 @@ class UNetMS(nn.Module):
             x = x.clone()[:, :-2]
             # if torch.sum(torch.isnan(x)) > 0.:
             #     print('NaNs in X')
-            x = self.SoftMax(x).clone()
+
+            # x = self.SoftMax(x).clone()
+
             x = self.L2Norm(x)
             y = x[:, -2:]
             # if torch.sum(torch.isnan(x)) > 0.:
@@ -404,7 +407,7 @@ class UNetMS(nn.Module):
             x, ret_loss = self.MS(x, lab, background_pred=y[:, 0], subsample_size=self.subsample_size)
             return x, ret_loss, y
         else:
-            x = self.SoftMax(x).clone()
+            # x = self.SoftMax(x).clone()
             x = self.L2Norm(x)
             x, ret_loss = self.MS(x, lab, subsample_size=self.subsample_size)
             return x, ret_loss
@@ -417,12 +420,35 @@ class L2Norm(nn.Module):
     def forward(self, x):
         # L2 Normalization
         (bs, c, w, h) = x.size()
+
+        # for b in range(bs):
+        #     y = x[b].view(c, -1)
+        #     y_ = torch.mean(y, dim=0)
+        #     y_n = y - y_
+        #     y_n_ = torch.sqrt(torch.sum(y_n ** 2, dim=0))
+        #     x[b] = (y_n / y_n_).view(c, w, h)
+
         for b in range(bs):
-            y = x[b].view(c, -1)
-            y_ = torch.mean(y, dim=0)
-            y_n = y - y_
-            y_n_ = torch.sqrt(torch.sum(y_n ** 2, dim=0))
-            x[b] = (y_n / y_n_).view(c, w, h)
+            # for k in range(c):
+            #     print(torch.min(x[b, k].reshape(-1)), torch.max(x[b, k].reshape(-1)))
+            # print(torch.norm(x[b].view(c, -1), p=2, dim=1))
+            # print(torch.norm(x[b].view(c, -1), p=2, dim=1).size())
+
+            x[b] = (x[b].clone().view(c, -1) / torch.norm(x[b].clone().view(c, -1), p=2, dim=0)).view(c, w, h)
+
+            # for k in range(c):
+            #     print(torch.min(x[b, k].reshape(-1)), torch.max(x[b, k].reshape(-1)))
+
+        # print(torch.norm(x[0, :, 0, 0]))
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111, projection='3d')
+        # f = x[0].clone().detach().cpu().numpy()
+        # f = f.reshape(c, -1).T
+        # ax.scatter(f[:, 0], f[:, 1], f[:, 2])
+        # plt.xlim(-1, 1)
+        # plt.ylim(-1, 1)
+        # plt.show()
+
         return x
 
 

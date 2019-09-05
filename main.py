@@ -42,7 +42,15 @@ from torchsummary import summary
 # data.synchronise_folder()
 
 
-# h.test('mean_shift_test_3')
+# h.test('sphere_test')
+
+set = h.Setup(model_name='sphere_test_4',
+              subsample_size=1024, embedding_dim=3, margin=0.5, nb_epochs=50,
+              save_config=True, learning_rate=0.01, scaling=10,
+              batch_size=10, include_background=False, kernel_bandwidth=None, step_size=1.,
+              background_pred=False,
+              nb_iterations=0, embedding_loss=True)
+set.main()
 
 # set = h.Setup(model_name='mean_shift_test_4',
 #               subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=30,

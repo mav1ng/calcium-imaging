@@ -57,6 +57,8 @@ def plot_input(data, labels):
 
         plt.show()
 
+
+
 def plot_emb_pca(data, labels):
     """
     Visualizes The embeddings with dimesnsion reduction via PCA
@@ -98,6 +100,10 @@ def plot_emb_pca(data, labels):
 
     plt.title('PCA Actual (upper) vs Ground Truth (lower)')
 
+    plt.show()
+
+    pDf = pDf.reshape(-1, 3)
+    plt.scatter(pDf[:, 0], pDf[:, 1], pDf[:, 2])
     plt.show()
 
 

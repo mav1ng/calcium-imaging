@@ -313,7 +313,7 @@ class MS(nn.Module):
                 loss = (loss / self.bs) * self.scaling * (1/(self.iter + 1))
 
                 with torch.no_grad():
-                    ret_loss = ret_loss + loss.detach()
+                    ret_loss = ret_loss + loss.item()
 
                 if t == self.iter and not self.use_background_pred and not t == 0:
                     loss.backward()

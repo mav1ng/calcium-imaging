@@ -286,9 +286,9 @@ class MS(nn.Module):
                                      torch.mul(1. - self.step_size, torch.eye(self.sw * self.sh, device=d))))
 
                 if subsample_size is not None and not self.test:
-                    out = out.view(self.bs, self.emb, -1)
+                    out = out.view(self.bs, self.emb, -1).clone()
                     out[b, :, ind] = y
-                    out = out.view(self.bs, self.emb, self.w, self.h)
+                    out = out.view(self.bs, self.emb, self.w, self.h).clone()
                 else:
                     out[b, :, :, :] = y.view(self.emb, self.w, self.h)
 

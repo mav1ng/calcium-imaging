@@ -319,6 +319,7 @@ class MS(nn.Module):
                     loss.backward()
                 else:
                     loss.backward(retain_graph=True)
+
             elif self.val and not self.test:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
 
@@ -335,11 +336,9 @@ class MS(nn.Module):
                 loss = (loss / self.bs) * 25 * (1/(self.iter + 1))
 
                 with torch.no_grad():
-                    ret_loss = ret_loss + loss.detach()
+                    ret_loss = ret_loss + loss.item()
 
-        out = x_in
-
-        return out, ret_loss
+        return x_in, ret_loss
 
 
 class UNetMS(nn.Module):

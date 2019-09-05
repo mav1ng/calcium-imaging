@@ -301,10 +301,10 @@ class MS(nn.Module):
             if self.training and self.use_embedding_loss and not self.val:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
 
-                emb = out
-                lab = lab_in_
-
-                if subsample_size is not None:
+                if subsample_size is None:
+                    emb = out
+                    lab = lab_in_
+                elif subsample_size is not None:
                     emb = out.view(self.bs, self.emb, -1)[:, :, ind].view(self.bs, self.emb, wurzel, wurzel)
                     lab = lab_in_.view(self.bs, -1)[:, ind].view(self.bs, wurzel, wurzel)
 

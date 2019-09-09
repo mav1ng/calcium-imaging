@@ -327,7 +327,7 @@ class Setup:
             precision = precision / count
 
             ret_cel = cel_loss.item() / bs
-            ret_emb = val_loss.item() / bs
+            ret_emb = val_loss/ bs
 
             self.writer.add_scalar('Validation CEL', ret_cel)
             self.writer.add_scalar('Validation EMB', ret_emb)
@@ -740,6 +740,8 @@ def test(model_name):
     model.to(device)
     model.type(dtype)
     model.load_state_dict(torch.load('model/model_weights_' + str(model_name) + '.pt'))
+
+    print('Testing ' + str(model_name))
 
     results = []
     result_dict = {'dataset': None, 'regions': None}

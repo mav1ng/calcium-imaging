@@ -299,7 +299,7 @@ class MS(nn.Module):
 
             # print('self.training', self.training)
 
-            if self.training and self.use_embedding_loss and not self.val:
+            if self.training and self.use_embedding_loss and not self.val and self.scaling != 0.:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
 
                 if subsample_size is None:
@@ -319,8 +319,7 @@ class MS(nn.Module):
                 if t == self.iter and not self.use_background_pred and not t == 0:
                     loss.backward()
                 else:
-                    if not loss.item() == 0.:
-                        loss.backward(retain_graph=True)
+                    loss.backward(retain_graph=True)
 
             elif self.val and not self.test:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)

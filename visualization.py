@@ -102,9 +102,14 @@ def plot_emb_pca(data, labels):
 
     plt.show()
 
-    pDf = pDf.reshape(-1, 3)
-    plt.scatter(pDf[:, 0], pDf[:, 1], pDf[:, 2])
-    plt.show()
+    try:
+        data_ = data.view(3, -1).t().cpu().numpy()
+        plt.scatter(data_[:, 0], data_[:, 1], data_[:, 2])
+        plt.show()
+    except TypeError:
+        pDf = pDf.reshape(-1, 3)
+        plt.scatter(pDf[:, 0], pDf[:, 1], pDf[:, 2])
+        plt.show()
 
 
 def plot_sk_nn(data, labels):

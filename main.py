@@ -41,37 +41,44 @@ from torchsummary import summary
 
 
 # data.synchronise_folder()
-# h.test('test_2')
-# h.test('test_3')
-# h.test('test_4.1')
-# h.test('test_4.3')
-# h.test('mean_shift_test_7')
-h.test('test2')
-
-# set = h.Setup(model_name='sphere_test_4',
-#               subsample_size=1024, embedding_dim=3, margin=0.5, nb_epochs=50,
-#               save_config=True, learning_rate=0.01, scaling=10,
-#               batch_size=10, include_background=False, kernel_bandwidth=None, step_size=1.,
-#               background_pred=False,
-#               nb_iterations=0, embedding_loss=True)
-# set.main()
-
-set = h.Setup(model_name='test3_m',
-              subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=1,
-              save_config=True, learning_rate=0.0005, scaling=0,
-              batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
-              background_pred=True,
-              nb_iterations=5, embedding_loss=True)
-set.main()
+# h.test('t2e')
 
 
-# set = h.Setup(model_name='test_1.1',
-#               subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=1,
-#               save_config=True, learning_rate=0.0005, scaling=10,
+# set = h.Setup(model_name='t2',
+#               subsample_size=1024, embedding_dim=3, margin=0.5, nb_epochs=10,
+#               save_config=True, learning_rate=0.0001, scaling=0,
 #               batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
 #               background_pred=True,
-#               nb_iterations=0, embedding_loss=True)
+#               nb_iterations=0, embedding_loss=False, pre_train=True, pre_train_name='t_pre')
 # set.main()
+# h.test('t2')
+
+#
+# set = h.Setup(model_name='t2e',
+#               subsample_size=1024, embedding_dim=3, margin=0.5, nb_epochs=10,
+#               save_config=True, learning_rate=0.0001, scaling=0,
+#               batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
+#               background_pred=True,
+#               nb_iterations=5, embedding_loss=True, pre_train=True, pre_train_name='t_pre')
+# set.main()
+# h.test('t2e')
+
+# set = h.Setup(model_name='t_pre',
+#               subsample_size=1024, embedding_dim=3, margin=0.5, nb_epochs=1,
+#               save_config=True, learning_rate=0., scaling=0,
+#               batch_size=1, include_background=True, kernel_bandwidth=None, step_size=1.,
+#               background_pred=True,
+#               nb_iterations=0, embedding_loss=False)
+# set.main()
+
+
+set = h.Setup(model_name='adam_test',
+              subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=50,
+              save_config=True, learning_rate=0.0005, scaling=10,
+              batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
+              background_pred=True,
+              nb_iterations=0, embedding_loss=False)
+set.main()
 
 
 # set = h.Setup(model_name='test_4.3',

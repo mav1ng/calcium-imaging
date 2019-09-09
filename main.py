@@ -40,8 +40,17 @@ import neurofinder as nf
 from torchsummary import summary
 
 
-# data.synchronise_folder()
-# h.test('t2e')
+data.synchronise_folder()
+# h.test('abram_test_long')
+
+
+# set = h.Setup(model_name='128_test',
+#               subsample_size=1024, embedding_dim=32, margin=0.5, nb_epochs=10,
+#               save_config=True, learning_rate=0.0001, scaling=10,
+#               batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
+#               background_pred=True,
+#               nb_iterations=10, embedding_loss=True)
+# set.main()
 
 
 # set = h.Setup(model_name='t2',
@@ -72,13 +81,13 @@ from torchsummary import summary
 # set.main()
 
 
-set = h.Setup(model_name='adam_test',
-              subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=50,
-              save_config=True, learning_rate=0.0005, scaling=10,
-              batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
-              background_pred=True,
-              nb_iterations=0, embedding_loss=False)
-set.main()
+# set = h.Setup(model_name='abram_test_short',
+#               subsample_size=1024, embedding_dim=3, margin=0.5, nb_epochs=50,
+#               save_config=True, learning_rate=0.0005, scaling=10,
+#               batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
+#               background_pred=True,
+#               nb_iterations=0, embedding_loss=False)
+# set.main()
 
 
 # set = h.Setup(model_name='test_4.3',

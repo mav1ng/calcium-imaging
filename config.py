@@ -43,7 +43,7 @@ training = dict(
     lr=0.002,
     nb_epochs=1000,
     nb_samples=100,
-    img_size=64,
+    img_size=128,
     batch_size=1,
 
     aux_network=False,

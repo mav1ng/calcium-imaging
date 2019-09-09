@@ -145,6 +145,8 @@ class Setup:
                     lab = torch.where(label[b].flatten().long() > 0,
                                       torch.tensor(1, dtype=torch.long, device=self.device),
                                       torch.tensor(0, dtype=torch.long, device=self.device))
+                    print(lab.size())
+                    print(y[b].view(2, -1).t().size())
                     cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
 
                     # if cel_loss != cel_loss:
@@ -776,15 +778,15 @@ def test(model_name):
 
             (bs, ch, w, h) = output.size()
 
-            for i in range(ch):
-                plt.imshow(output[0, i].detach().cpu().numpy())
-                plt.show()
+            # for i in range(ch):
+            #     plt.imshow(output[0, i].detach().cpu().numpy())
+            #     plt.show()
 
             # plt.imshow(__[0, 0].detach().cpu().numpy())
             # plt.show()
 
-            labels = np.ones((bs, w, h))
-            v.plot_emb_pca(output[0], labels[0])
+            # labels = np.ones((bs, w, h))
+            # v.plot_emb_pca(output[0], labels[0])
 
             # pos_matrix = cl.get_pos_mat(bs, w, h)
             # m = torch.cat([output, pos_matrix], dim=1)

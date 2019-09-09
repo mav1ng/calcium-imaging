@@ -54,6 +54,7 @@ class UNet(nn.Module):
         self.embedding_dim = embedding_dim
         self.dropout_rate = dropout_rate
         self.background_pred = background_pred
+        self.filters = 32
 
         self.conv_layer_1 = get_conv_layer(self.input_channels, self.embedding_dim)
         self.conv_layer_2 = get_conv_layer(self.embedding_dim, self.embedding_dim)
@@ -96,6 +97,7 @@ class UNet(nn.Module):
 
         self.conv_layer_17 = get_conv_layer(self.embedding_dim * 2, self.embedding_dim)
         self.conv_layer_18 = get_conv_layer(self.embedding_dim, self.embedding_dim)
+
         if self.background_pred:
             self.conv_layer_end = nn.Conv2d(self.embedding_dim, self.embedding_dim + 2, 1)
         else:

@@ -40,25 +40,42 @@ import neurofinder as nf
 from torchsummary import summary
 
 
-data.synchronise_folder()
-# h.test('abram_test_long')
+# data.synchronise_folder()
+# h.test('128_test_long')
 
 
-# set = h.Setup(model_name='128_test',
-#               subsample_size=1024, embedding_dim=32, margin=0.5, nb_epochs=10,
-#               save_config=True, learning_rate=0.0001, scaling=10,
-#               batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
+"""ABRAM OPT ROUND 1"""
+cur_nb_epochs = 100
+lr_list = np.linspace(0.0001, 0.01, 10000)
+
+for i in range(100):
+    cur_emb = np.random.choice(np.array([0]))
+    cur_bs = np.random.randint(1, 21)
+    cur_lr = np.around(np.random.choice(lr_list), decimals=5)
+    print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs, 'Emb Dim: ', cur_emb)
+    set = h.Setup(model_name='abram' + '_' + str(cur_lr) + '_' + str(cur_bs) + '_' + str(cur_emb),
+                  nb_epochs=cur_nb_epochs, save_config=True, learning_rate=cur_lr, batch_size=cur_bs,
+                  embedding_loss=False, background_pred=True, nb_iterations=0, embedding_dim=cur_emb)
+    set.main()
+ana.score('abram_', include_metric=True)
+ana.save_images('abram_')
+
+
+# set = h.Setup(model_name='128_test_short',
+#               subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=50,
+#               save_config=True, learning_rate=0.01, scaling=10,
+#               batch_size=4, include_background=False, kernel_bandwidth=None, step_size=1.,
 #               background_pred=True,
-#               nb_iterations=10, embedding_loss=True)
+#               nb_iterations=0, embedding_loss=False)
 # set.main()
 
 
-# set = h.Setup(model_name='t2',
-#               subsample_size=1024, embedding_dim=3, margin=0.5, nb_epochs=10,
-#               save_config=True, learning_rate=0.0001, scaling=0,
-#               batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
+# set = h.Setup(model_name='emb_test',
+#               subsample_size=1024, embedding_dim=16, margin=0.5, nb_epochs=10,
+#               save_config=True, learning_rate=0.002, scaling=10,
+#               batch_size=5, include_background=False, kernel_bandwidth=None, step_size=1.,
 #               background_pred=True,
-#               nb_iterations=0, embedding_loss=False, pre_train=True, pre_train_name='t_pre')
+#               nb_iterations=0, embedding_loss=True)
 # set.main()
 # h.test('t2')
 

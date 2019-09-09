@@ -145,8 +145,6 @@ class Setup:
                     lab = torch.where(label[b].flatten().long() > 0,
                                       torch.tensor(1, dtype=torch.long, device=self.device),
                                       torch.tensor(0, dtype=torch.long, device=self.device))
-                    print(lab.size())
-                    print(y[b].view(2, -1).t().size())
                     cel_loss = cel_loss.clone() + criterionCEL(y[b].view(2, -1).t(), lab)
 
                     # if cel_loss != cel_loss:
@@ -675,7 +673,17 @@ def emb_subsample(embedding_tensor, label_tensor, backpred, include_background, 
 
     back_prob = torch.ones(bs, w, h, device=device) * 2
     if backpred is not None:
-        back_prob = 1 - (backpred * 0.5 + 0.5) * prefer_cell
+        softmax_layer = nn.Softmax2d()
+        backpred = softmax_layer(backpred)
+
+        # plt.imshow(backpred[0, 0].detach().cpu().numpy())
+        # plt.colorbar()
+        # plt.show()
+        # plt.imshow(backpred[0, 0].detach().cpu().numpy())
+        # plt.colorbar()
+        # plt.show()
+
+        back_prob = 1 - backpred[:, 0] * prefer_cell
 
     emb = torch.zeros(bs, ch, new_w, new_h, device=device)
     lab = torch.zeros(bs, new_w, new_h, device=device)
@@ -763,6 +771,7 @@ def test(model_name):
 
     with torch.no_grad():
         for i, batch in enumerate(test_loader):
+            print(i)
 
             input = batch['image']
             input_var = list()
@@ -778,9 +787,9 @@ def test(model_name):
 
             (bs, ch, w, h) = output.size()
 
-            # for i in range(ch):
-            #     plt.imshow(output[0, i].detach().cpu().numpy())
-            #     plt.show()
+            for k in range(ch):
+                plt.imshow(output[0, k].detach().cpu().numpy())
+                plt.show()
 
             # plt.imshow(__[0, 0].detach().cpu().numpy())
             # plt.show()

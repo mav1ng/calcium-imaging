@@ -56,52 +56,52 @@ class UNet(nn.Module):
         self.background_pred = background_pred
         self.filters = 32
 
-        self.conv_layer_1 = get_conv_layer(self.input_channels, self.embedding_dim)
-        self.conv_layer_2 = get_conv_layer(self.embedding_dim, self.embedding_dim)
+        self.conv_layer_1 = get_conv_layer(self.input_channels, self.filters)
+        self.conv_layer_2 = get_conv_layer(self.filters, self.filters)
 
         self.max_pool_2D_1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv_layer_3 = get_conv_layer(self.embedding_dim, self.embedding_dim * 2)
-        self.conv_layer_4 = get_conv_layer(self.embedding_dim * 2, self.embedding_dim * 2)
+        self.conv_layer_3 = get_conv_layer(self.filters, self.filters * 2)
+        self.conv_layer_4 = get_conv_layer(self.filters * 2, self.filters * 2)
         self.dropout_1 = nn.Dropout(p=self.dropout_rate)
 
         self.max_pool_2D_2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv_layer_5 = get_conv_layer(self.embedding_dim * 2, self.embedding_dim * 4)
-        self.conv_layer_6 = get_conv_layer(self.embedding_dim * 4, self.embedding_dim * 4)
+        self.conv_layer_5 = get_conv_layer(self.filters * 2, self.filters * 4)
+        self.conv_layer_6 = get_conv_layer(self.filters * 4, self.filters * 4)
         self.dropout_2 = nn.Dropout(p=self.dropout_rate * 2)
 
         self.max_pool_2D_3 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv_layer_7 = get_conv_layer(self.embedding_dim * 4, self.embedding_dim * 8)
-        self.conv_layer_8 = get_conv_layer(self.embedding_dim * 8, self.embedding_dim * 8)
+        self.conv_layer_7 = get_conv_layer(self.filters * 4, self.filters * 8)
+        self.conv_layer_8 = get_conv_layer(self.filters * 8, self.filters * 8)
         self.dropout_3 = nn.Dropout(p=self.dropout_rate * 2)
 
         self.max_pool_2D_4 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv_layer_9 = get_conv_layer(self.embedding_dim * 8, self.embedding_dim * 16)
-        self.conv_layer_10 = get_conv_layer(self.embedding_dim * 16, self.embedding_dim * 16)
-        self.up_layer_1 = get_up_layer(self.embedding_dim * 16, self.embedding_dim * 8)
+        self.conv_layer_9 = get_conv_layer(self.filters * 8, self.filters * 16)
+        self.conv_layer_10 = get_conv_layer(self.filters * 16, self.filters * 16)
+        self.up_layer_1 = get_up_layer(self.filters * 16, self.filters * 8)
         self.dropout_4 = nn.Dropout(p=self.dropout_rate * 2)
 
-        self.conv_layer_11 = get_conv_layer(self.embedding_dim * 16, self.embedding_dim * 8)
-        self.conv_layer_12 = get_conv_layer(self.embedding_dim * 8, self.embedding_dim * 8)
-        self.up_layer_2 = get_up_layer(self.embedding_dim * 8, self.embedding_dim * 4)
+        self.conv_layer_11 = get_conv_layer(self.filters * 16, self.filters * 8)
+        self.conv_layer_12 = get_conv_layer(self.filters * 8, self.filters * 8)
+        self.up_layer_2 = get_up_layer(self.filters * 8, self.filters * 4)
         self.dropout_5 = nn.Dropout(p=self.dropout_rate * 2)
 
-        self.conv_layer_13 = get_conv_layer(self.embedding_dim * 8, self.embedding_dim * 4)
-        self.conv_layer_14 = get_conv_layer(self.embedding_dim * 4, self.embedding_dim * 4)
-        self.up_layer_3 = get_up_layer(self.embedding_dim * 4, self.embedding_dim * 2)
+        self.conv_layer_13 = get_conv_layer(self.filters * 8, self.filters * 4)
+        self.conv_layer_14 = get_conv_layer(self.filters * 4, self.filters * 4)
+        self.up_layer_3 = get_up_layer(self.filters * 4, self.filters * 2)
         self.dropout_6 = nn.Dropout(p=self.dropout_rate * 2)
 
-        self.conv_layer_15 = get_conv_layer(self.embedding_dim * 4, self.embedding_dim * 2)
-        self.conv_layer_16 = get_conv_layer(self.embedding_dim * 2, self.embedding_dim * 2)
-        self.up_layer_4 = get_up_layer(self.embedding_dim * 2, self.embedding_dim)
+        self.conv_layer_15 = get_conv_layer(self.filters * 4, self.filters * 2)
+        self.conv_layer_16 = get_conv_layer(self.filters * 2, self.filters * 2)
+        self.up_layer_4 = get_up_layer(self.filters * 2, self.filters)
         self.dropout_7 = nn.Dropout(p=self.dropout_rate)
 
-        self.conv_layer_17 = get_conv_layer(self.embedding_dim * 2, self.embedding_dim)
-        self.conv_layer_18 = get_conv_layer(self.embedding_dim, self.embedding_dim)
+        self.conv_layer_17 = get_conv_layer(self.filters * 2, self.filters)
+        self.conv_layer_18 = get_conv_layer(self.filters, self.filters)
 
         if self.background_pred:
-            self.conv_layer_end = nn.Conv2d(self.embedding_dim, self.embedding_dim + 2, 1)
+            self.conv_layer_end = nn.Conv2d(self.filters, self.embedding_dim + 2, 1)
         else:
-            self.conv_layer_end = nn.Conv2d(self.embedding_dim, self.embedding_dim, 1)
+            self.conv_layer_end = nn.Conv2d(self.filters, self.embedding_dim, 1)
 
         # self.Softmax2d = nn.Softmax2d()
 
@@ -395,18 +395,19 @@ class UNetMS(nn.Module):
         #     if torch.sum(torch.isnan(x[:, -2:])) > 0.:
         #         print('NaNs in Y')
 
-        if self.use_background_pred:
+        if self.use_background_pred and self.embedding_dim == 0:
+            return x, 0., x
+        elif self.use_background_pred:
             x = x.clone()[:, :-2]
             # if torch.sum(torch.isnan(x)) > 0.:
             #     print('NaNs in X')
 
             # x = self.SoftMax(x).clone()
-
-            x = self.L2Norm(x)
             y = x.clone()[:, -2:]
+            x = self.L2Norm(x)
             # if torch.sum(torch.isnan(x)) > 0.:
             #     print('NaNs in Y')
-            x, ret_loss = self.MS(x, lab, background_pred=y[:, 0], subsample_size=self.subsample_size)
+            x, ret_loss = self.MS(x, lab, background_pred=y, subsample_size=self.subsample_size)
             return x, ret_loss, y
         else:
             # x = self.SoftMax(x).clone()

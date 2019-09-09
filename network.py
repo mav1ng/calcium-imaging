@@ -286,9 +286,9 @@ class MS(nn.Module):
                                      torch.mul(1. - self.step_size, torch.eye(self.sw * self.sh, device=d))))
 
                 if subsample_size is not None and not self.test:
-                    out = out.view(self.bs, self.emb, -1)
+                    out = out.view(self.bs, self.emb, -1).clone()
                     out[b, :, ind] = y
-                    out = out.view(self.bs, self.emb, self.w, self.h)
+                    out = out.view(self.bs, self.emb, self.w, self.h).clone()
                 else:
                     out[b, :, :, :] = y.view(self.emb, self.w, self.h)
 
@@ -302,10 +302,10 @@ class MS(nn.Module):
             if self.training and self.use_embedding_loss and not self.val:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
 
-                emb = out
-                lab = lab_in_
-
-                if subsample_size is not None:
+                if subsample_size is None:
+                    emb = out
+                    lab = lab_in_
+                elif subsample_size is not None:
                     emb = out.view(self.bs, self.emb, -1)[:, :, ind].view(self.bs, self.emb, wurzel, wurzel)
                     lab = lab_in_.view(self.bs, -1)[:, ind].view(self.bs, wurzel, wurzel)
 
@@ -314,13 +314,14 @@ class MS(nn.Module):
                 loss = (loss / self.bs) * self.scaling * (1/(self.iter + 1))
 
                 with torch.no_grad():
-                    ret_loss = ret_loss + loss.detach()
+                    ret_loss = ret_loss + loss.item()
 
                 if t == self.iter and not self.use_background_pred and not t == 0:
                     loss.backward()
                 else:
                     if not loss.item() == 0.:
                         loss.backward(retain_graph=True)
+
             elif self.val and not self.test:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
 
@@ -337,7 +338,7 @@ class MS(nn.Module):
                 loss = (loss / self.bs) * 25 * (1/(self.iter + 1))
 
                 with torch.no_grad():
-                    ret_loss = ret_loss + loss.detach()
+                    ret_loss = ret_loss + loss.item()
 
         return x_in, ret_loss
 

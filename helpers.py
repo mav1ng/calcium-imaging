@@ -155,7 +155,7 @@ class Setup:
 
                 self.writer.add_scalar('Cross Entropy Loss', cel_loss.item())
 
-                cel_loss.backward(retain_graph=True)
+                cel_loss.backward()
                 cel_losses.update(cel_loss.item())
 
                 if c.debug['print_img']:
@@ -774,9 +774,9 @@ def test(model_name):
 
             (bs, ch, w, h) = output.size()
 
-            # for i in range(ch):
-            #     plt.imshow(output[0, i].detach().cpu().numpy())
-            #     plt.show()
+            for i in range(ch):
+                plt.imshow(output[0, i].detach().cpu().numpy())
+                plt.show()
 
             # plt.imshow(__[0, 0].detach().cpu().numpy())
             # plt.show()

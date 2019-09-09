@@ -237,7 +237,6 @@ class MS(nn.Module):
 
 
         x = x_in.view(self.bs, self.emb, self.w, self.h)
-        out = torch.zeros(self.bs, self.emb, self.w, self.h, device=d)
         out = x_in.view(self.bs, self.emb, self.w, self.h)
         y = torch.zeros(self.emb, self.w * self.h, device=d)
 
@@ -294,6 +293,7 @@ class MS(nn.Module):
                     out[b, :, :, :] = y.view(self.emb, self.w, self.h)
 
             x = out.view(self.bs, self.emb, -1)
+
             if subsample_size is not None and not self.test:
                 x = out.view(self.bs, self.emb, -1)[:, :, ind]
 
@@ -319,8 +319,8 @@ class MS(nn.Module):
                 if t == self.iter and not self.use_background_pred and not t == 0:
                     loss.backward()
                 else:
-                    # print(loss.item())
-                    loss.backward(retain_graph=True)
+                    if not loss.item() == 0.:
+                        loss.backward(retain_graph=True)
             elif self.val and not self.test:
                 lab_in_ = torch.tensor(h.get_diff_labels(lab_in.detach().cpu().numpy()), device=d)
 
@@ -401,7 +401,7 @@ class UNetMS(nn.Module):
             # x = self.SoftMax(x).clone()
 
             x = self.L2Norm(x)
-            y = x[:, -2:]
+            y = x.clone()[:, -2:]
             # if torch.sum(torch.isnan(x)) > 0.:
             #     print('NaNs in Y')
             x, ret_loss = self.MS(x, lab, background_pred=y[:, 0], subsample_size=self.subsample_size)
@@ -418,28 +418,11 @@ class L2Norm(nn.Module):
         super(L2Norm, self).__init__()
 
     def forward(self, x):
-        # L2 Normalization
         (bs, c, w, h) = x.size()
 
-        # for b in range(bs):
-        #     y = x[b].view(c, -1)
-        #     y_ = torch.mean(y, dim=0)
-        #     y_n = y - y_
-        #     y_n_ = torch.sqrt(torch.sum(y_n ** 2, dim=0))
-        #     x[b] = (y_n / y_n_).view(c, w, h)
-
         for b in range(bs):
-            # for k in range(c):
-            #     print(torch.min(x[b, k].reshape(-1)), torch.max(x[b, k].reshape(-1)))
-            # print(torch.norm(x[b].view(c, -1), p=2, dim=1))
-            # print(torch.norm(x[b].view(c, -1), p=2, dim=1).size())
-
             x[b] = (x[b].clone().view(c, -1) / torch.norm(x[b].clone().view(c, -1), p=2, dim=0)).view(c, w, h)
 
-            # for k in range(c):
-            #     print(torch.min(x[b, k].reshape(-1)), torch.max(x[b, k].reshape(-1)))
-
-        # print(torch.norm(x[0, :, 0, 0]))
         # fig = plt.figure()
         # ax = fig.add_subplot(111, projection='3d')
         # f = x[0].clone().detach().cpu().numpy()

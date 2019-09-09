@@ -39,48 +39,48 @@ import neurofinder as nf
 
 from torchsummary import summary
 
+
 # data.synchronise_folder()
+# h.test('test_2')
+# h.test('test_3')
+# h.test('test_4.1')
+# h.test('test_4.3')
+# h.test('mean_shift_test_7')
+h.test('test2')
 
+# set = h.Setup(model_name='sphere_test_4',
+#               subsample_size=1024, embedding_dim=3, margin=0.5, nb_epochs=50,
+#               save_config=True, learning_rate=0.01, scaling=10,
+#               batch_size=10, include_background=False, kernel_bandwidth=None, step_size=1.,
+#               background_pred=False,
+#               nb_iterations=0, embedding_loss=True)
+# set.main()
 
-# h.test('sphere_test')
-
-set = h.Setup(model_name='sphere_test_4',
-              subsample_size=1024, embedding_dim=3, margin=0.5, nb_epochs=50,
-              save_config=True, learning_rate=0.01, scaling=10,
-              batch_size=10, include_background=False, kernel_bandwidth=None, step_size=1.,
-              background_pred=False,
-              nb_iterations=0, embedding_loss=True)
+set = h.Setup(model_name='test3_m',
+              subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=1,
+              save_config=True, learning_rate=0.0005, scaling=0,
+              batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
+              background_pred=True,
+              nb_iterations=5, embedding_loss=True)
 set.main()
 
-# set = h.Setup(model_name='mean_shift_test_4',
-#               subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=30,
-#               save_config=True, learning_rate=0.0005, scaling=0,
+
+# set = h.Setup(model_name='test_1.1',
+#               subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=1,
+#               save_config=True, learning_rate=0.0005, scaling=10,
 #               batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
 #               background_pred=True,
-#               nb_iterations=5, embedding_loss=True)
+#               nb_iterations=0, embedding_loss=True)
 # set.main()
-# ana.score('mean_shift_test_4', include_metric=True)
-# ana.save_images('mean_shift_test_4')
 
-# set = h.Setup(model_name='test_2',
-#               subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=30,
+
+# set = h.Setup(model_name='test_4.3',
+#               subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=12,
 #               save_config=True, learning_rate=0.0005, scaling=0,
 #               batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
 #               background_pred=True,
 #               nb_iterations=0, embedding_loss=True)
 # set.main()
-# ana.score('test_2', include_metric=True)
-# ana.save_images('test_2')
-
-# set = h.Setup(model_name='test_3',
-#               subsample_size=1024, embedding_dim=18, margin=0.5, nb_epochs=30,
-#               save_config=True, learning_rate=0.0005, scaling=0,
-#               batch_size=1, include_background=False, kernel_bandwidth=None, step_size=1.,
-#               background_pred=True,
-#               nb_iterations=0, embedding_loss=False)
-# set.main()
-# ana.score('test_3', include_metric=True)
-# ana.save_images('test_3')
 
 
 # set = h.Setup(model_name='test',

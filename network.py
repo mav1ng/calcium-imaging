@@ -217,10 +217,11 @@ class MS(nn.Module):
         self.prefer_cell = 0.5
 
         self.criterion = EmbeddingLoss(margin=self.margin).cuda()
+        self.L2Norm = L2Norm()
 
     def forward(self, x_in, lab_in, subsample_size, background_pred=None):
         """
-        :param x_in: flattened image in D x N , D embedding Dimension, N number of Pixels
+        :param x_in: l2 normalized flattened image in D x N , D embedding Dimension, N number of Pixels
         :param lab_in specify labels B x W x H if model is usd in training mode
         :return: tensor with dimension B x D x W x H, B batch size, D embedding dimension, loss
         W width of the image, H height of the image, embeddings x_in mean shifted
@@ -277,6 +278,17 @@ class MS(nn.Module):
             # iterating over all samples in the batch
             for b in range(self.bs):
                 y = x[b, :, :]
+
+                # fig = plt.figure()
+                # ax = fig.add_subplot(111, projection='3d')
+                # f = y.clone().detach().cpu().numpy()
+                # f = f.reshape(3, -1).T
+                # ax.scatter(f[:, 0], f[:, 1], f[:, 2])
+                # plt.xlim(-1, 1)
+                # plt.ylim(-1, 1)
+                # ax.set_zlim(-1, 1)
+                # plt.show()
+
                 if t != 0:
                     kernel_mat = torch.exp(torch.mul(self.kernel_bandwidth, mm(y.clone().t(), y.clone())))
                     kernel_mat = torch.where(kernel_mat < 1., torch.tensor(0., device=d), kernel_mat)
@@ -293,6 +305,8 @@ class MS(nn.Module):
                     out = out.view(self.bs, self.emb, self.w, self.h).clone()
                 else:
                     out[b, :, :, :] = y.view(self.emb, self.w, self.h)
+
+            out = self.L2Norm(out)
 
             x = out.view(self.bs, self.emb, -1)
 

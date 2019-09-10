@@ -42,16 +42,56 @@ from torchsummary import summary
 
 # data.synchronise_folder()
 # h.test('abram_0.0068_11')
-h.test('noah_0.00171_1_3.25_5.15')
+# h.test('mean_shift_full_test')
+
+"""NOAH OPT ROUND 1"""
+margin = 0.5
+nb_epochs = 100
+nb_iter = 5
+step_size = 1.
+
+kernel_bandwidth_list = np.linspace(5, 15, 1000)
+scaling_list = np.linspace(1, 10, 300)
+lr_list = np.linspace(0.0001, 0.01, 10000)
+subsample_size = 1024
+
+for i in range(50):
+    kernel_bandwidth = np.around(np.random.choice(kernel_bandwidth_list), decimals=2)
+    emb_dim = np.random.randint(8, 33)
+    scaling = np.around(np.random.choice(scaling_list), decimals=2)
+    bs = np.random.randint(1, 21)
+    lr = np.around(np.random.choice(lr_list), decimals=5)
+
+    print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+          'Number epochs: ',
+          nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+    set = h.Setup(
+        model_name='noah_' + str(lr) + '_' + str(bs) + '_' + str(scaling) + '_' + str(kernel_bandwidth),
+        subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+        nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+        background_pred=True,
+        nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+    set.main()
+ana.score('noah_', include_metric=True)
+ana.save_images('noah_')
 
 
+# set = h.Setup(
+#         model_name='mean_shift_full_test',
+#         subsample_size=1024, embedding_dim=16, margin=0.5, scaling=5,
+#         nb_epochs=100, save_config=True, learning_rate=0.0005, batch_size=4, include_background=False,
+#         background_pred=True,
+#         nb_iterations=5, kernel_bandwidth=10., step_size=1., embedding_loss=True)
+# set.main()
+# ana.score('mean_shift_full_test', include_metric=True)
+# ana.save_images('mean_shift_full_test')
 
-# set = h.Setup(model_name='emb_test_ohne',
-#               subsample_size=1024, embedding_dim=16, margin=0.5, nb_epochs=1000,
+# set = h.Setup(model_name='ms_test_1',
+#               subsample_size=1024, embedding_dim=3, margin=0.5, nb_epochs=10,
 #               save_config=True, learning_rate=0.002, scaling=10,
-#               batch_size=5, include_background=True, kernel_bandwidth=None, step_size=1.,
-#               background_pred=False,
-#               nb_iterations=0, embedding_loss=True)
+#               batch_size=1, include_background=False, kernel_bandwidth=12., step_size=1.,
+#               background_pred=True,
+#               nb_iterations=5, embedding_loss=True)
 # set.main()
 
 

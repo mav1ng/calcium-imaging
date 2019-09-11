@@ -44,6 +44,10 @@ from torchsummary import summary
 # h.test('abram_0.0068_11')
 # h.test('mean_shift_full_test')
 
+
+#
+
+
 """NOAH OPT ROUND 1"""
 margin = 0.5
 nb_epochs = 100
@@ -191,9 +195,10 @@ ana.save_images('noah_')
 
 # ana.plot_analysis('eve2_114_0.3_25', th=0)
 
+# h.test('abram_0.00461_3')
 
 
-# ana.analysis(analysis='lr_ep_bs', analysis_name='eve', use_metric=False)
+# ana.analysis(analysis='lr_ep_bs', analysis_name='abram', use_metric=True)
 # ana.analysis(analysis='ed_ma_sc', analysis_name='eve', use_metric=False)
 # ana.analysis(analysis='ed_ma', analysis_name='abram', use_metric=False)
 # ana.analysis(analysis='ss', analysis_name='evey', use_metric=True)

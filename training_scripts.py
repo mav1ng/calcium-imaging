@@ -14,6 +14,21 @@
 # ana.score('abram_', include_metric=True)
 # ana.save_images('abram_')
 
+"""ABRAM OPT ROUND 2"""
+# cur_nb_epochs = 100
+# lr_list = np.linspace(0.0001, 0.1, 10000)
+#
+# for i in range(100):
+#     cur_emb = 0
+#     cur_bs = 4
+#     cur_lr = np.around(np.random.choice(lr_list), decimals=5)
+#     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
+#     set = h.Setup(model_name='abram' + '_' + str(cur_lr) + '_' + str(cur_bs),
+#                   nb_epochs=cur_nb_epochs, save_config=True, learning_rate=cur_lr, batch_size=cur_bs,
+#                   embedding_loss=False, background_pred=True, nb_iterations=0, embedding_dim=cur_emb)
+#     set.main()
+# ana.score('abram_', include_metric=True)
+# ana.save_images('abram_')
 
 
 """AZRAEL OPT ROUND 1"""

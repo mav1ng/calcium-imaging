@@ -85,8 +85,8 @@ def postprocess_label(prediction, background, th=0., object_min_size=18, embeddi
         if background is not None:
             predict[b] = np.where(background[b].detach().cpu().numpy() > th, 0, prediction[b])
 
-        plt.imshow(predict[b])
-        plt.show()
+        # plt.imshow(predict[b])
+        # plt.show()
 
         predict[b] = np.where(predict[b] > 0, 1, 0)
 

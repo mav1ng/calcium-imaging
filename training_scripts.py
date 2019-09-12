@@ -80,6 +80,33 @@
 # ana.save_images('eve_')
 
 
+"""EVE OPT ROUND 2"""
+margin = 0.5
+nb_epochs = 50
+
+lr_list = np.linspace(0.0001, 0.001, 10000)
+subsample_size = 1024
+scaling = 4.
+
+for i in range(100):
+    bs = 20
+    emb_dim = np.random.choice(np.array([16, 32]))
+    lr = np.around(np.random.choice(lr_list), decimals=5)
+
+    print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+          'Number epochs: ',
+          nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+    set = h.Setup(
+        model_name='eve_' + '_' + str(lr) + '_' + str(scaling) + '_' + str(emb_dim) + '_' + str(bs),
+        subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+        nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=True,
+        background_pred=True,
+        nb_iterations=0, embedding_loss=True)
+    set.main()
+ana.score('eve_', include_metric=True)
+ana.save_images('eve_')
+
+
 
 """ADAM OPT ROUND 1"""
 # margin = 0.5
@@ -108,6 +135,32 @@
 # ana.score('adam_', include_metric=True)
 # ana.save_images('adam_')
 
+
+"""ADAM OPT ROUND 2"""
+# margin = 0.5
+# nb_epochs = 50
+#
+# lr_list = np.linspace(0.0001, 0.001, 10000)
+# subsample_size = 1024
+#
+# for i in range(100):
+#     bs = 20
+#     emb_dim = np.random.choice(np.array([16, 32]))
+#     scaling = 4.
+#     lr = np.around(np.random.choice(lr_list), decimals=5)
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(
+#         model_name='adam_' + '_' + str(lr) + '_' + str(scaling) + '_' + str(emb_dim) + '_' + str(bs),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('adam_', include_metric=True)
+# ana.save_images('adam_')
 
 
 """NOAH OPT ROUND 1"""

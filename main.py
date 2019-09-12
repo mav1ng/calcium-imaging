@@ -42,28 +42,28 @@ from torchsummary import summary
 
 # data.synchronise_folder()
 # h.test('abram_0.0068_11')
-# h.test('mean_shift_full_test')
+# h.test('noah_0.00575_13_2.38_8.09')
 
 
-#
+# ana.score('noah_', include_metric=False)
+# ana.save_images('noah_')
 
 
-"""NOAH OPT ROUND 1"""
+"""NOAH OPT ROUND 2"""
 margin = 0.5
-nb_epochs = 100
-nb_iter = 5
+nb_epochs = 50
+nb_iter = 3
 step_size = 1.
 
 kernel_bandwidth_list = np.linspace(5, 15, 1000)
-scaling_list = np.linspace(1, 10, 300)
 lr_list = np.linspace(0.0001, 0.01, 10000)
 subsample_size = 1024
 
 for i in range(50):
     kernel_bandwidth = np.around(np.random.choice(kernel_bandwidth_list), decimals=2)
-    emb_dim = np.random.randint(8, 33)
-    scaling = np.around(np.random.choice(scaling_list), decimals=2)
-    bs = np.random.randint(1, 21)
+    emb_dim = np.random.choice(np.array([8, 16, 32]))
+    scaling = 3.
+    bs = np.random.randint(1, 5)
     lr = np.around(np.random.choice(lr_list), decimals=5)
 
     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
@@ -78,6 +78,39 @@ for i in range(50):
     set.main()
 ana.score('noah_', include_metric=True)
 ana.save_images('noah_')
+
+
+
+# """NOAH OPT ROUND 1"""
+# margin = 0.5
+# nb_epochs = 100
+# nb_iter = 5
+# step_size = 1.
+#
+# kernel_bandwidth_list = np.linspace(5, 15, 1000)
+# scaling_list = np.linspace(1, 10, 300)
+# lr_list = np.linspace(0.0001, 0.01, 10000)
+# subsample_size = 1024
+#
+# for i in range(50):
+#     kernel_bandwidth = np.around(np.random.choice(kernel_bandwidth_list), decimals=2)
+#     emb_dim = np.random.randint(8, 33)
+#     scaling = np.around(np.random.choice(scaling_list), decimals=2)
+#     bs = np.random.randint(1, 21)
+#     lr = np.around(np.random.choice(lr_list), decimals=5)
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+#     set = h.Setup(
+#         model_name='noah_' + str(lr) + '_' + str(bs) + '_' + str(scaling) + '_' + str(kernel_bandwidth),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+#     set.main()
+# ana.score('noah_', include_metric=True)
+# ana.save_images('noah_')
 
 
 # set = h.Setup(
@@ -195,11 +228,11 @@ ana.save_images('noah_')
 
 # ana.plot_analysis('eve2_114_0.3_25', th=0)
 
-# h.test('abram_0.00461_3')
+# h.test('noah_0.00315_11_7.17_11.27')
 
 
-# ana.analysis(analysis='lr_ep_bs', analysis_name='abram', use_metric=True)
-# ana.analysis(analysis='ed_ma_sc', analysis_name='eve', use_metric=False)
+# ana.analysis(analysis='lr_ep_bs', analysis_name='', use_metric=False)
+# ana.analysis(analysis='ed_ma_sc', analysis_name='adam', use_metric=False)
 # ana.analysis(analysis='ed_ma', analysis_name='abram', use_metric=False)
 # ana.analysis(analysis='ss', analysis_name='evey', use_metric=True)
 # ana.analysis(analysis='lr', analysis_name='m_adam4_', use_metric=True)

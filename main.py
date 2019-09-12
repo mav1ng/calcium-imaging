@@ -42,11 +42,12 @@ from torchsummary import summary
 
 # data.synchronise_folder()
 # h.test('abram_0.0068_11')
-# h.test('noah_0.00575_13_2.38_8.09')
+# h.test('adam__0.00039_3.9_10_19')
 
 
-# ana.score('noah_', include_metric=False)
-# ana.save_images('noah_')
+# ana.score('abram_', include_metric=False)
+# ana.save_images('abram_')
+
 
 
 """NOAH OPT ROUND 2"""
@@ -233,7 +234,7 @@ ana.save_images('noah_')
 
 # ana.analysis(analysis='lr_ep_bs', analysis_name='', use_metric=False)
 # ana.analysis(analysis='ed_ma_sc', analysis_name='adam', use_metric=False)
-# ana.analysis(analysis='ed_ma', analysis_name='abram', use_metric=False)
+# ana.analysis(analysis='ed_ma', analysis_name='azrael', use_metric=False)
 # ana.analysis(analysis='ss', analysis_name='evey', use_metric=True)
 # ana.analysis(analysis='lr', analysis_name='m_adam4_', use_metric=True)
 

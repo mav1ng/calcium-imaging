@@ -13,6 +13,8 @@ import clustering as cl
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
+from torchvision import transforms, utils
+
 from pprint import pprint
 
 
@@ -652,3 +654,32 @@ def analysis(analysis, analysis_name, use_metric):
         print_results(data, ana_param, optimized_parameters, (2, 3), use_metric)
     else:
         print('Analysis Name is not known!')
+
+
+def input_test(nb_neuro, input_dim, corr_path, corr_sum_folder, sum_folder):
+    # transform_train = transforms.Compose([data.RandomCrop(128)])
+    # val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+    #                                    corr_sum_folder='data/corr_sum_img/',
+    #                                    sum_folder='data/sum_img/',
+    #                                    mask_folder='data/sum_masks/',
+    #                                    transform=None, device=device, dtype=dtype, test=True)
+    train_dataset = data.CombinedDataset(corr_path=corr_path,
+                                         corr_sum_folder=corr_sum_folder,
+                                         sum_folder=sum_folder,
+                                         mask_folder='data/sum_masks/',
+                                         transform=None, device=torch.device('cuda:0'), dtype=torch.float, test=False)
+    val_dataset = data.CombinedDataset(corr_path=corr_path,
+                                       corr_sum_folder=corr_sum_folder,
+                                       sum_folder=sum_folder,
+                                       mask_folder='data/sum_masks/',
+                                       transform=None, device=torch.device('cuda:0'), dtype=torch.float, test=True)
+
+    cur_img = torch.cat([train_dataset[nb_neuro]['image'][input_dim], val_dataset[nb_neuro]['image'][input_dim]], dim=1)
+
+    return cur_img
+
+
+def show_input(image, image_name):
+    plt.imshow(image.detach().cpu().numpy(), cmap='gray')
+    plt.savefig('x_images/' + str(image_name) + '.pdf')
+    # plt.show()

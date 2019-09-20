@@ -208,7 +208,7 @@ class Setup:
                 break
 
 
-    def validate(self, val_loader, model, use_metric, criterionCEL, scoring=False):
+    def validate(self, val_loader, model, use_metric, criterionCEL, scoring=False, pp_th=0., cl_th=0.8):
 
         # nf_threshold = c.val['nf_threshold']
         # switch to evaluate mode
@@ -274,14 +274,14 @@ class Setup:
                 if use_metric and torch.sum(torch.isnan(output)).item() == 0:
                     # predict = cl.label_emb_sl(output.view(ch, -1).t(), th=.5)
 
-                    predict = cl.label_embeddings(output.view(ch, -1).t(), th=self.th_nn)
+                    predict = cl.label_embeddings(output.view(ch, -1).t(), th=cl_th)
                     predict = predict.reshape(bs, w, h)
 
                     if scoring:
                         if model.use_background_pred:
-                            predict = cl.postprocess_label(predict, background=y[:, 0])
+                            predict = cl.postprocess_label(predict, background=y[:, 0], th=pp_th)
                         else:
-                            predict = cl.postprocess_label(predict, background=None)
+                            predict = cl.postprocess_label(predict, background=None, th=pp_th)
 
                     f1_metric_ = 0.
                     (recall_, precision_) = (0., 0.)
@@ -787,9 +787,9 @@ def test(model_name):
 
             (bs, ch, w, h) = output.size()
 
-            for k in range(ch):
-                plt.imshow(output[0, k].detach().cpu().numpy())
-                plt.show()
+            # for k in range(ch):
+            #     plt.imshow(output[0, k].detach().cpu().numpy())
+            #     plt.show()
 
             # plt.imshow(__[0, 0].detach().cpu().numpy())
             # plt.show()
@@ -833,11 +833,23 @@ def test(model_name):
     pass
 
 
+def find_th(model_name, iter=10):
+    best_score = 0.
+    (best_th_cl, best_th_pp) = (0., 0.)
+    for th in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4]:
+        for back_pred in [-0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,
+                          0.8, 0.9]:
+            print('Current ClTh: ' + str(th) + '\t Current pp th: ' + str(back_pred))
+            cur_met = val_score(model_name, use_metric=True, iter=iter, cl_th=th, pp_th=back_pred)[0]
+            if best_score < cur_met:
+                best_score = cur_met
+                (best_th_cl, best_th_pp) = (th, back_pred)
+    print(
+        'For model ' + str(model_name) + ' the best thresholds were: \n cl_th: ' + str(best_th_cl) + '\n pp_th: ' + str(
+            best_th_pp))
 
 
-
-
-def val_score(model_name, use_metric, iter=10, th=c.val['th_nn']):
+def val_score(model_name, use_metric, iter=10, th=c.val['th_nn'], cl_th=0.8, pp_th=0.):
     """
     Method to quantify the overall performance of a model
     :param iter: the more iterations the more accurate
@@ -890,7 +902,7 @@ def val_score(model_name, use_metric, iter=10, th=c.val['th_nn']):
     cel_loss = []
     for i in range(iter):
         f1_metric, emb_loss_, cel_loss_ = set.validate(val_loader, model, use_metric=use_metric,
-                                                       criterionCEL=nn.CrossEntropyLoss().cuda(), scoring=True)
+                                                       criterionCEL=nn.CrossEntropyLoss().cuda(), scoring=True, cl_th=0.8, pp_th=0.)
         f1_.append(f1_metric)
         emb_loss.append(emb_loss_)
         cel_loss.append(cel_loss_)

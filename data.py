@@ -917,7 +917,7 @@ def preprocess_corr(corr_path, nb_corr_to_preserve=0, use_denoiser=False, test=F
     pass
 
 
-def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['use_slicing'], slice_size=1,
+def create_corr_data(neurofinder_path, maxpool=True, corr_form='small_star', slicing=c.corr['use_slicing'], slice_size=1,
                      test=False, dtype=c.data['dtype'], device=c.cuda['device']):
     """
     Method that creates the corresponding correlation data from the neurofinder videos and returns them
@@ -933,11 +933,12 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
                         device=device)
 
     (N, w, h) = imgs.size()
+    if maxpool:
+        print(imgs.size())
+        mp2d = torch.nn.MaxPool3d((5, 1, 1))
+        imgs = mp2d(imgs.view(1, N, w, h))[0]
+        print(imgs.size())
 
-    print(imgs.size())
-    mp2d = torch.nn.MaxPool3d((5, 1, 1))
-    imgs = mp2d(imgs.view(1, N, w, h))[0]
-    print(imgs.size())
     dims = imgs.size()[1:]  # 512 x 512
     len = imgs.size(0)  # 3024
 
@@ -974,7 +975,7 @@ def create_corr_data(neurofinder_path, corr_form='small_star', slicing=c.corr['u
 
 
 def get_corr_data(nf_folder, corr_path, file_name='corr_nf_', slicing=True, slice_size=100, corr_form='starmy',
-                  test=False, dtype=c.data['dtype'], device=c.cuda['device']):
+                  test=False, maxpool=True, dtype=c.data['dtype'], device=c.cuda['device']):
     """
     Method that creates correlation and saves it to specified folder
     :param nf_folder:
@@ -990,7 +991,7 @@ def get_corr_data(nf_folder, corr_path, file_name='corr_nf_', slicing=True, slic
         print(folder)
         corr_ = create_corr_data(neurofinder_path=str(nf_folder) + '/' + str(folder), slicing=slicing,
                                  slice_size=slice_size,
-                                 corr_form=corr_form, test=test, dtype=dtype, device=device)
+                                 corr_form=corr_form, test=test, dtype=dtype, device=device, maxpool=maxpool)
 
         if not os.path.exists(corr_path + '/'):
             os.makedirs(corr_path + '/')
@@ -1068,9 +1069,9 @@ def create_summary_img(nf_folder, sum_folder='data/sum_img', test=False, dtype=c
         imgs = mp2d(imgs.view(1, N, w, h))[0]
 
     mean_summar = get_mean_img(imgs)
-    h = imgs - mean_summar
-    h_ = get_mean_img(torch.where(h < 0., torch.tensor(0., dtype=torch.double), h))
-    mean_summar = normalize_summary_img(h_)
+    # h = imgs - mean_summar
+    # h_ = get_mean_img(torch.where(h < 0., torch.tensor(0., dtype=torch.double), h))
+    mean_summar = normalize_summary_img(mean_summar)
 
     var_summar = get_var_img(imgs)
     g = var_summar
@@ -1078,17 +1079,25 @@ def create_summary_img(nf_folder, sum_folder='data/sum_img', test=False, dtype=c
     g_ = torch.sqrt(g)
     var_summar = normalize_summary_img(g_)
 
-    con = 0
     if test:
         con = 5
-    save_numpy_to_h5py(data_array=mean_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-(5+con):-con] + '_mean',
-                       file_path=str(sum_folder) + '/')
-    save_numpy_to_h5py(data_array=var_summar.detach().cpu().numpy(), file_name=str(nf_folder)[-(5+con):-con] + '_var',
-                       file_path=str(sum_folder) + '/')
+        save_numpy_to_h5py(data_array=mean_summar.detach().cpu().numpy(),
+                           file_name=str(nf_folder)[-(5 + con):-con] + '_mean',
+                           file_path=str(sum_folder) + '/')
+        save_numpy_to_h5py(data_array=var_summar.detach().cpu().numpy(),
+                           file_name=str(nf_folder)[-(5 + con):-con] + '_var',
+                           file_path=str(sum_folder) + '/')
+    else:
+        save_numpy_to_h5py(data_array=mean_summar.detach().cpu().numpy(),
+                           file_name=str(nf_folder)[-5:] + '_mean',
+                           file_path=str(sum_folder) + '/')
+        save_numpy_to_h5py(data_array=var_summar.detach().cpu().numpy(),
+                           file_name=str(nf_folder)[-5:] + '_var',
+                           file_path=str(sum_folder) + '/')
     pass
 
 
-def get_summary_img(nf_folder, sum_folder='data/sum_img', test=False, dtype=c.data['dtype'], device=c.cuda['device']):
+def get_summary_img(nf_folder, sum_folder='data/sum_img', test=False, maxpool=False, dtype=c.data['dtype'], device=c.cuda['device']):
     """
     Method that creates summmary images of the Neurofinder Datasets
     :param nf_folder:
@@ -1100,7 +1109,7 @@ def get_summary_img(nf_folder, sum_folder='data/sum_img', test=False, dtype=c.da
     print(dic)
     for x in dic:
         print('Summarizing ' + str(x) + ' ...')
-        create_summary_img(str(nf_folder) + '/' + str(x), sum_folder=sum_folder, test=test, dtype=dtype, device=device)
+        create_summary_img(str(nf_folder) + '/' + str(x), sum_folder=sum_folder, test=test, use_maxpool=maxpool, dtype=dtype, device=device)
     pass
 
 
@@ -1129,7 +1138,7 @@ def get_new_corr_img(nf_folder, corr_sum_folder='data/corr_sum_img', test=False,
 
 def generate_data(nf_folder, corr_path, slicing, slice_size, sum_folder, nb_corr_to_preserve, generate_summary=False,
                   use_denoiser=False, new_corr_img=False, corr_sum_folder='data/corr_sum_img',
-                  testset=False):
+                  testset=False, maxpool=True, preprocess=True):
     """
     Method to generate input data give the following settings
     :param nf_folder: Folder which  has the Neurofinder Data
@@ -1148,16 +1157,16 @@ def generate_data(nf_folder, corr_path, slicing, slice_size, sum_folder, nb_corr
 
     get_corr_data(nf_folder=nf_folder, corr_path=corr_path,
                   slicing=slicing, test=testset,
-                  slice_size=slice_size, device=cpu, dtype=dtype)
+                  slice_size=slice_size, device=cpu, dtype=dtype, maxpool=maxpool)
     if generate_summary:
         get_summary_img(nf_folder=nf_folder, sum_folder=sum_folder,
-                        test=testset, device=cpu, dtype=torch.double)
+                        test=testset, device=cpu, dtype=torch.double, maxpool=maxpool)
     if new_corr_img:
         get_new_corr_img(nf_folder=nf_folder, corr_sum_folder=corr_sum_folder, test=testset, device=cpu,
                          dtype=torch.double)
-
-    preprocess_corr(corr_path=corr_path, nb_corr_to_preserve=nb_corr_to_preserve,
-                    use_denoiser=use_denoiser, test=testset)
+    if preprocess:
+        preprocess_corr(corr_path=corr_path, nb_corr_to_preserve=nb_corr_to_preserve,
+                        use_denoiser=use_denoiser, test=testset)
     pass
 
 

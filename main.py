@@ -39,46 +39,81 @@ import neurofinder as nf
 
 from torchsummary import summary
 
+#
 
 # data.synchronise_folder()
-# h.test('abram_0.0068_11')
+# h.test('abram_0.03426_4')
+
+
+
+
+# h.val_score('abram_0.03426_4', use_metric=True, iter=3, th=)
+
+h.find_th('abram_opt', iter=10)
+
 # h.test('adam__0.00039_3.9_10_19')
+# h.test('adam__0.00027_4.0_16_20')
+# val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+#                                    corr_sum_folder='data/corr_sum_img/',
+#                                    sum_folder='data/sum_img/',
+#                                    mask_folder='data/sum_masks/',
+#                                    transform=None, device=device, dtype=dtype, test=True)
+
+# data.generate_data(nf_folder='data/training_data', slice_size=100, corr_path='data/x_no_ms_corr_folder', slicing=True, sum_folder='data/x_no_ms_sum_folder'
+#                    , nb_corr_to_preserve=4, generate_summary=True, maxpool=True, preprocess=True)
+
+# data.get_summary_img(nf_folder='data/test_data', sum_folder='data/test_sum_img',
+#                         test=True, device=torch.device('cpu'), dtype=torch.double, maxpool=True)
+
+# for i in range(19):
+#     input_test = ana.input_test(nb_neuro=i, input_dim=2, corr_path='data/x_mp_corr_folder/transformed_4/',
+#                    corr_sum_folder='data/corr_sum_img/',
+#                    sum_folder='data/x_mp_sum_folder/')
+#     input_test_2 = ana.input_test(nb_neuro=i, input_dim=2, corr_path='data/x_no_mp_corr_folder/transformed_4/',
+#                    corr_sum_folder='data/corr_sum_img/',
+#                    sum_folder='data/x_no_mp_sum_folder/')
+#     ana.show_input(input_test, str(i) + '_corr_mp')
+#     ana.show_input(input_test_2, str(i) + '_corr_not_mp')
 
 
-# ana.score('abram_', include_metric=False)
-# ana.save_images('abram_')
+# for i in [2, 3, 6, 10, 20]:
+#     input_test = ana.input_test(nb_neuro=1, input_dim=i, corr_path='data/x_mp_corr_folder_no_pre/',
+#                        corr_sum_folder='data/corr_sum_img/',
+#                        sum_folder='data/x_mp_sum_folder_no_pre/')
+#     ana.show_input(input_test, str(i) + '_corrs_0001')
 
+# ana.score('noah_', include_metric=False)
+# ana.save_images('noah_')
 
-
-"""NOAH OPT ROUND 2"""
-margin = 0.5
-nb_epochs = 50
-nb_iter = 3
-step_size = 1.
-
-kernel_bandwidth_list = np.linspace(5, 15, 1000)
-lr_list = np.linspace(0.0001, 0.01, 10000)
-subsample_size = 1024
-
-for i in range(50):
-    kernel_bandwidth = np.around(np.random.choice(kernel_bandwidth_list), decimals=2)
-    emb_dim = np.random.choice(np.array([8, 16, 32]))
-    scaling = 3.
-    bs = np.random.randint(1, 5)
-    lr = np.around(np.random.choice(lr_list), decimals=5)
-
-    print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
-          'Number epochs: ',
-          nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
-    set = h.Setup(
-        model_name='noah_' + str(lr) + '_' + str(bs) + '_' + str(scaling) + '_' + str(kernel_bandwidth),
-        subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
-        nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
-        background_pred=True,
-        nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
-    set.main()
-ana.score('noah_', include_metric=True)
-ana.save_images('noah_')
+# """NOAH OPT ROUND 2"""
+# margin = 0.5
+# nb_epochs = 50
+# nb_iter = 3
+# step_size = 1.
+#
+# kernel_bandwidth_list = np.linspace(5, 15, 1000)
+# lr_list = np.linspace(0.0001, 0.01, 10000)
+# subsample_size = 1024
+#
+# for i in range(50):
+#     kernel_bandwidth = np.around(np.random.choice(kernel_bandwidth_list), decimals=2)
+#     emb_dim = np.random.choice(np.array([8, 16, 32]))
+#     scaling = 3.
+#     bs = np.random.randint(1, 5)
+#     lr = np.around(np.random.choice(lr_list), decimals=5)
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+#     set = h.Setup(
+#         model_name='noah_' + str(lr) + '_' + str(bs) + '_' + str(scaling) + '_' + str(kernel_bandwidth),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+#     set.main()
+# ana.score('noah_', include_metric=True)
+# ana.save_images('noah_')
 
 
 
@@ -232,7 +267,7 @@ ana.save_images('noah_')
 # h.test('noah_0.00315_11_7.17_11.27')
 
 
-# ana.analysis(analysis='lr_ep_bs', analysis_name='', use_metric=False)
+# ana.analysis(analysis='lr_ep_bs', analysis_name='adam', use_metric=False)
 # ana.analysis(analysis='ed_ma_sc', analysis_name='adam', use_metric=False)
 # ana.analysis(analysis='ed_ma', analysis_name='azrael', use_metric=False)
 # ana.analysis(analysis='ss', analysis_name='evey', use_metric=True)

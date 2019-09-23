@@ -656,7 +656,7 @@ def analysis(analysis, analysis_name, use_metric):
         print('Analysis Name is not known!')
 
 
-def input_test(nb_neuro, input_dim, corr_path, corr_sum_folder, sum_folder):
+def input_test(nb_neuro, input_dim, corr_path, corr_sum_folder, sum_folder, show_label):
     # transform_train = transforms.Compose([data.RandomCrop(128)])
     # val_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
     #                                    corr_sum_folder='data/corr_sum_img/',
@@ -674,12 +674,17 @@ def input_test(nb_neuro, input_dim, corr_path, corr_sum_folder, sum_folder):
                                        mask_folder='data/sum_masks/',
                                        transform=None, device=torch.device('cuda:0'), dtype=torch.float, test=True)
 
-    cur_img = torch.cat([train_dataset[nb_neuro]['image'][input_dim], val_dataset[nb_neuro]['image'][input_dim]], dim=1)
+    if not show_label:
+        cur_img = torch.cat([train_dataset[nb_neuro]['image'][input_dim], val_dataset[nb_neuro]['image'][input_dim]], dim=1)
+    else:
+        cur_img = torch.cat([train_dataset[nb_neuro]['label'], val_dataset[nb_neuro]['label']],
+                            dim=0)
 
     return cur_img
 
 
-def show_input(image, image_name):
+def show_input(image, image_name, save_image):
     plt.imshow(image.detach().cpu().numpy(), cmap='gray')
-    plt.savefig('x_images/' + str(image_name) + '.pdf')
+    if save_image:
+        plt.savefig('x_images/' + str(image_name) + '.pdf')
     # plt.show()

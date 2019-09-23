@@ -45,11 +45,32 @@ from torchsummary import summary
 # h.test('abram_0.03426_4')
 
 
+for i in range(19):
+    input_test = ana.input_test(nb_neuro=i, input_dim=2, corr_path='data/x_mp_corr_folder/transformed_4/',
+                   corr_sum_folder='data/corr_sum_img/',
+                   sum_folder='data/x_mp_sum_folder/', show_label=False)
+    input_test_2 = ana.input_test(nb_neuro=i, input_dim=2, corr_path='data/x_no_mp_corr_folder/transformed_4/',
+                   corr_sum_folder='data/corr_sum_img/',
+                   sum_folder='data/x_no_mp_sum_folder/', show_label=False)
+    ana.show_input(input_test, str(i) + '_corr_mp', save_image=False)
+    ana.show_input(input_test_2, str(i) + '_corr_not_mp', save_image=False)
+
+
+for i in [2, 3, 6, 10, 20]:
+    input_test = ana.input_test(nb_neuro=1, input_dim=i, corr_path='data/x_mp_corr_folder_no_pre/',
+                       corr_sum_folder='data/corr_sum_img/',
+                       sum_folder='data/x_mp_sum_folder_no_pre/')
+    ana.show_input(input_test, str(i) + '_corrs_0001', save_image=False)
+
+
+
+# ana.score('noah_', include_metric=False)
+# ana.save_images('noah_')
 
 
 # h.val_score('abram_0.03426_4', use_metric=True, iter=3, th=)
 
-h.find_th('abram_opt', iter=10)
+# h.find_th('abram_opt', iter=10)
 
 # h.test('adam__0.00039_3.9_10_19')
 # h.test('adam__0.00027_4.0_16_20')
@@ -65,25 +86,6 @@ h.find_th('abram_opt', iter=10)
 # data.get_summary_img(nf_folder='data/test_data', sum_folder='data/test_sum_img',
 #                         test=True, device=torch.device('cpu'), dtype=torch.double, maxpool=True)
 
-# for i in range(19):
-#     input_test = ana.input_test(nb_neuro=i, input_dim=2, corr_path='data/x_mp_corr_folder/transformed_4/',
-#                    corr_sum_folder='data/corr_sum_img/',
-#                    sum_folder='data/x_mp_sum_folder/')
-#     input_test_2 = ana.input_test(nb_neuro=i, input_dim=2, corr_path='data/x_no_mp_corr_folder/transformed_4/',
-#                    corr_sum_folder='data/corr_sum_img/',
-#                    sum_folder='data/x_no_mp_sum_folder/')
-#     ana.show_input(input_test, str(i) + '_corr_mp')
-#     ana.show_input(input_test_2, str(i) + '_corr_not_mp')
-
-
-# for i in [2, 3, 6, 10, 20]:
-#     input_test = ana.input_test(nb_neuro=1, input_dim=i, corr_path='data/x_mp_corr_folder_no_pre/',
-#                        corr_sum_folder='data/corr_sum_img/',
-#                        sum_folder='data/x_mp_sum_folder_no_pre/')
-#     ana.show_input(input_test, str(i) + '_corrs_0001')
-
-# ana.score('noah_', include_metric=False)
-# ana.save_images('noah_')
 
 # """NOAH OPT ROUND 2"""
 # margin = 0.5

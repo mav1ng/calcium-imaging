@@ -677,8 +677,11 @@ def input_test(nb_neuro, input_dim, corr_path, corr_sum_folder, sum_folder, show
     if not show_label:
         cur_img = torch.cat([train_dataset[nb_neuro]['image'][input_dim], val_dataset[nb_neuro]['image'][input_dim]], dim=1)
     else:
-        cur_img = torch.cat([train_dataset[nb_neuro]['label'], val_dataset[nb_neuro]['label']],
-                            dim=0)
+        cur_img = torch.cat([train_dataset[nb_neuro]['image'][input_dim], val_dataset[nb_neuro]['image'][input_dim]],
+                            dim=1)
+        lab_img = torch.cat([train_dataset[nb_neuro]['label'], val_dataset[nb_neuro]['label']], dim=1)
+
+        cur_img = torch.where(lab_img == 1., torch.max(cur_img), cur_img)
 
     return cur_img
 

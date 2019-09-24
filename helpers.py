@@ -159,7 +159,7 @@ class Setup:
                 cel_losses.update(cel_loss.item())
 
                 if c.debug['print_img']:
-                    v.plot_pred_back(y[0].detach(), label.detach())
+                    v.plot_pred_back(y[0].detach(), label[0].detach())
             else:
                 output, ret_loss = model(input, label)
                 cel_loss = torch.tensor(0., device=self.device)
@@ -279,7 +279,7 @@ class Setup:
 
                     if scoring:
                         if model.use_background_pred:
-                            predict = cl.postprocess_label(predict, background=y[:, 0], th=pp_th)
+                            predict = cl.postprocess_label(predict, background=y[:, 1], th=pp_th)
                         else:
                             predict = cl.postprocess_label(predict, background=None, th=pp_th)
 
@@ -787,9 +787,9 @@ def test(model_name):
 
             (bs, ch, w, h) = output.size()
 
-            # for k in range(ch):
-            #     plt.imshow(output[0, k].detach().cpu().numpy())
-            #     plt.show()
+            for k in range(ch):
+                plt.imshow(output[0, k].detach().cpu().numpy())
+                plt.show()
 
             # plt.imshow(__[0, 0].detach().cpu().numpy())
             # plt.show()
@@ -807,7 +807,7 @@ def test(model_name):
             predict = predict.reshape(bs, w, h)
 
             if model.use_background_pred:
-                predict = cl.postprocess_label(predict, background=background[:, 0], embeddings=output)
+                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output)
             else:
                 predict = cl.postprocess_label(predict, background=None)
 
@@ -836,17 +836,26 @@ def test(model_name):
 def find_th(model_name, iter=10):
     best_score = 0.
     (best_th_cl, best_th_pp) = (0., 0.)
-    for th in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4]:
-        for back_pred in [-0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,
-                          0.8, 0.9]:
+    th_list = []
+    bp_th_list = []
+    score_list = []
+    for th in [0.1, 0.5, 1., 1.5]:
+        for back_pred in [0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 0.3, 0.325, 0.35, 0.375, 0.4]:
             print('Current ClTh: ' + str(th) + '\t Current pp th: ' + str(back_pred))
             cur_met = val_score(model_name, use_metric=True, iter=iter, cl_th=th, pp_th=back_pred)[0]
             if best_score < cur_met:
                 best_score = cur_met
                 (best_th_cl, best_th_pp) = (th, back_pred)
-    print(
-        'For model ' + str(model_name) + ' the best thresholds were: \n cl_th: ' + str(best_th_cl) + '\n pp_th: ' + str(
+            th_list.append(th)
+            bp_th_list.append(back_pred)
+            score_list.append(cur_met)
+    print('For model ' + str(model_name) + ' the best thresholds were: \n cl_th: ' + str(best_th_cl) + '\n pp_th: ' + str(
             best_th_pp))
+
+    ret = np.array([th_list, bp_th_list, score_list])
+    data.save_numpy_to_h5py(ret, model_name + '_find_th', file_path='plot_data/')
+
+    return ret
 
 
 def val_score(model_name, use_metric, iter=10, th=c.val['th_nn'], cl_th=0.8, pp_th=0.):

@@ -787,9 +787,9 @@ def test(model_name):
 
             (bs, ch, w, h) = output.size()
 
-            for k in range(ch):
-                plt.imshow(output[0, k].detach().cpu().numpy())
-                plt.show()
+            # for k in range(ch):
+            #     plt.imshow(output[0, k].detach().cpu().numpy())
+            #     plt.show()
 
             # plt.imshow(__[0, 0].detach().cpu().numpy())
             # plt.show()
@@ -803,11 +803,11 @@ def test(model_name):
             # predict = cl.label_embeddings(m.view(ch + 2, -1).t(), th=0.8)
             # predict = predict.reshape(bs, w, h)
 
-            predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.8)
+            predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.1)
             predict = predict.reshape(bs, w, h)
 
             if model.use_background_pred:
-                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output)
+                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output, th=0.4)
             else:
                 predict = cl.postprocess_label(predict, background=None)
 
@@ -839,7 +839,7 @@ def find_th(model_name, iter=10):
     th_list = []
     bp_th_list = []
     score_list = []
-    for th in [0.1, 0.5, 1., 1.5]:
+    for th in [0.1, 0.5, 0.75, 1., 1.25, 1.5]:
         for back_pred in [0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 0.3, 0.325, 0.35, 0.375, 0.4]:
             print('Current ClTh: ' + str(th) + '\t Current pp th: ' + str(back_pred))
             cur_met = val_score(model_name, use_metric=True, iter=iter, cl_th=th, pp_th=back_pred)[0]
@@ -911,7 +911,7 @@ def val_score(model_name, use_metric, iter=10, th=c.val['th_nn'], cl_th=0.8, pp_
     cel_loss = []
     for i in range(iter):
         f1_metric, emb_loss_, cel_loss_ = set.validate(val_loader, model, use_metric=use_metric,
-                                                       criterionCEL=nn.CrossEntropyLoss().cuda(), scoring=True, cl_th=0.8, pp_th=0.)
+                                                       criterionCEL=nn.CrossEntropyLoss().cuda(), scoring=True, cl_th=cl_th, pp_th=pp_th)
         f1_.append(f1_metric)
         emb_loss.append(emb_loss_)
         cel_loss.append(cel_loss_)

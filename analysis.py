@@ -391,6 +391,27 @@ def analyse_ed_ma(analysis_name):
     return ret, ana_param, optimized_parameters
 
 
+def analyse_kb_iter(analysis_name):
+    ana_list = get_analysis(analysis_name)
+
+    ana_param = ana_list[0]
+
+    ret = np.zeros((5, ana_list.__len__()))
+
+    for i, ana in enumerate(ana_list):
+        ret[0, i] = float(ana.kernel_bandwidth)
+        ret[1, i] = float(ana.nb_iterations)
+        ret[2, i] = float(ana.val_score)
+        ret[3, i] = float(ana.emb_score)
+        ret[4, i] = float(ana.cel_score)
+
+    optimized_parameters = ['Kernel Bandwidth', 'Number of Iterations']
+
+    ret = np.where(ret == -1., np.nan, ret)
+
+    return ret, ana_param, optimized_parameters
+
+
 def analyse_ss(analysis_name):
     ana_list = get_analysis(analysis_name)
 
@@ -552,6 +573,39 @@ def plot_ed_ma(analysis_name, use_metric):
     plt.show()
 
 
+def plot_kb_iter(analysis_name, use_metric):
+    """
+    Method that visualizes the Perfomance of a model depending on kernel bandwidth and number
+    of iterations
+    in a 4D graph by normalizing and weighting embedding and cel score perhaps not smart
+    :param analysis_name:
+    :return:
+    """
+    data, ana_param, _ = analyse_kb_iter(analysis_name)
+
+    data[3] = normalize_score(data[3])
+    data[4] = normalize_score(data[4])
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x = data[0]
+    y = data[1]
+
+    if use_metric:
+        z = data[2]
+    else:
+        z = ((data[3] + data[4]) / 2)
+
+    img = ax.scatter(x, y, z)
+    plt.show()
+
+    plt.scatter(x, z)
+    plt.show()
+    plt.scatter(y, z)
+    plt.show()
+
+
 def plot_ss(analysis_name, use_metric):
     """
     Method that visualizes the Perfomance of a model depending on Subsample Size
@@ -652,6 +706,11 @@ def analysis(analysis, analysis_name, use_metric):
         data, ana_param, optimized_parameters = analyse_lr(analysis_name)
         plot_lr(analysis_name, use_metric)
         print_results(data, ana_param, optimized_parameters, (2, 3), use_metric)
+    elif str(analysis) == 'kb_iter':
+        data, ana_param, optimized_parameters = analyse_kb_iter(analysis_name)
+        plot_kb_iter(analysis_name, use_metric)
+        print_results(data, ana_param, optimized_parameters, (3, 4), use_metric)
+
     else:
         print('Analysis Name is not known!')
 

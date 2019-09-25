@@ -9,6 +9,7 @@ import helpers
 import visualization as v
 import network as n
 import data
+import mahotas as mh
 
 def label_emb_sl(data, th):
     """
@@ -82,21 +83,23 @@ def postprocess_label(prediction, background, th=0., object_min_size=18, embeddi
     (bs, w, h) = prediction.shape
     predict = prediction.copy()
 
-    for b in range(bs):
-        background[b] = data.normalize_summary_img(background[b]) * 100
+    if background is not None:
+        for b in range(bs):
+            background[b] = data.normalize_summary_img(background[b]) * 100
 
     for b in range(bs):
 
-        plt.imshow(predict[b])
-        plt.show()
+        # plt.imshow(predict[b])
+        # plt.show()
+
 
         if background is not None:
-            predict[b] = np.where(background[b].detach().cpu().numpy() < 0.27, 0., prediction[b])
-
-        plt.imshow(predict[b])
-        plt.show()
+            predict[b] = np.where(background[b].detach().cpu().numpy() < th, 0., prediction[b])
 
         predict[b] = np.where(predict[b] > 0, 1, 0)
+
+        # plt.imshow(predict[b])
+        # plt.show()
 
         predict[b] = morphology.remove_small_objects(predict[b].astype(bool), object_min_size, connectivity=2)
 

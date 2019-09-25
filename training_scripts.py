@@ -405,6 +405,36 @@
 # ana.score('noah3_', include_metric=True)
 # ana.save_images('noah3_')
 
+
+"""NOAH OPT ROUND 4"""
+# margin = 0.5
+# nb_epochs = 50
+# step_size = 1.
+#
+# kernel_bandwidth_list = [2, 4, 6]
+# subsample_size = 1024
+#
+# for i in range(6):
+#     emb_dim = np.random.choice(np.array(([16, 32, 64])))
+#     nb_iter = np.random.choice(np.array([1, 2]))
+#     kernel_bandwidth = np.random.choice(np.array(kernel_bandwidth_list))
+#     scaling = 4.
+#     bs = 20
+#     lr = 0.0002
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+#     set = h.Setup(
+#         model_name='noah4_' + str(lr) + '_' + str(nb_iter) + '_' + str(emb_dim) + '_' + str(kernel_bandwidth),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+#     set.main()
+# ana.score('noah4_', include_metric=True)
+# ana.save_images('noah4_')
+
 """????????????????????????????????????????????????????????????????????????????????????????????????????????????????"""
 
 

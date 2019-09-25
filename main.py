@@ -42,13 +42,19 @@ from torchsummary import summary
 #
 
 # data.synchronise_folder()
-# h.test('abram_opt_30')
+h.test('abram_opt_30')
+
+
 
 #
 
 
-# h.test('mean_shift_iter1_bs1_kb10')
-# a = h.find_th('abram_opt_30', iter=10)
+# h.test('eve2_0.00073_4.0_32_20')
+
+
+# h.val_score('abram_opt_30', cl_th=.1, pp_th=0.4, use_metric=True, iter=100)
+
+# a = h.find_th('azrael_opt_112', iter=10)
 
 # for i in range(19):
 #     input_test = ana.input_test(nb_neuro=i, input_dim=0, corr_path='data/corr/starmy/maxpool/transformed_4/',
@@ -69,8 +75,8 @@ from torchsummary import summary
 
 
 
-# ana.score('noah_', include_metric=False)
-# ana.save_images('noah_')
+# ana.score('noah3_', include_metric=False)
+# ana.save_images('noah3_')
 
 
 # h.val_score('abram_0.03426_4', use_metric=True, iter=3, th=)
@@ -253,9 +259,10 @@ from torchsummary import summary
 # h.test('noah_0.00315_11_7.17_11.27')
 
 
-# ana.analysis(analysis='lr_ep_bs', analysis_name='adam2', use_metric=False)
-# ana.analysis(analysis='ed_ma_sc', analysis_name='adam', use_metric=False)
+# ana.analysis(analysis='lr_ep_bs', analysis_name='eve2_', use_metric=False)
+# ana.analysis(analysis='ed_ma_sc', analysis_name='noah3', use_metric=False)
 # ana.analysis(analysis='ed_ma', analysis_name='azrael2', use_metric=False)
+# ana.analysis(analysis='kb_iter', analysis_name='noah3', use_metric=False)
 # ana.analysis(analysis='ss', analysis_name='evey', use_metric=True)
 # ana.analysis(analysis='lr', analysis_name='m_adam4_', use_metric=True)
 

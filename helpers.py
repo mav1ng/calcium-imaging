@@ -208,7 +208,7 @@ class Setup:
                 break
 
 
-    def validate(self, val_loader, model, use_metric, criterionCEL, scoring=False, pp_th=0., cl_th=0.8, return_full=False):
+    def validate(self, val_loader, model, use_metric, criterionCEL, scoring=False, pp_th=0., cl_th=0.8, return_full=False, obj_size=18, holes_size=3):
 
         # nf_threshold = c.val['nf_threshold']
         # switch to evaluate mode
@@ -279,9 +279,11 @@ class Setup:
 
                     if scoring:
                         if model.use_background_pred:
-                            predict = cl.postprocess_label(predict, background=y[:, 1], th=pp_th)
+                            predict = cl.postprocess_label(predict, background=y[:, 1], th=pp_th, hole_size=holes_size,
+                                                           obj_size=obj_size)
                         else:
-                            predict = cl.postprocess_label(predict, background=None, th=pp_th)
+                            predict = cl.postprocess_label(predict, background=None, th=pp_th, hole_size=holes_size,
+                                                           obj_size=obj_size)
 
                     f1_metric_ = 0.
                     (recall_, precision_) = (0., 0.)
@@ -805,16 +807,16 @@ def test(model_name):
             # predict = cl.label_embeddings(m.view(ch + 2, -1).t(), th=0.8)
             # predict = predict.reshape(bs, w, h)
 
-            predict = cl.label_embeddings(output.view(ch, -1).t(), th=0.1)
+            predict = cl.label_embeddings(output.view(ch, -1).t(), th=1.25)
             predict = predict.reshape(bs, w, h)
 
             if model.use_background_pred:
-                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output, th=-0.9)
+                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output, th=0.375)
             else:
                 predict = cl.postprocess_label(predict, background=None)
 
             if c.test['show_img']:
-                plt.imshow(predict[0])
+                plt.imshow(predict[0], cmap='tab20b')
                 plt.title('Predicted Background (upper) vs Ground Truth (lower)')
                 plt.show()
 
@@ -833,6 +835,80 @@ def test(model_name):
         model.MS.test = False
 
     pass
+
+
+def create_output_image(model_name, cl_th, pp_th):
+
+    dtype = torch.float
+    device = torch.device('cuda:0')
+
+    dic = data.read_from_json('config/' + str(model_name) + '.json')
+
+    model = n.UNetMS(input_channels=int(dic['input_channels']),
+                     embedding_dim=int(dic['embedding_dim']),
+                     use_background_pred=dic['background_pred'] == 'True',
+                     nb_iterations=int(dic['nb_iterations']),
+                     kernel_bandwidth=dic['kernel_bandwidth'],
+                     step_size=float(dic['step_size']),
+                     use_embedding_loss=dic['Embedding Loss'] == 'True',
+                     margin=float(dic['margin']),
+                     include_background=dic['Include Background'] == 'True',
+                     scaling=float(dic['scaling']),
+                     subsample_size=int(dic['subsample_size']))
+
+    model.to(device)
+    model.type(dtype)
+    model.load_state_dict(torch.load('model/model_weights_' + str(model_name) + '.pt'))
+
+    print('Testing ' + str(model_name))
+
+    test_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+                                       corr_sum_folder='data/corr_sum_img/',
+                                       sum_folder='data/sum_img/',
+                                       transform=None, device=device, dtype=dtype)
+
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0)
+    print('Test loader prepared.')
+
+    model.eval()
+    model.MS.test = True
+
+    with torch.no_grad():
+        for i, batch in enumerate(test_loader):
+            print(i)
+
+            input = batch['image']
+            input_var = list()
+            for j in range(len(input)):
+                input_var.append(torch.autograd.Variable(input[j]))
+
+
+            # compute output
+            if model.use_background_pred:
+                output, _, background = model(input, None)
+            else:
+                output, _ = model(input, None)
+
+            (bs, ch, w, h) = output.size()
+
+            predict = cl.label_embeddings(output.view(ch, -1).t(), th=cl_th)
+            predict = predict.reshape(bs, w, h)
+
+            if model.use_background_pred:
+                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output, th=pp_th)
+            else:
+                predict = cl.postprocess_label(predict, background=None)
+
+            if c.test['show_img']:
+                plt.imshow(predict[0], cmap='tab20b')
+                plt.title('Predicted Background (upper) vs Ground Truth (lower)')
+                plt.show()
+
+        model.MS.val = False
+        model.MS.test = False
+
+    pass
+
 
 
 def find_th(model_name, iter=10):
@@ -857,10 +933,52 @@ def find_th(model_name, iter=10):
     ret = np.array([th_list, bp_th_list, score_list])
     data.save_numpy_to_h5py(ret, model_name + '_find_th', file_path='plot_data/')
 
-    return ret
+    return best_th_cl, best_th_pp
 
 
-def val_score(model_name, use_metric, iter=10, th=c.val['th_nn'], cl_th=0.8, pp_th=0., return_full=False):
+def find_optimal_object_size(model_name, cl_th, pp_th, iter=10):
+    best_score = 0.
+    best_object_size = 0
+    o_list = []
+    score_list = []
+    for obj in [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150]:
+        print('Current Object Size: ' + str(obj))
+        cur_met = \
+        val_score(model_name, use_metric=True, iter=iter, cl_th=cl_th, pp_th=pp_th, obj_size=obj, holes_size=3)[0]
+        if best_score < cur_met:
+            best_score = cur_met
+            best_object_size = obj
+        o_list.append(obj)
+        score_list.append(cur_met)
+
+    ret = np.array([o_list, score_list])
+    data.save_numpy_to_h5py(ret, model_name + '_find_obj_size', file_path='plot_data/')
+
+    best_score = 0.
+    best_hole_size = 0
+    h_list = []
+    score_list = []
+    for hole in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40, 45, 50]:
+        print('Current Hole Size: ' + str(hole))
+        cur_met = val_score(model_name, use_metric=True, iter=iter, cl_th=cl_th, pp_th=pp_th, obj_size=best_object_size,
+                            holes_size=hole)[0]
+        if best_score < cur_met:
+            best_score = cur_met
+            best_hole_size = hole
+        h_list.append(hole)
+        score_list.append(cur_met)
+
+    ret2 = np.array([h_list, score_list])
+    data.save_numpy_to_h5py(ret2, model_name + '_find_hole_size', file_path='plot_data/')
+
+    print('For model ' + str(model_name) + ' the best object size were: \n obj: ' + str(
+        best_object_size) + '\n hole: ' + str(
+        best_hole_size))
+
+    return best_object_size, best_hole_size
+
+
+def val_score(model_name, use_metric, iter=10, th=c.val['th_nn'], cl_th=0.8, pp_th=0., return_full=False, obj_size=18, holes_size=3):
     """
     Method to quantify the overall performance of a model
     :param iter: the more iterations the more accurate
@@ -917,8 +1035,11 @@ def val_score(model_name, use_metric, iter=10, th=c.val['th_nn'], cl_th=0.8, pp_
     if return_full:
         for i in range(iter):
             f1_metric, cur_rec, cur_prec, emb_loss_, cel_loss_ = set.validate(val_loader, model, use_metric=use_metric,
-                                                           criterionCEL=nn.CrossEntropyLoss().cuda(), scoring=True,
-                                                           cl_th=cl_th, pp_th=pp_th, return_full=True)
+                                                                              criterionCEL=nn.CrossEntropyLoss().cuda(),
+                                                                              scoring=True,
+                                                                              cl_th=cl_th, pp_th=pp_th,
+                                                                              return_full=True, holes_size=holes_size,
+                                                                              obj_size=obj_size)
             f1_.append(f1_metric)
             rec_.append(cur_rec)
             prec_.append(cur_prec)
@@ -927,7 +1048,9 @@ def val_score(model_name, use_metric, iter=10, th=c.val['th_nn'], cl_th=0.8, pp_
     else:
         for i in range(iter):
             f1_metric, emb_loss_, cel_loss_ = set.validate(val_loader, model, use_metric=use_metric,
-                                                           criterionCEL=nn.CrossEntropyLoss().cuda(), scoring=True, cl_th=cl_th, pp_th=pp_th)
+                                                           criterionCEL=nn.CrossEntropyLoss().cuda(), scoring=True,
+                                                           cl_th=cl_th, pp_th=pp_th, holes_size=holes_size,
+                                                           obj_size=obj_size)
             f1_.append(f1_metric)
             emb_loss.append(emb_loss_)
             cel_loss.append(cel_loss_)

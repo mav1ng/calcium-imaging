@@ -71,7 +71,7 @@ def get_pos_mat(bs, w, h):
 
     return ret * 1.5
 
-def postprocess_label(prediction, background, th=0., object_min_size=18, embeddings=None):
+def postprocess_label(prediction, background, th=0., obj_size=18, hole_size=3, embeddings=None):
     """
     Postprocessing of the Labelling
     :param prediction: Bs x W x H
@@ -89,26 +89,17 @@ def postprocess_label(prediction, background, th=0., object_min_size=18, embeddi
 
     for b in range(bs):
 
-        plt.imshow(predict[b])
-        plt.show()
+        # plt.imshow(predict[b])
+        # plt.show()
 
         if background is not None:
             predict[b] = np.where(background[b].detach().cpu().numpy() < th, 0., prediction[b])
 
         predict[b] = np.where(predict[b] > 0, 1, 0)
 
-        plt.imshow(predict[b])
-        plt.show()
+        predict[b] = morphology.remove_small_objects(predict[b].astype(bool), obj_size, connectivity=2)
 
-        predict[b] = morphology.remove_small_objects(predict[b].astype(bool), object_min_size, connectivity=2)
-
-        plt.imshow(predict[b])
-        plt.show()
-
-        predict[b] = morphology.remove_small_holes(predict[b].astype(bool), 3, connectivity=1)
-
-        plt.imshow(predict[b])
-        plt.show()
+        predict[b] = morphology.remove_small_holes(predict[b].astype(bool), hole_size, connectivity=1)
 
         if np.sum(predict[b] == np.unique(predict[b])[0]) >= np.sum(predict[b] == np.unique(predict[b])[1]):
             background_pixel = np.unique(predict[b])[0]

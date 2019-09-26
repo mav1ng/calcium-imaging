@@ -42,13 +42,23 @@ from torchsummary import summary
 #
 
 # data.synchronise_folder()
+
+# a = h.find_th('abram_opt_30', iter=10)
+
+# h.find_optimal_object_size('abram_opt_30', cl_th=.1, pp_th=0.4)
+# h.find_optimal_object_size('azrael_opt_112', cl_th=.1, pp_th=0.25)
+# h.find_optimal_object_size('eve_opt_132', cl_th=1.25, pp_th=0.375)
+# h.find_optimal_object_size('adam_opt_132', cl_th=.75, pp_th=0.15)
+
+# h.create_output_image('abram_opt_30', cl_th=.1, pp_th=0.4)
+# h.create_output_image('azrael_opt_112', cl_th=.1, pp_th=0.25)
+# h.create_output_image('adam_opt_132', cl_th=1.25, pp_th=0.375)
+# h.create_output_image('adam_opt_132', cl_th=.75, pp_th=0.15)
+
 # h.test('abram_opt_30')
-
-
-
 # h.test('noah4_0.0002_1_16_2')
 # h.test('azrael_opt_112')
-h.test('adam_opt_132')
+# h.test('adam_opt_132')
 # h.test('eve_opt_132')
 
 # a = h.find_th('abram_opt_30', iter=10)

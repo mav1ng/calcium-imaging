@@ -208,7 +208,7 @@ class Setup:
                 break
 
 
-    def validate(self, val_loader, model, use_metric, criterionCEL, scoring=False, pp_th=0., cl_th=0.8):
+    def validate(self, val_loader, model, use_metric, criterionCEL, scoring=False, pp_th=0., cl_th=0.8, return_full=False):
 
         # nf_threshold = c.val['nf_threshold']
         # switch to evaluate mode
@@ -343,7 +343,10 @@ class Setup:
             self.writer.add_scalar('Recall', recall)
             self.writer.add_scalar('Precision', precision)
 
-        return f1_metric, ret_emb, ret_cel
+        if return_full:
+            return f1_metric, recall, precision, ret_emb, ret_cel
+        else:
+            return f1_metric, ret_emb, ret_cel
 
 
     def main(self):
@@ -521,7 +524,7 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def get_diff_labels(mask):
+def get_diff_labels(mask, background=0):
     """
     returns mask with different labels
     :param mask: input np array B x w x h
@@ -530,10 +533,9 @@ def get_diff_labels(mask):
     (bs, w, h) = mask.shape
 
     for b in range(bs):
-        mask[b] = skm.label(mask[b], background=0)
+        mask[b] = skm.label(mask[b], background=background)
 
     return mask
-
 
 def get_input_diag(part_nb, dataset):
     """method that returns a sliced image along the diagonal from the dataset"""
@@ -807,7 +809,7 @@ def test(model_name):
             predict = predict.reshape(bs, w, h)
 
             if model.use_background_pred:
-                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output, th=0.4)
+                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output, th=-0.9)
             else:
                 predict = cl.postprocess_label(predict, background=None)
 
@@ -858,7 +860,7 @@ def find_th(model_name, iter=10):
     return ret
 
 
-def val_score(model_name, use_metric, iter=10, th=c.val['th_nn'], cl_th=0.8, pp_th=0.):
+def val_score(model_name, use_metric, iter=10, th=c.val['th_nn'], cl_th=0.8, pp_th=0., return_full=False):
     """
     Method to quantify the overall performance of a model
     :param iter: the more iterations the more accurate
@@ -907,21 +909,51 @@ def val_score(model_name, use_metric, iter=10, th=c.val['th_nn'], cl_th=0.8, pp_
                   scaling=float(dic['scaling']),
                   subsample_size=int(dic['subsample_size']))
     f1_ = []
+    rec_ = []
+    prec_ = []
     emb_loss = []
     cel_loss = []
-    for i in range(iter):
-        f1_metric, emb_loss_, cel_loss_ = set.validate(val_loader, model, use_metric=use_metric,
-                                                       criterionCEL=nn.CrossEntropyLoss().cuda(), scoring=True, cl_th=cl_th, pp_th=pp_th)
-        f1_.append(f1_metric)
-        emb_loss.append(emb_loss_)
-        cel_loss.append(cel_loss_)
 
-    ret_f1 = sum(f1_) / f1_.__len__()
-    ret_emb = sum(emb_loss) / emb_loss.__len__()
-    ret_cel = sum(cel_loss)/cel_loss.__len__()
-    print('Average Val Score of model ' + str(model_name) + ':\t' + str(ret_f1) + '\n '
-            'Average Emb Score/Average CEL Score: \t' + str(ret_emb) + '/' + str(ret_cel))
-    return ret_f1, ret_emb, ret_cel
+    if return_full:
+        for i in range(iter):
+            f1_metric, cur_rec, cur_prec, emb_loss_, cel_loss_ = set.validate(val_loader, model, use_metric=use_metric,
+                                                           criterionCEL=nn.CrossEntropyLoss().cuda(), scoring=True,
+                                                           cl_th=cl_th, pp_th=pp_th, return_full=True)
+            f1_.append(f1_metric)
+            rec_.append(cur_rec)
+            prec_.append(cur_prec)
+            emb_loss.append(emb_loss_)
+            cel_loss.append(cel_loss_)
+    else:
+        for i in range(iter):
+            f1_metric, emb_loss_, cel_loss_ = set.validate(val_loader, model, use_metric=use_metric,
+                                                           criterionCEL=nn.CrossEntropyLoss().cuda(), scoring=True, cl_th=cl_th, pp_th=pp_th)
+            f1_.append(f1_metric)
+            emb_loss.append(emb_loss_)
+            cel_loss.append(cel_loss_)
+
+    ret_f1 = np.nanmean(f1_)
+    ret_emb = np.nanmean(emb_loss)
+    ret_cel = np.nanmean(cel_loss)
+
+    if return_full:
+        f1_std = np.nanstd(f1_)
+        emb_std = np.nanstd(emb_loss)
+        cel_std = np.nanstd(cel_loss)
+        ret_rec = np.nanmean(rec_)
+        rec_std = np.nanstd(rec_)
+        ret_prec = np.nanmean(prec_)
+        prec_std = np.nanstd(prec_)
+        print('Average Val Score of model ' + str(model_name) + ':\t' + str(ret_f1) + '\t' + str(f1_std) +
+              '\nAverage Recall\t' + str(ret_rec) + '\t' + str(rec_std) +
+              '\nAverage Precision\t' + str(ret_prec) + '\t' + str(prec_std) +
+              '\nAverage Emb Loss\t' + str(ret_emb) + '\t' + str(emb_std) +
+              '\nAverage Cel Loss\t' + str(ret_cel) + '\t' + str(cel_std))
+        return ret_f1, f1_std, ret_rec, rec_std, ret_prec, prec_std, ret_emb, emb_std, ret_cel, cel_std
+    else:
+        print('Average Val Score of model ' + str(model_name) + ':\t' + str(ret_f1) + '\n '
+                'Average Emb Score/Average CEL Score: \t' + str(ret_emb) + '/' + str(ret_cel))
+        return ret_f1, ret_emb, ret_cel
 
 
 def test_th(model_name, background_pred, np_arange=(0.005, 2.05, 0.005), iter=10):

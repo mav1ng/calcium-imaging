@@ -19,33 +19,37 @@ from numpy import array, zeros
 import scipy.ndimage as ndimage
 import cv2
 
-batch_size = c.training['batch_size']
-train = c.training['train']
+print(np.array([2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66,
+                       70, 74, 78]).astype(np.double) ** 2)
 
-dtype = c.data['dtype']
 
-device = torch.device('cpu')
-img_size = c.training['img_size']
-
-data = data.load_numpy_from_h5py(file_name='plot_data/abram_opt_30_find_th_gzip.hkl')
-
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-
-print(data.shape)
-
-x = data[0]
-y = data[1]
-z = data[2]
-
-img = ax.scatter(x, y, z)
-fig.colorbar(img)
-plt.show()
-
-plt.scatter(x, z)
-plt.show()
-plt.scatter(y, z)
-plt.show()
+# batch_size = c.training['batch_size']
+# train = c.training['train']
+#
+# dtype = c.data['dtype']
+#
+# device = torch.device('cpu')
+# img_size = c.training['img_size']
+#
+# data = data.load_numpy_from_h5py(file_name='plot_data/eve_opt_132_find_th_gzip.hkl')
+#
+# fig = plt.figure()
+# ax = fig.add_subplot(111, projection='3d')
+#
+# print(data.shape)
+#
+# x = data[0]
+# y = data[1]
+# z = data[2]
+#
+# img = ax.scatter(x, y, z)
+# fig.colorbar(img)
+# plt.show()
+#
+# plt.scatter(x, z)
+# plt.show()
+# plt.scatter(y, z)
+# plt.show()
 
 # h.val_score(model_name='adam_opt', use_metric=True, iter=100, th=0.8)
 

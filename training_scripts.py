@@ -435,6 +435,265 @@
 # ana.score('noah4_', include_metric=True)
 # ana.save_images('noah4_')
 
+
+"""NOAH OPT LONG"""
+# margin = 0.5
+# nb_epochs = 1000
+# step_size = 1.
+#
+# subsample_size = 1024
+#
+# emb_dim = 16
+# nb_iter = 1
+# kernel_bandwidth = 2.
+# scaling = 4.
+# bs = 20
+# lr = 0.0002
+#
+# print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#       'Number epochs: ',
+#       nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+# set = h.Setup(
+#     model_name='noah_opt_long' + str(lr) + '_' + str(nb_iter) + '_' + str(emb_dim) + '_' + str(kernel_bandwidth),
+#     subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#     nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#     background_pred=True,
+#     nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+# set.main()
+# ana.score('noah_opt_long', include_metric=True)
+# ana.save_images('noah_opt_long')
+
+
+"""!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"""
+
+"""ABRAM PRE"""
+# cur_nb_epochs = 272
+# lr = 0.03426
+#
+# cur_emb = 14
+# cur_bs = 4
+# cur_lr = lr
+# print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
+# set = h.Setup(model_name='pre_abram_14',
+#               nb_epochs=cur_nb_epochs, save_config=True, learning_rate=cur_lr, batch_size=cur_bs,
+#               embedding_loss=False, background_pred=True, nb_iterations=0, embedding_dim=cur_emb)
+# set.main()
+
+# """AZRAEL EMB + Margin"""
+# cur_nb_epochs = 50
+#
+# cur_lr = 0.00013
+# subsample_size = 1024
+# cur_bs = 20
+# margin_list = np.linspace(0.1, 0.9, 1000)
+#
+# for i in range(100):
+#     margin = np.around(np.random.choice(margin_list, decimals=2))
+#     cur_emb = np.random.randint(1, 65)
+#     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
+#     set = h.Setup(model_name='m_emb_azrael_' + str(margin) + ' ' + str(cur_emb),
+#                   nb_epochs=cur_nb_epochs, save_config=True, learning_rate=cur_lr, batch_size=cur_bs,
+#                   subsample_size=subsample_size, embedding_loss=True, background_pred=False, nb_iterations=0,
+#                   embedding_dim=cur_emb, include_background=True, margin=margin)
+#     set.main()
+# ana.score('m_emb_azrael_', include_metric=True)
+# ana.save_images('m_emb_azrael_')
+
+"""AZRAEL Subsample Size"""
+# cur_nb_epochs = 50
+#
+# cur_lr = 0.00013
+# subsample_size_list = np.array([2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66,
+#                        70, 74, 78]).astype(np.double) ** 2
+# cur_bs = 20
+# margin = 0.5
+# cur_emb = 16
+#
+# for subsample_size in subsample_size_list.astype(np.int):
+#     print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
+#     set = h.Setup(model_name='ss_azrael_' + str(subsample_size),
+#                   nb_epochs=cur_nb_epochs, save_config=True, learning_rate=cur_lr, batch_size=cur_bs,
+#                   subsample_size=subsample_size, embedding_loss=True, background_pred=False, nb_iterations=0,
+#                   embedding_dim=cur_emb, include_background=True, margin=margin)
+#     set.main()
+# ana.score('ss_azrael_', include_metric=True)
+# ana.save_images('ss_azrael_')
+
+"""EVE Emb Margin"""
+#
+# nb_epochs = 50
+# subsample_size = 1024
+# scaling = 4.
+# margin_list = np.linspace(0.1, 0.9, 1000)
+#
+# for i in range(50):
+#     margin = np.around(np.random.choice(margin_list), decimals=2)
+#     bs = 20
+#     emb_dim = np.random.randint(1, 65)
+#     lr = 0.00054
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(
+#         model_name='m_emb_eve_' + str(margin) + ' ' + str(emb_dim),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=True,
+#         background_pred=True,
+#         nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('m_emb_eve_', include_metric=True)
+# ana.save_images('m_emb_eve_')
+
+"""EVE Subsample Size"""
+# nb_epochs = 50
+# subsample_size_list = np.array([2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66,
+#                        70, 74, 78]).astype(np.double) ** 2
+# scaling = 4.
+# margin = 0.5
+# emb_dim = 32
+# bs = 20
+# lr = 0.00054
+#
+# for subsample_size in subsample_size_list.astype(int):
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(
+#         model_name='ss_eve_' + str(subsample_size),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=True,
+#         background_pred=True,
+#         nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('ss_eve_', include_metric=True)
+# ana.save_images('ss_eve_')
+
+"""EVE Scaling"""
+# nb_epochs = 50
+#
+# subsample_size = 1024
+# scaling_list = np.array(
+#     [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8., 8.5, 9., 9.5, 10.])
+# margin = 0.5
+# emb_dim = 32
+# bs = 20
+# lr = 0.00054
+#
+# for scaling in scaling_list:
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(
+#         model_name='scale_eve_' + str(subsample_size),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=True,
+#         background_pred=True,
+#         nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('scale_eve_', include_metric=True)
+# ana.save_images('scale_eve_')
+
+"""ADAM Emb Margin"""
+# nb_epochs = 50
+# subsample_size = 1024
+# scaling = 4.
+# margin_list = np.linspace(0.1, 0.9, 1000)
+#
+# for i in range(50):
+#     margin = np.around(np.random.choice(margin_list), decimals=2)
+#     bs = 20
+#     emb_dim = np.random.randint(1, 65)
+#     lr = 0.0005
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(
+#         model_name='m_emb_adam_' + str(margin) + ' ' + str(emb_dim),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('m_emb_adam_', include_metric=True)
+# ana.save_images('m_emb_adam_')
+
+"""ADAM Subsample Size"""
+# nb_epochs = 50
+# subsample_size_list = np.array([2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66,
+#                        70, 74, 78]).astype(np.double) ** 2
+# scaling = 4.
+# margin = 0.5
+# emb_dim = 32
+# bs = 20
+# lr = 0.0005
+#
+# for subsample_size in subsample_size_list.astype(int):
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(
+#         model_name='ss_adam_' + str(subsample_size),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('ss_adam_', include_metric=True)
+# ana.save_images('ss_adam_')
+
+
+"""Adam Scaling"""
+# nb_epochs = 50
+#
+# subsample_size = 1024
+# scaling_list = np.array(
+#     [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8., 8.5, 9., 9.5, 10.])
+# margin = 0.5
+# emb_dim = 32
+# bs = 20
+# lr = 0.0005
+#
+# for scaling in scaling_list:
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+#     set = h.Setup(
+#         model_name='scale_adam_' + str(subsample_size),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=0, embedding_loss=True)
+#     set.main()
+# ana.score('scale_adam_', include_metric=True)
+# ana.save_images('scale_adam_')
+
+
+"""ADAM PRE TRAIN vs NORMAL"""
+# margin = 0.5
+# nb_epochs = 1000
+# subsample_size = 1024
+#
+# bs = 20
+# emb_dim = 32
+# scaling = 4.
+# lr = 0.0005
+#
+# print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#       'Number epochs: ',
+#       nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+# set = h.Setup(
+#     model_name='pre_adam_trained',
+#     subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#     nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#     background_pred=True,
+#     nb_iterations=0, embedding_loss=True, pre_train=True, pre_train_name='abram_opt_30')
+# set.main()
+# ana.score('pre_adam_trained', include_metric=True)
+# ana.save_images('pre_adam_trained')
+
 """????????????????????????????????????????????????????????????????????????????????????????????????????????????????"""
 
 

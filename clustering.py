@@ -89,23 +89,35 @@ def postprocess_label(prediction, background, th=0., object_min_size=18, embeddi
 
     for b in range(bs):
 
-        # plt.imshow(predict[b])
-        # plt.show()
-
+        plt.imshow(predict[b])
+        plt.show()
 
         if background is not None:
             predict[b] = np.where(background[b].detach().cpu().numpy() < th, 0., prediction[b])
 
         predict[b] = np.where(predict[b] > 0, 1, 0)
 
-        # plt.imshow(predict[b])
-        # plt.show()
+        plt.imshow(predict[b])
+        plt.show()
 
         predict[b] = morphology.remove_small_objects(predict[b].astype(bool), object_min_size, connectivity=2)
 
+        plt.imshow(predict[b])
+        plt.show()
+
         predict[b] = morphology.remove_small_holes(predict[b].astype(bool), 3, connectivity=1)
 
-        predict[b] = helpers.get_diff_labels(predict[b].reshape(1, w, h))
+        plt.imshow(predict[b])
+        plt.show()
+
+        if np.sum(predict[b] == np.unique(predict[b])[0]) >= np.sum(predict[b] == np.unique(predict[b])[1]):
+            background_pixel = np.unique(predict[b])[0]
+        else:
+            background_pixel = np.unique(predict[b])[1]
+
+        predict[b] = helpers.get_diff_labels(predict[b].reshape(1, w, h), background=background_pixel)
+
+        # print(str(np.unique(predict[b]).shape) + ' clusters were found!')
 
         # plt.imshow(predict[b])
         # plt.show()

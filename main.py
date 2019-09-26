@@ -42,19 +42,23 @@ from torchsummary import summary
 #
 
 # data.synchronise_folder()
-h.test('abram_opt_30')
+# h.test('abram_opt_30')
 
 
 
-#
+# h.test('noah4_0.0002_1_16_2')
+# h.test('azrael_opt_112')
+h.test('adam_opt_132')
+# h.test('eve_opt_132')
+
+# a = h.find_th('abram_opt_30', iter=10)
+
+# h.val_score('abram_opt_30', cl_th=.1, pp_th=0.4, use_metric=True, iter=100, return_full=True)
+# h.val_score('azrael_opt_112', cl_th=.1, pp_th=0.25, use_metric=True, iter=100, return_full=True)
+# h.val_score('eve_opt_132', cl_th=1.25, pp_th=0.375, use_metric=True, iter=100, return_full=True)
+# h.val_score('adam_opt_132', cl_th=.75, pp_th=0.15, use_metric=True, iter=100, return_full=True)
 
 
-# h.test('eve2_0.00073_4.0_32_20')
-
-
-# h.val_score('abram_opt_30', cl_th=.1, pp_th=0.4, use_metric=True, iter=100)
-
-# a = h.find_th('azrael_opt_112', iter=10)
 
 # for i in range(19):
 #     input_test = ana.input_test(nb_neuro=i, input_dim=0, corr_path='data/corr/starmy/maxpool/transformed_4/',
@@ -148,8 +152,8 @@ h.test('abram_opt_30')
 #         nb_iterations=3, kernel_bandwidth=6., step_size=.5, embedding_loss=True)
 # set.main()
 
-# ana.score('mean_shift_full_test', include_metric=True)
-# ana.save_images('mean_shift_full_test')
+# ana.score('noah4', include_metric=False)
+# ana.save_images('noah4')
 
 # set = h.Setup(model_name='ms_test_1',
 #               subsample_size=1024, embedding_dim=3, margin=0.5, nb_epochs=10,
@@ -259,10 +263,10 @@ h.test('abram_opt_30')
 # h.test('noah_0.00315_11_7.17_11.27')
 
 
-# ana.analysis(analysis='lr_ep_bs', analysis_name='eve2_', use_metric=False)
-# ana.analysis(analysis='ed_ma_sc', analysis_name='noah3', use_metric=False)
+# ana.analysis(analysis='lr_ep_bs', analysis_name='noah4', use_metric=False)
+# ana.analysis(analysis='ed_ma_sc', analysis_name='noah4', use_metric=False)
 # ana.analysis(analysis='ed_ma', analysis_name='azrael2', use_metric=False)
-# ana.analysis(analysis='kb_iter', analysis_name='noah3', use_metric=False)
+# ana.analysis(analysis='kb_iter', analysis_name='noah4', use_metric=False)
 # ana.analysis(analysis='ss', analysis_name='evey', use_metric=True)
 # ana.analysis(analysis='lr', analysis_name='m_adam4_', use_metric=True)
 

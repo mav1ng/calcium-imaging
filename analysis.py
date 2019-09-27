@@ -276,6 +276,7 @@ def save_images(analysis_name, th=0., postproc=False):
 
 def full_score_analysis(analysis_name, analysis_list, include_metric=True, iter=10):
     full_list = []
+    ret = {}
 
     for ana in analysis_list:
         ret = {}

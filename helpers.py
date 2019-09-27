@@ -732,7 +732,7 @@ def emb_subsample(embedding_tensor, label_tensor, backpred, include_background, 
     return emb, lab, ind
 
 
-def test(model_name):
+def test(model_name, cl_th, pp_th, obj_size, hole_size, show_image=True, save_image=False):
 
     dtype = torch.float
     device = torch.device('cuda:0')
@@ -763,9 +763,9 @@ def test(model_name):
                 '04.00.test', '04.01.test']
 
     test_dataset = data.TestCombinedDataset(corr_path='data/test_corr/starmy/maxpool/transformed_4/',
-                                       corr_sum_folder='data/test_corr_sum_img/',
-                                       sum_folder='data/test_sum_img/',
-                                       transform=None, device=device, dtype=dtype)
+                                            corr_sum_folder='data/test_corr_sum_img/',
+                                            sum_folder='data/test_sum_img/',
+                                            transform=None, device=device, dtype=dtype)
 
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0)
     print('Test loader prepared.')
@@ -807,18 +807,23 @@ def test(model_name):
             # predict = cl.label_embeddings(m.view(ch + 2, -1).t(), th=0.8)
             # predict = predict.reshape(bs, w, h)
 
-            predict = cl.label_embeddings(output.view(ch, -1).t(), th=1.25)
+            predict = cl.label_embeddings(output.view(ch, -1).t(), th=cl_th)
             predict = predict.reshape(bs, w, h)
 
             if model.use_background_pred:
-                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output, th=0.375)
+                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output, th=pp_th,
+                                               obj_size=obj_size, hole_size=hole_size)
             else:
-                predict = cl.postprocess_label(predict, background=None)
+                predict = cl.postprocess_label(predict, background=None, obj_size=obj_size, hole_size=hole_size)
 
-            if c.test['show_img']:
+            if show_image:
                 plt.imshow(predict[0], cmap='tab20b')
                 plt.title('Predicted Background (upper) vs Ground Truth (lower)')
                 plt.show()
+
+            if save_image:
+                plt.imshow(predict[0], cmap='tab20b')
+                plt.savefig('x_images/output/' + str(model_name) + '_testd_' + str(i) + '.pdf')
 
             mask_predict = data.toCoords(get_diff_labels(predict))
             result_dict['dataset'] = namelist[i]
@@ -837,7 +842,7 @@ def test(model_name):
     pass
 
 
-def create_output_image(model_name, cl_th, pp_th):
+def create_output_image(model_name, cl_th, pp_th, obj_size, hole_size, show_image=False, save_images=False):
 
     dtype = torch.float
     device = torch.device('cuda:0')
@@ -865,7 +870,8 @@ def create_output_image(model_name, cl_th, pp_th):
     test_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
                                        corr_sum_folder='data/corr_sum_img/',
                                        sum_folder='data/sum_img/',
-                                       transform=None, device=device, dtype=dtype)
+                                        mask_folder='data/sum_masks/',
+                                       transform=None, device=device, dtype=dtype, train_val_ratio=1.0)
 
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=0)
     print('Test loader prepared.')
@@ -895,14 +901,19 @@ def create_output_image(model_name, cl_th, pp_th):
             predict = predict.reshape(bs, w, h)
 
             if model.use_background_pred:
-                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output, th=pp_th)
+                predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output, th=pp_th,
+                                               obj_size=obj_size, hole_size=hole_size)
             else:
-                predict = cl.postprocess_label(predict, background=None)
+                predict = cl.postprocess_label(predict, background=None, obj_size=obj_size, hole_size=hole_size)
 
-            if c.test['show_img']:
+            if show_image:
                 plt.imshow(predict[0], cmap='tab20b')
                 plt.title('Predicted Background (upper) vs Ground Truth (lower)')
                 plt.show()
+
+            if save_images:
+                plt.imshow(predict[0], cmap='tab20b')
+                plt.savefig('x_images/output/' + str(model_name) + '_td_' + str(i) + '.pdf')
 
         model.MS.val = False
         model.MS.test = False

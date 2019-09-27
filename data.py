@@ -454,7 +454,7 @@ class CombinedDataset(Dataset):
     def __init__(self, corr_path, sum_folder='data/sum_img/', mask_folder='data/sum_masks/', transform=None, test=False,
                  corr_sum_folder='data/corr_sum_img/',
                  dtype=c.data['dtype'],
-                 device=c.cuda['device']):
+                 device=c.cuda['device'], train_val_ratio=0.75):
         """
         :param folder_path: Path to the Folder with h5py files with Numpy Array of Correlation Data that should
         be used for training/testing
@@ -490,7 +490,7 @@ class CombinedDataset(Dataset):
             [h.pad_nf(load_numpy_from_h5py(file_name=f), labels=True) for f in self.corr_sum],
             dtype=dtype,
             device=device)
-        self.train_val_ratio = 0.75
+        self.train_val_ratio = train_val_ratio
         # self.x_bound = int(round(self.train_val_ratio * self.dims[0]))
         self.y_bound = int(round(self.train_val_ratio * self.dims[1]))
 

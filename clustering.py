@@ -101,10 +101,13 @@ def postprocess_label(prediction, background, th=0., obj_size=18, hole_size=3, e
 
         predict[b] = morphology.remove_small_holes(predict[b].astype(bool), hole_size, connectivity=1)
 
-        if np.sum(predict[b] == np.unique(predict[b])[0]) >= np.sum(predict[b] == np.unique(predict[b])[1]):
+        try:
+            if np.sum(predict[b] == np.unique(predict[b])[0]) >= np.sum(predict[b] == np.unique(predict[b])[1]):
+                background_pixel = np.unique(predict[b])[0]
+            else:
+                background_pixel = np.unique(predict[b])[1]
+        except IndexError:
             background_pixel = np.unique(predict[b])[0]
-        else:
-            background_pixel = np.unique(predict[b])[1]
 
         predict[b] = helpers.get_diff_labels(predict[b].reshape(1, w, h), background=background_pixel)
 

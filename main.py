@@ -39,7 +39,9 @@ import neurofinder as nf
 
 from torchsummary import summary
 
-#
+
+
+
 
 # data.synchronise_folder()
 
@@ -51,22 +53,22 @@ from torchsummary import summary
 # h.find_optimal_object_size('adam_opt_132', cl_th=.75, pp_th=0.15)
 
 # h.create_output_image('abram_opt_30', cl_th=.1, pp_th=0.4)
-# h.create_output_image('azrael_opt_112', cl_th=.1, pp_th=0.25)
+h.create_output_image('azrael_opt_112', cl_th=.1, pp_th=0.25, obj_size=35, hole_size=6, show_image=False, save_images=True)
 # h.create_output_image('adam_opt_132', cl_th=1.25, pp_th=0.375)
-# h.create_output_image('adam_opt_132', cl_th=.75, pp_th=0.15)
+# h.create_output_image('adam_opt_132', cl_th=.75, pp_th=0.15, obj_size=20, hole_size=14, show_image=False, save_images=True)
 
 # h.test('abram_opt_30')
 # h.test('noah4_0.0002_1_16_2')
-# h.test('azrael_opt_112')
-# h.test('adam_opt_132')
+# h.test('azrael_opt_112', cl_th=0.1, pp_th=0.25, obj_size=35, hole_size=6, show_image=False, save_image=True)
+# h.test('adam_opt_132', cl_th=0.75, pp_th=0.15, obj_size=20, hole_size=14)
 # h.test('eve_opt_132')
 
 # a = h.find_th('abram_opt_30', iter=10)
 
 # h.val_score('abram_opt_30', cl_th=.1, pp_th=0.4, use_metric=True, iter=100, return_full=True)
-# h.val_score('azrael_opt_112', cl_th=.1, pp_th=0.25, use_metric=True, iter=100, return_full=True)
+# h.val_score('azrael_opt_112', cl_th=.1, pp_th=0.25, obj_size=35, holes_size=6, use_metric=True, iter=100, return_full=True)
 # h.val_score('eve_opt_132', cl_th=1.25, pp_th=0.375, use_metric=True, iter=100, return_full=True)
-# h.val_score('adam_opt_132', cl_th=.75, pp_th=0.15, use_metric=True, iter=100, return_full=True)
+# h.val_score('adam_opt_132', cl_th=.75, pp_th=0.15, obj_size=20, holes_size=14, use_metric=True, iter=100, return_full=True)
 
 
 

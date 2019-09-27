@@ -274,7 +274,65 @@ def save_images(analysis_name, th=0., postproc=False):
     pass
 
 
+def full_score_analysis(analysis_name, analysis_list, include_metric=True, iter=10):
+    full_list = []
 
+    for ana in analysis_list:
+        ret = {}
+        print('Evaluating ' + str(ana.model_name))
+
+        cl_th = 0.8
+        pp_th = 0.
+        obj_size = 18
+        hole_size = 3
+
+        if 'abram' in str(ana.model_name):
+            cl_th = 0.1
+            pp_th = 0.4
+            obj_size = 10
+            hole_size = 12
+        elif 'azrael' in str(ana.model_name):
+            cl_th = 0.1
+            pp_th = 0.25
+            obj_size = 35
+            hole_size = 6
+        # elif 'eve' in str(ana.model_name):
+        #     cl_th = 1.25
+        #     pp_th = 0.375
+        #     obj_size =
+        #     hole_size =
+        elif 'adam' in str(ana.model_name):
+            cl_th = 0.75
+            pp_th = 0.15
+            obj_size = 20
+            hole_size = 14
+        # elif 'noah' in str(ana.model_name):
+        #     cl_th =
+        #     pp_th =
+        #     obj_size =
+        #     hole_size =
+
+        f1, f1_std, rec, rec_std, prec, prec_std, emb, emb_std, cel, cel_std = h.val_score(
+            model_name=str(ana.model_name), iter=iter, use_metric=include_metric, return_full=True, cl_th=cl_th,
+            pp_th=pp_th, obj_size=obj_size, holes_size=hole_size)
+
+        ret['model_name'] = str(ana.model_name)
+        ret['f1'] = f1
+        ret['f1_std'] = f1_std
+        ret['recall'] = rec
+        ret['recall_std'] = rec_std
+        ret['precision'] = prec
+        ret['precision_std'] = prec_std
+        ret['Emb Loss'] = emb
+        ret['Emb Loss std'] = emb_std
+        ret['CEL Loss'] = cel
+        ret['CEL Loss std'] = cel_std
+
+        full_list.append(ret)
+
+    data.save_numpy_to_h5py(np.array(full_list), 'full_score_' + str(analysis_name), file_path='plot_data/')
+
+    return ret
 
 
 def val_score_analysis(analysis_list, include_metric, iter=1):
@@ -310,6 +368,10 @@ def score(analysis_name, include_metric, iter=1):
                                ana.include_background, ana.scaling, ana.subsample_size, ana.learning_rate,
                                ana.nb_epochs, ana.batch_size, ana.pre_train, ana.pre_train_name)
     pass
+
+def full_score(analysis_name, include_metric, iter=10):
+    ana_list = get_analysis(analysis_name)
+    score_list = val_score_analysis(ana_list, include_metric=include_metric, iter=iter)
 
 
 def score_metric(analysis_name):
@@ -743,6 +805,31 @@ def input_test(nb_neuro, input_dim, corr_path, corr_sum_folder, sum_folder, show
         cur_img = torch.where(lab_img == 1., torch.max(cur_img), cur_img)
 
     return cur_img
+
+
+def input_labels(nb_neuro='data/training_data/', diff_labs=True, show_images=True, save_images=False):
+    dtype = torch.float
+    device = torch.device('cuda:0')
+
+    train_dataset = data.CombinedDataset(corr_path='data/corr/starmy/maxpool/transformed_4/',
+                                         corr_sum_folder='data/corr_sum_img/',
+                                         sum_folder='data/sum_img/',
+                                         mask_folder='data/sum_masks/',
+                                         transform=None, device=device, dtype=dtype, train_val_ratio=1.0)
+
+    for i, ds in enumerate(train_dataset):
+        cur_img = ds['label'].detach().cpu().numpy()
+
+        if diff_labs:
+            cur_img = np.squeeze(h.get_diff_labels(np.expand_dims(cur_img, axis=0), background=0), axis=0)
+
+        if show_images:
+            plt.imshow(cur_img, cmap='tab20b')
+            plt.show()
+
+        if save_images:
+            plt.imshow(cur_img, cmap='tab20b')
+            plt.savefig('x_images/labels/td_' + str(i) + '.pdf')
 
 
 def show_input(image, image_name, save_image):

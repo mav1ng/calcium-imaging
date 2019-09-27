@@ -89,17 +89,29 @@ def postprocess_label(prediction, background, th=0., obj_size=18, hole_size=3, e
 
     for b in range(bs):
 
-        # plt.imshow(predict[b])
-        # plt.show()
+        plt.imshow(predict[b], cmap='tab20b')
+        plt.show()
 
         if background is not None:
             predict[b] = np.where(background[b].detach().cpu().numpy() < th, 0., prediction[b])
 
+        plt.imshow(predict[b])
+        plt.show()
+
         predict[b] = np.where(predict[b] > 0, 1, 0)
+
+        plt.imshow(predict[b])
+        plt.show()
 
         predict[b] = morphology.remove_small_objects(predict[b].astype(bool), obj_size, connectivity=2)
 
+        plt.imshow(predict[b])
+        plt.show()
+
         predict[b] = morphology.remove_small_holes(predict[b].astype(bool), hole_size, connectivity=1)
+
+        plt.imshow(predict[b])
+        plt.show()
 
         try:
             if np.sum(predict[b] == np.unique(predict[b])[0]) >= np.sum(predict[b] == np.unique(predict[b])[1]):
@@ -110,6 +122,9 @@ def postprocess_label(prediction, background, th=0., obj_size=18, hole_size=3, e
             background_pixel = np.unique(predict[b])[0]
 
         predict[b] = helpers.get_diff_labels(predict[b].reshape(1, w, h), background=background_pixel)
+
+        plt.imshow(predict[b])
+        plt.show()
 
         # print(str(np.unique(predict[b]).shape) + ' clusters were found!')
 

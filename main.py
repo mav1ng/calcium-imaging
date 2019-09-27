@@ -39,10 +39,6 @@ import neurofinder as nf
 
 from torchsummary import summary
 
-
-
-
-
 # data.synchronise_folder()
 
 # a = h.find_th('abram_opt_30', iter=10)
@@ -52,20 +48,20 @@ from torchsummary import summary
 # h.find_optimal_object_size('eve_opt_132', cl_th=1.25, pp_th=0.375)
 # h.find_optimal_object_size('adam_opt_132', cl_th=.75, pp_th=0.15)
 
-# h.create_output_image('abram_opt_30', cl_th=.1, pp_th=0.4)
-h.create_output_image('azrael_opt_112', cl_th=.1, pp_th=0.25, obj_size=35, hole_size=6, show_image=False, save_images=True)
-# h.create_output_image('adam_opt_132', cl_th=1.25, pp_th=0.375)
+# h.create_output_image('abram_opt_30', cl_th=.1, pp_th=0.4, obj_size=10, hole_size=12, show_image=True, save_images=False)
+# h.create_output_image('azrael_opt_112', cl_th=.1, pp_th=0.25, obj_size=35, hole_size=6, show_image=False, save_images=True)
+# h.create_output_image('eve_opt_132', cl_th=1.25, pp_th=0.375, obj_size=, hole_size=, show_image=True, save_images=False)
 # h.create_output_image('adam_opt_132', cl_th=.75, pp_th=0.15, obj_size=20, hole_size=14, show_image=False, save_images=True)
 
-# h.test('abram_opt_30')
+# h.test('abram_opt_30', cl_th=.1, pp_th=0.4, obj_size=10, hole_size=12, show_image=False, save_image=True)
 # h.test('noah4_0.0002_1_16_2')
-# h.test('azrael_opt_112', cl_th=0.1, pp_th=0.25, obj_size=35, hole_size=6, show_image=False, save_image=True)
+# h.test('azrael_opt_112', cl_th=0.1, pp_th=0.25, obj_size=35, hole_size=6)
 # h.test('adam_opt_132', cl_th=0.75, pp_th=0.15, obj_size=20, hole_size=14)
-# h.test('eve_opt_132')
+# h.test('eve_opt_132', cl_th=1.25, pp_th=0.375, obj_size=, hole_size=)
 
 # a = h.find_th('abram_opt_30', iter=10)
 
-# h.val_score('abram_opt_30', cl_th=.1, pp_th=0.4, use_metric=True, iter=100, return_full=True)
+# h.val_score('abram_opt_30', cl_th=.1, pp_th=0.4, obj_size=10, holes_size=12, use_metric=True, iter=100, return_full=True)
 # h.val_score('azrael_opt_112', cl_th=.1, pp_th=0.25, obj_size=35, holes_size=6, use_metric=True, iter=100, return_full=True)
 # h.val_score('eve_opt_132', cl_th=1.25, pp_th=0.375, use_metric=True, iter=100, return_full=True)
 # h.val_score('adam_opt_132', cl_th=.75, pp_th=0.15, obj_size=20, holes_size=14, use_metric=True, iter=100, return_full=True)

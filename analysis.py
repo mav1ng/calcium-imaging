@@ -297,11 +297,11 @@ def full_score_analysis(analysis_name, analysis_list, include_metric=True, iter=
             pp_th = 0.25
             obj_size = 35
             hole_size = 6
-        # elif 'eve' in str(ana.model_name):
-        #     cl_th = 1.25
-        #     pp_th = 0.375
-        #     obj_size =
-        #     hole_size =
+        elif 'eve' in str(ana.model_name):
+            cl_th = 1.25
+            pp_th = 0.25
+            obj_size = 10
+            hole_size = 16
         elif 'adam' in str(ana.model_name):
             cl_th = 0.75
             pp_th = 0.15

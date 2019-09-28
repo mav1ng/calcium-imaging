@@ -454,7 +454,7 @@
 #       'Number epochs: ',
 #       nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
 # set = h.Setup(
-#     model_name='noah_opt_long' + str(lr) + '_' + str(nb_iter) + '_' + str(emb_dim) + '_' + str(kernel_bandwidth),
+#     model_name='noah_opt_long',
 #     subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
 #     nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
 #     background_pred=True,
@@ -464,33 +464,7 @@
 # ana.save_images('noah_opt_long')
 
 
-"""NOAH Pre TRAINED"""
-# margin = 0.5
-# nb_epochs = 1000
-# step_size = 1.
-#
-# subsample_size = 1024
-#
-# emb_dim = 16
-# nb_iter = 1
-# kernel_bandwidth = 2.
-# scaling = 4.
-# bs = 20
-# lr = 0.0002
-#
-# print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
-#       'Number epochs: ',
-#       nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
-# set = h.Setup(
-#     model_name='pre_noah_trained',
-#     subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
-#     nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
-#     background_pred=True,
-#     nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True, pre_train=True,
-#     pre_train_name='pre_abram_16')
-# set.main()
-# ana.score('pre_noah_trained', include_metric=True)
-# ana.save_images('pre_noah_trained')
+
 
 
 """!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"""
@@ -668,6 +642,29 @@
 # ana.score('pre_eve_trained', include_metric=True)
 # ana.save_images('pre_eve_trained')
 
+"""EVE PRE TRAIN vs NORMAL"""
+# margin = 0.5
+# nb_epochs = 1000
+# subsample_size = 1024
+#
+# bs = 20
+# emb_dim = 32
+# scaling = 4.
+# lr = 0.00054
+#
+# print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#       'Number epochs: ',
+#       nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+# set = h.Setup(
+#     model_name='pre_eve_trained2',
+#     subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#     nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=True,
+#     background_pred=True,
+#     nb_iterations=0, embedding_loss=True, pre_train=True, pre_train_name='pre_abram_32')
+# set.main()
+# ana.score('pre_eve_trained2', include_metric=True)
+# ana.save_images('pre_eve_trained2')
+
 
 """ADAM Emb Margin"""
 # nb_epochs = 50
@@ -767,6 +764,58 @@
 # set.main()
 # ana.score('pre_adam_trained', include_metric=True)
 # ana.save_images('pre_adam_trained')
+
+"""ADAM PRE TRAIN vs NORMAL"""
+# margin = 0.5
+# nb_epochs = 1000
+# subsample_size = 1024
+#
+# bs = 20
+# emb_dim = 32
+# scaling = 4.
+# lr = 0.0005
+#
+# print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#       'Number epochs: ',
+#       nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+# set = h.Setup(
+#     model_name='pre_adam_trained2',
+#     subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#     nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#     background_pred=True,
+#     nb_iterations=0, embedding_loss=True, pre_train=True, pre_train_name='pre_abram_32')
+# set.main()
+# ana.score('pre_adam_trained2', include_metric=True)
+# ana.save_images('pre_adam_trained2')
+
+
+"""NOAH Pre TRAINED"""
+# margin = 0.5
+# nb_epochs = 1000
+# step_size = 1.
+#
+# subsample_size = 1024
+#
+# emb_dim = 16
+# nb_iter = 1
+# kernel_bandwidth = 2.
+# scaling = 4.
+# bs = 20
+# lr = 0.0002
+#
+# print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#       'Number epochs: ',
+#       nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+# set = h.Setup(
+#     model_name='pre_noah_trained',
+#     subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#     nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#     background_pred=True,
+#     nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True, pre_train=True,
+#     pre_train_name='pre_abram_16')
+# set.main()
+# ana.score('pre_noah_trained', include_metric=True)
+# ana.save_images('pre_noah_trained')
 
 """????????????????????????????????????????????????????????????????????????????????????????????????????????????????"""
 

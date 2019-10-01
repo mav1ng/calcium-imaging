@@ -39,29 +39,20 @@ import neurofinder as nf
 
 from torchsummary import summary
 
-"""AZRAEL Subsample Size"""
-cur_nb_epochs = 50
 
-cur_lr = 0.00013
-subsample_size_list = np.array([62, 66,
-                       70, 74, 78]).astype(np.double) ** 2
-cur_bs = 20
-margin = 0.5
-cur_emb = 16
+#
 
-for subsample_size in subsample_size_list.astype(np.int):
-    print('Number epochs: ', cur_nb_epochs, 'Learning Rate: ', cur_lr, 'Batch Size: ', cur_bs)
-    set = h.Setup(model_name='ss_azrael_' + str(subsample_size),
-                  nb_epochs=cur_nb_epochs, save_config=True, learning_rate=cur_lr, batch_size=cur_bs,
-                  subsample_size=subsample_size, embedding_loss=True, background_pred=False, nb_iterations=0,
-                  embedding_dim=cur_emb, include_background=True, margin=margin)
-    set.main()
-ana.score('ss_azrael_', include_metric=True)
-ana.save_images('ss_azrael_')
+
+# ana.full_score('ss_eve_', include_metric=True)
+# ana.full_score('scale_adam_', include_metric=True, iter=10)
 
 # data.synchronise_folder()
 
 # a = h.find_th('abram_opt_30', iter=10)
+
+
+# h.test('pre_eve_trained2', cl_th=0.75, pp_th=0.2, obj_size=20, hole_size=14, show_image=True, save_image=False)
+
 
 # h.find_optimal_object_size('abram_opt_30', cl_th=.1, pp_th=0.4)
 # h.find_optimal_object_size('azrael_opt_112', cl_th=.1, pp_th=0.25)
@@ -73,11 +64,11 @@ ana.save_images('ss_azrael_')
 # h.create_output_image('eve_opt_132', cl_th=1.25, pp_th=0.25, obj_size=10, hole_size=16, show_image=True, save_images=False)
 # h.create_output_image('adam_opt_132', cl_th=.75, pp_th=0.15, obj_size=20, hole_size=14, show_image=False, save_images=True)
 
-# h.test('abram_opt_30', cl_th=.1, pp_th=0.4, obj_size=10, hole_size=12, show_image=False, save_image=True)
+# h.test('abram_opt_30', cl_th=.1, pp_th=0.4, obj_size=10, hole_size=12, show_image=False, save_image=False)
 # h.test('noah4_0.0002_1_16_2')
-# h.test('azrael_opt_112', cl_th=0.1, pp_th=0.25, obj_size=35, hole_size=6)
-# h.test('adam_opt_132', cl_th=0.75, pp_th=0.15, obj_size=20, hole_size=14)
-# h.test('eve_opt_132', cl_th=1.25, pp_th=0.25, obj_size=10, hole_size=16, show_image=False, save_image=True)
+# h.test('azrael_opt_112', cl_th=0.1, pp_th=0.25, obj_size=35, hole_size=6, show_image=False, save_image=False)
+# h.test('adam_opt_132', cl_th=0.75, pp_th=0.15, obj_size=20, hole_size=14, show_image=False, save_image=False)
+# h.test('eve_opt_132', cl_th=1.25, pp_th=0.25, obj_size=10, hole_size=16, show_image=False, save_image=False)
 
 # a = h.find_th('abram_opt_30', iter=10)
 

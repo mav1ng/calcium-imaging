@@ -788,6 +788,63 @@
 # ana.score('pre_adam_trained2', include_metric=True)
 # ana.save_images('pre_adam_trained2')
 
+"""NOAH OPT EMB Margin"""
+# nb_epochs = 50
+# step_size = 1.
+#
+# subsample_size = 1024
+# margin_list = np.linspace(0.1, 0.9, 1000)
+#
+# for i in range(34):
+#     margin = np.around(np.random.choice(margin_list), decimals=2)
+#     emb_dim = np.random.randint(2, 65)
+#     nb_iter = 1
+#     kernel_bandwidth = 2
+#     scaling = 4.
+#     bs = 20
+#     lr = 0.0002
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+#     set = h.Setup(
+#         model_name='m_emb_noah_' + str(margin) + '_' + str(emb_dim),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+#     set.main()
+# ana.score('m_emb_noah_', include_metric=True)
+# ana.save_images('m_emb_noah_')
+
+
+"""NOAH Scaling Margin"""
+# nb_epochs = 50
+# step_size = 1.
+#
+# subsample_size = 1024
+# scaling_list = np.array([0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8., 8.5, 9., 9.5, 10.])
+#
+# for scaling in scaling_list:
+#     margin = 0.5
+#     emb_dim = 16
+#     nb_iter = 1
+#     kernel_bandwidth = 2
+#     bs = 20
+#     lr = 0.0002
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+#     set = h.Setup(
+#         model_name='scale_noah_' + str(scaling),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+#     set.main()
+# ana.score('scale_noah_', include_metric=True)
+# ana.save_images('scale_noah_')
 
 """NOAH Pre TRAINED"""
 # margin = 0.5
@@ -816,6 +873,94 @@
 # set.main()
 # ana.score('pre_noah_trained', include_metric=True)
 # ana.save_images('pre_noah_trained')
+
+"""NOAH Subsample Size"""
+# nb_epochs = 50
+# step_size = 1.
+#
+# subsample_size = 1024
+# margin = 0.5
+# subsample_size_list = np.array([2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66,
+#                         70, 74, 78]).astype(np.double) ** 2
+# emb_dim = 16
+# nb_iter = 1
+# kernel_bandwidth = 2
+# scaling = 4.
+# bs = 20
+# lr = 0.0002
+#
+# for subsample_size in subsample_size_list.astype(int):
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+#     set = h.Setup(
+#         model_name='ss_noah_' + str(subsample_size),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+#     set.main()
+# ana.score('ss_noah_', include_metric=True)
+# ana.save_images('ss_noah_')
+
+
+"""NOAH Iter"""
+# nb_epochs = 50
+# step_size = 1.
+#
+# subsample_size = 1024
+# margin = 0.5
+# emb_dim = 16
+# nb_iter = 1
+# kernel_bandwidth = 2
+# scaling = 4.
+# bs = 20
+# lr = 0.0002
+#
+# iter_list = [10]
+#
+# for nb_iter in iter_list:
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+#     set = h.Setup(
+#         model_name='iter_noah_' + str(nb_iter),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+#     set.main()
+
+
+"""NOAH Kernel Bandwidth"""
+# nb_epochs = 50
+# step_size = 1.
+#
+# subsample_size = 1024
+# margin = 0.5
+# emb_dim = 16
+# nb_iter = 1
+# scaling = 4.
+# bs = 20
+# lr = 0.0002
+# kb_list = [6., 10., 25.]
+#
+#
+# for kernel_bandwidth in kb_list:
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+#     set = h.Setup(
+#         model_name='kb_noah_' + str(kernel_bandwidth),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+#     set.main()
+
 
 """????????????????????????????????????????????????????????????????????????????????????????????????????????????????"""
 

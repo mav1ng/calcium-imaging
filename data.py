@@ -87,6 +87,7 @@ def toCoords(mask):
     coords = []
     for _, label in enumerate(unique):
         coords.append({'coordinates': (mask == label).nonzero().cpu().numpy().tolist()})
+
     return coords
 
 

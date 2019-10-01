@@ -758,7 +758,6 @@ def test(model_name, cl_th, pp_th, obj_size, hole_size, show_image=True, save_im
     print('Testing ' + str(model_name))
 
     results = []
-    result_dict = {'dataset': None, 'regions': None}
     namelist = ['00.00.test', '00.01.test', '01.00.test', '01.01.test', '02.00.test', '02.01.test', '03.00.test',
                 '04.00.test', '04.01.test']
 
@@ -825,10 +824,8 @@ def test(model_name, cl_th, pp_th, obj_size, hole_size, show_image=True, save_im
                 plt.imshow(predict[0], cmap='tab20b')
                 plt.savefig('x_images/output/' + str(model_name) + '_testd_' + str(i) + '.pdf')
 
-            mask_predict = data.toCoords(get_diff_labels(predict))
-            result_dict['dataset'] = namelist[i]
-            result_dict['regions'] = mask_predict[0]
-            results.append(result_dict)
+            mask_predict = data.toCoords(predict[0])
+            results.append({'dataset': namelist[i], 'regions': mask_predict})
 
         if not os.path.exists('data/test_results'):
             os.makedirs('data/test_results')

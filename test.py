@@ -19,8 +19,13 @@ from numpy import array, zeros
 import scipy.ndimage as ndimage
 import cv2
 
-print(np.array([2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66,
-                       70, 74, 78]).astype(np.double) ** 2)
+data = np.array(data.read_from_json('plot_data/adam_opt_long_val_cel.json'))
+x = data[:, 0]
+y = data[:, 2]
+x = x - data[0, 0]
+
+plt.plot(x, y)
+plt.show()
 
 
 # batch_size = c.training['batch_size']

@@ -275,11 +275,19 @@ def save_images(analysis_name, th=0., postproc=False):
 
 
 def full_score_analysis(analysis_name, analysis_list, include_metric=True, iter=10):
-    full_list = []
-    ret = {}
+    model_name_ = []
+    f1_ = []
+    f1_std_ = []
+    rec_ = []
+    rec_std_ = []
+    prec_ = []
+    prec_std_ = []
+    emb_ = []
+    emb_std_ = []
+    cel_ = []
+    cel_std_ = []
 
     for ana in analysis_list:
-        ret = {}
         print('Evaluating ' + str(ana.model_name))
 
         cl_th = 0.8
@@ -317,23 +325,30 @@ def full_score_analysis(analysis_name, analysis_list, include_metric=True, iter=
             model_name=str(ana.model_name), iter=iter, use_metric=include_metric, return_full=True, cl_th=cl_th,
             pp_th=pp_th, obj_size=obj_size, holes_size=hole_size)
 
-        ret['model_name'] = str(ana.model_name)
-        ret['f1'] = f1
-        ret['f1_std'] = f1_std
-        ret['recall'] = rec
-        ret['recall_std'] = rec_std
-        ret['precision'] = prec
-        ret['precision_std'] = prec_std
-        ret['Emb Loss'] = emb
-        ret['Emb Loss std'] = emb_std
-        ret['CEL Loss'] = cel
-        ret['CEL Loss std'] = cel_std
+        model_name_.append(str(ana.model_name))
+        f1_.append(f1)
+        f1_std_.append(f1_std)
+        rec_.append(rec)
+        rec_std_.append(rec_std)
+        prec_.append(prec)
+        prec_std_.append(prec_std)
+        emb_.append(emb)
+        emb_std_.append(emb_std)
+        cel_.append(cel)
+        cel_std_.append(cel_std)
 
-        full_list.append(ret)
-
-    data.save_numpy_to_h5py(np.array(full_list), 'full_score_' + str(analysis_name), file_path='plot_data/')
+    ret = [model_name_, f1_, f1_std_, rec_, rec_std_, prec_, prec_std_, emb_, emb_std_, cel_, cel_std_]
+    data.write_to_json(ret, path='data/model_scores/full_score_' + str(analysis_name) + '.json')
 
     return ret
+
+
+def full_score(analysis_name, include_metric, iter=10):
+    ana_list = get_analysis(analysis_name)
+    score_list = full_score_analysis(analysis_name=analysis_name, analysis_list=ana_list, include_metric=include_metric,
+                                     iter=iter)
+    return score_list
+
 
 
 def val_score_analysis(analysis_list, include_metric, iter=1):
@@ -369,10 +384,6 @@ def score(analysis_name, include_metric, iter=1):
                                ana.include_background, ana.scaling, ana.subsample_size, ana.learning_rate,
                                ana.nb_epochs, ana.batch_size, ana.pre_train, ana.pre_train_name)
     pass
-
-def full_score(analysis_name, include_metric, iter=10):
-    ana_list = get_analysis(analysis_name)
-    score_list = val_score_analysis(ana_list, include_metric=include_metric, iter=iter)
 
 
 def score_metric(analysis_name):
@@ -747,6 +758,73 @@ def print_results(data, ana_params, optimized_parameters, score_ind, use_metric)
 
     pass
 
+
+def full_analyse(analysis_name, analysis):
+    ana_list = get_analysis(analysis_name)
+    scores = data.read_from_json('full_score_' + str(analysis_name) + '.json')
+    name_list = scores[0]
+    scores = np.array([scores[1:]])
+
+    ret = np.zeros((11, ana_list.__len__()))
+
+    for i, ana in enumerate(ana_list):
+        current_model_name = name_list == str(ana.model_name)
+        index = np.argwhere(np.array(current_model_name) == 1)
+        cur_score = scores[index]
+
+        if analysis =='ss':
+            ret[0, i] = float(ana.subsample_size)
+        elif analysis == 'scaling':
+            ret[0, i] = float(ana.scaling)
+
+        for j in range(11):
+            ret[j + 1, i] = cur_score[j]
+
+    optimized_parameters = ['Subsample Size']
+
+    ret = np.where(ret == -1., np.nan, ret)
+
+    return ret, optimized_parameters
+
+
+def full_plot_ss(data):
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x = data[0]
+    y = data[9]
+    y_err = data[10]
+
+    plt.scatter(x, y, cmap='tab20b')
+    ax.errorbars(x, y, y_err=y_err)
+    plt.show()
+
+
+def full_plot_scaling(data):
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x = data[0]
+    y = data[9]
+    y_err = data[10]
+
+    plt.scatter(x, y, cmap='tab20b')
+    ax.errorbars(x, y, y_err=y_err)
+    plt.show()
+
+
+def full_analysis(analysis, analysis_name):
+    if str(analysis) == 'ss':
+        data, optimized_parameters = full_analyse(analysis_name, analysis='ss')
+        full_plot_ss(data)
+    elif str(analysis) == 'scaling':
+        data, optimized_parameters = full_analyse(analysis_name, analysis='scaling')
+        full_plot_scaling(data)
+
+    else:
+        print('Analysis Name is not known!')
 
 def analysis(analysis, analysis_name, use_metric):
     if str(analysis) == 'lr_ep_bs':

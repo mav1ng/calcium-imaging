@@ -170,22 +170,54 @@ class Setup:
             except AttributeError:
                 emb_losses.update(ret_loss)
 
+
+
+
+            #
+            #
+            # print(output.size())
+            # print(label.size())
+            #
+            # data_ = output[0].view(3, -1).t().detach().cpu().numpy()
+            # label_ = get_diff_labels(label.detach().cpu().numpy(), background=0)[0].reshape(-1)
+            #
+            # # plt.scatter(data_[:, 0], data_[:, 1], data_[:, 2], c=label_, cmap='tab20b')
+            # # plt.show()
+            #
+            # fig = plt.figure()
+            # ax = fig.add_subplot(111, projection='3d')
+            # ax.scatter(data_[:, 0], data_[:, 1], data_[:, 2], c=label_, cmap='tab20b', s=5, alpha=1)
+            #
+            # plt.axis('off')
+            #
+            # u, v = np.mgrid[0:2 * np.pi:50j, 0:np.pi:50j]
+            # x = np.cos(u) * np.sin(v)
+            # y = np.sin(u) * np.sin(v)
+            # z = np.cos(v)
+            # ax.plot_wireframe(x, y, z, cmap='tab20b', color='grey', alpha=0.3)
+            #
+            # plt.show()
+
+
+
+
+
             if c.debug['print_img']:
                 # fig = v.draw_umap(data=output[0].detach().view(c.UNet['embedding_dim'], -1),
                 #                   color=label[0].detach().flatten())
                 # plt.show()
 
-                pred_labels = cl.label_embeddings(output[0].view(self.embedding_dim, -1).t().detach(),
-                                                  th=c.val['th_nn'])
-                pred_labels2 = cl.label_emb_sl(output[0].view(self.embedding_dim, -1).t().detach(),
-                                               th=c.val['th_sl'])
+                # pred_labels = cl.label_embeddings(output[0].view(self.embedding_dim, -1).t().detach(),
+                #                                   th=c.val['th_nn'])
+                # pred_labels2 = cl.label_emb_sl(output[0].view(self.embedding_dim, -1).t().detach(),
+                #                                th=c.val['th_sl'])
+                #
+                # print('There are ' + str(torch.unique(label).size(0)) + ' clusters.')
+                #
+                # v.plot_sk_img(pred_labels, label.detach())
+                # v.plot_sk_img(pred_labels2, label.detach())
 
-                print('There are ' + str(torch.unique(label).size(0)) + ' clusters.')
-
-                v.plot_sk_img(pred_labels, label.detach())
-                v.plot_sk_img(pred_labels2, label.detach())
-
-                v.plot_emb_pca(output[0].detach(), label.detach())
+                v.plot_emb_pca(output[0].detach().cpu().numpy(), label.detach().cpu().numpy())
 
             self.writer.add_scalar('Embedding Loss', ret_loss)
 
@@ -809,6 +841,27 @@ def test(model_name, cl_th, pp_th, obj_size, hole_size, show_image=True, save_im
             predict = cl.label_embeddings(output.view(ch, -1).t(), th=cl_th)
             predict = predict.reshape(bs, w, h)
 
+            # if i == 0:
+            #     pp_th = 0.2
+            # elif i == 1:
+            #     pp_th = 0.19
+            # elif i == 2:
+            #     pp_th = 0.19
+            # elif i == 3:
+            #     pp_th = 0.2
+            # elif i == 4:
+            #     pp_th = 0.21
+            # elif i == 5:
+            #     pp_th = 0.215
+            # elif i == 6:
+            #     pp_th = 0.14
+            # elif i == 7:
+            #     pp_th = 0.22
+            # elif i == 8:
+            #     pp_th = 0.21
+            #
+            # print(pp_th)
+
             if model.use_background_pred:
                 predict = cl.postprocess_label(predict, background=background[:, 1], embeddings=output, th=pp_th,
                                                obj_size=obj_size, hole_size=hole_size)
@@ -926,7 +979,7 @@ def find_th(model_name, iter=10):
     bp_th_list = []
     score_list = []
     for th in [0.1, 0.5, 0.75, 1., 1.25, 1.5]:
-        for back_pred in [0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 0.3, 0.325, 0.35, 0.375, 0.4]:
+        for back_pred in [0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 0.3]:
             print('Current ClTh: ' + str(th) + '\t Current pp th: ' + str(back_pred))
             cur_met = val_score(model_name, use_metric=True, iter=iter, cl_th=th, pp_th=back_pred)[0]
             if best_score < cur_met:

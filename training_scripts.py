@@ -1,3 +1,25 @@
+# """PLOT 3D Embeddings"""
+# margin = 0.5
+# nb_epochs = 5
+# subsample_size = 1024
+#
+# bs = 1
+# emb_dim = 3
+# scaling = 4.
+# lr = 0.0005
+#
+# print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#       'Number epochs: ',
+#       nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs)
+# set = h.Setup(
+#     model_name='test',
+#     subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#     nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#     background_pred=True,
+#     nb_iterations=0, embedding_loss=True, pre_train_name='3D_emb_50_pre', pre_train=True)
+# set.main()
+
+
 """ABRAM OPT ROUND 1"""
 # cur_nb_epochs = 100
 # lr_list = np.linspace(0.0001, 0.01, 10000)

@@ -39,20 +39,54 @@ import neurofinder as nf
 
 from torchsummary import summary
 
+"""NOAH OPT EMB Margin"""
+nb_epochs = 50
+step_size = 1.
 
-#
+subsample_size = 1024
+margin_list = np.linspace(0.1, 0.9, 1000)
+
+for i in range(20):
+    margin = np.around(np.random.choice(margin_list), decimals=2)
+    emb_dim = np.random.randint(2, 65)
+    nb_iter = 1
+    kernel_bandwidth = 2
+    scaling = 4.
+    bs = 20
+    lr = 0.0002
+
+    print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+          'Number epochs: ',
+          nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+    set = h.Setup(
+        model_name='m_emb_noah_' + str(margin) + '_' + str(emb_dim),
+        subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+        nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+        background_pred=True,
+        nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+    set.main()
+ana.score('m_emb_noah_', include_metric=True)
+ana.save_images('m_emb_noah_')
+
+# h.test('3D_emb_50', cl_th=0.75, pp_th=0.2, hole_size=14, obj_size=20)
+# h.test('3D_emb_init', cl_th=0.75, pp_th=0.2, hole_size=14, obj_size=20)
 
 
-# ana.full_score('ss_eve_', include_metric=True)
-# ana.full_score('scale_adam_', include_metric=True, iter=10)
+# h.test('noah_opt_75', cl_th=1.5, pp_th=0.175, obj_size=20, hole_size=20, show_image=False, save_image=False)
+
+# ana.full_score('m_emb_azrael_', include_metric=True, iter=10)
+# ana.full_score('pre_adam_trained2', include_metric=True, iter=10)
+# ana.full_score('pre_eve_trained2', include_metric=True, iter=10)
+# ana.full_score('kb_noah_', include_metric=True, iter=10)
 
 # data.synchronise_folder()
 
 # a = h.find_th('abram_opt_30', iter=10)
 
-
-# h.test('pre_eve_trained2', cl_th=0.75, pp_th=0.2, obj_size=20, hole_size=14, show_image=True, save_image=False)
-
+# th_cl, th_pp = h.find_th('noah_opt_225')
+# best_obj, best_hole = h.find_optimal_object_size('noah_opt_225', cl_th=th_cl, pp_th=th_pp)
+# h.val_score('noah_opt_75', use_metric=True, iter=100, cl_th=1.5, pp_th=0.175, return_full=True, obj_size=20,
+#              holes_size=20)
 
 # h.find_optimal_object_size('abram_opt_30', cl_th=.1, pp_th=0.4)
 # h.find_optimal_object_size('azrael_opt_112', cl_th=.1, pp_th=0.25)
@@ -63,6 +97,7 @@ from torchsummary import summary
 # h.create_output_image('azrael_opt_112', cl_th=.1, pp_th=0.25, obj_size=35, hole_size=6, show_image=False, save_images=True)
 # h.create_output_image('eve_opt_132', cl_th=1.25, pp_th=0.25, obj_size=10, hole_size=16, show_image=True, save_images=False)
 # h.create_output_image('adam_opt_132', cl_th=.75, pp_th=0.15, obj_size=20, hole_size=14, show_image=False, save_images=True)
+# h.create_output_image('noah_opt_75', cl_th=1.5, pp_th=0.175, obj_size=20, hole_size=20, show_image=False, save_images=True)
 
 # h.test('abram_opt_30', cl_th=.1, pp_th=0.4, obj_size=10, hole_size=12, show_image=False, save_image=False)
 # h.test('noah4_0.0002_1_16_2')
@@ -76,6 +111,7 @@ from torchsummary import summary
 # h.val_score('azrael_opt_112', cl_th=.1, pp_th=0.25, obj_size=35, holes_size=6, use_metric=True, iter=100, return_full=True)
 # h.val_score('eve_opt_132', cl_th=1.25, pp_th=0.25, use_metric=True, obj_size=10, holes_size=16, iter=100, return_full=True)
 # h.val_score('adam_opt_132', cl_th=.75, pp_th=0.15, obj_size=20, holes_size=14, use_metric=True, iter=100, return_full=True)
+# h.val_score('noah4_0.0002_1_16_2', cl_th=0.75, pp_th=0.125, obj_size=20, holes_size=14, use_metric=True, iter=100, return_full=True)
 
 
 

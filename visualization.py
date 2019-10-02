@@ -83,7 +83,7 @@ def plot_emb_pca(data, labels):
 
         d_ = np.mean(data, axis=0)
         d_n = data - d_
-        d_n_ = np.sqrt(np.sum(d_n ** 2, dim=0))
+        d_n_ = np.sqrt(np.sum(d_n ** 2, axis=0))
         d = d_n / d_n_
         d = np.where(np.isnan(d) != 1, d, 0.)
         d = d.reshape(c, -1).T
@@ -104,7 +104,12 @@ def plot_emb_pca(data, labels):
 
     try:
         data_ = data.view(3, -1).t().cpu().numpy()
-        plt.scatter(data_[:, 0], data_[:, 1], data_[:, 2])
+        plt.scatter(data_[:, 0], data_[:, 1], data_[:, 2], cmap='tab20b')
+        plt.show()
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(data_[:, 0], data_[:, 1], data_[:, 2], cmap='tab20b')
         plt.show()
     except TypeError:
         pDf = pDf.reshape(-1, 3)

@@ -315,11 +315,11 @@ def full_score_analysis(analysis_name, analysis_list, include_metric=True, iter=
             pp_th = 0.15
             obj_size = 20
             hole_size = 14
-        # elif 'noah' in str(ana.model_name):
-        #     cl_th =
-        #     pp_th =
-        #     obj_size =
-        #     hole_size =
+        elif 'noah' in str(ana.model_name):
+            cl_th = 1.5
+            pp_th = 0.175
+            obj_size = 20
+            hole_size = 20
 
         f1, f1_std, rec, rec_std, prec, prec_std, emb, emb_std, cel, cel_std = h.val_score(
             model_name=str(ana.model_name), iter=iter, use_metric=include_metric, return_full=True, cl_th=cl_th,

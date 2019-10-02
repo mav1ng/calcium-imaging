@@ -19,13 +19,13 @@ from numpy import array, zeros
 import scipy.ndimage as ndimage
 import cv2
 
-data = np.array(data.read_from_json('plot_data/adam_opt_long_val_cel.json'))
-x = data[:, 0]
-y = data[:, 2]
-x = x - data[0, 0]
-
-plt.plot(x, y)
-plt.show()
+# data = np.array(data.read_from_json('plot_data/adam_opt_long_val_cel.json'))
+# x = data[:, 0]
+# y = data[:, 2]
+# x = x - data[0, 0]
+#
+# plt.plot(x, y)
+# plt.show()
 
 
 # batch_size = c.training['batch_size']
@@ -36,7 +36,7 @@ plt.show()
 # device = torch.device('cpu')
 # img_size = c.training['img_size']
 #
-# data = data.load_numpy_from_h5py(file_name='plot_data/eve_opt_132_find_th_gzip.hkl')
+# data = data.load_numpy_from_h5py(file_name='plot_data/noah_opt_75_find_obj_size_gzip.hkl')
 #
 # fig = plt.figure()
 # ax = fig.add_subplot(111, projection='3d')

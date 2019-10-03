@@ -39,34 +39,36 @@ import neurofinder as nf
 
 from torchsummary import summary
 
-"""NOAH OPT EMB Margin"""
-nb_epochs = 50
-step_size = 1.
+ana.full_analysis(analysis='ss', analysis_name='ss_adam_')
 
-subsample_size = 1024
-margin_list = np.linspace(0.1, 0.9, 1000)
-
-for i in range(20):
-    margin = np.around(np.random.choice(margin_list), decimals=2)
-    emb_dim = np.random.randint(2, 65)
-    nb_iter = 1
-    kernel_bandwidth = 2
-    scaling = 4.
-    bs = 20
-    lr = 0.0002
-
-    print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
-          'Number epochs: ',
-          nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
-    set = h.Setup(
-        model_name='m_emb_noah_' + str(margin) + '_' + str(emb_dim),
-        subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
-        nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
-        background_pred=True,
-        nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
-    set.main()
-ana.score('m_emb_noah_', include_metric=True)
-ana.save_images('m_emb_noah_')
+# """NOAH OPT EMB Margin"""
+# nb_epochs = 50
+# step_size = 1.
+#
+# subsample_size = 1024
+# margin_list = np.linspace(0.1, 0.9, 1000)
+#
+# for i in range(20):
+#     margin = np.around(np.random.choice(margin_list), decimals=2)
+#     emb_dim = np.random.randint(2, 65)
+#     nb_iter = 1
+#     kernel_bandwidth = 2
+#     scaling = 4.
+#     bs = 20
+#     lr = 0.0002
+#
+#     print('Subsample Size: ', subsample_size, 'Embedding Dim: ', emb_dim, 'Margin: ', margin, 'Scaling: ', scaling,
+#           'Number epochs: ',
+#           nb_epochs, 'Learning Rate: ', lr, 'Batch Size: ', bs, 'kernel_bandwidth', kernel_bandwidth)
+#     set = h.Setup(
+#         model_name='m_emb_noah_' + str(margin) + '_' + str(emb_dim),
+#         subsample_size=subsample_size, embedding_dim=emb_dim, margin=margin, scaling=scaling,
+#         nb_epochs=nb_epochs, save_config=True, learning_rate=lr, batch_size=bs, include_background=False,
+#         background_pred=True,
+#         nb_iterations=nb_iter, kernel_bandwidth=kernel_bandwidth, step_size=step_size, embedding_loss=True)
+#     set.main()
+# ana.score('m_emb_noah_', include_metric=True)
+# ana.save_images('m_emb_noah_')
 
 # h.test('3D_emb_50', cl_th=0.75, pp_th=0.2, hole_size=14, obj_size=20)
 # h.test('3D_emb_init', cl_th=0.75, pp_th=0.2, hole_size=14, obj_size=20)
@@ -74,10 +76,11 @@ ana.save_images('m_emb_noah_')
 
 # h.test('noah_opt_75', cl_th=1.5, pp_th=0.175, obj_size=20, hole_size=20, show_image=False, save_image=False)
 
-# ana.full_score('m_emb_azrael_', include_metric=True, iter=10)
+# ana.full_score('m_emb_azrael_', include_metric=False, iter=10)
 # ana.full_score('pre_adam_trained2', include_metric=True, iter=10)
 # ana.full_score('pre_eve_trained2', include_metric=True, iter=10)
-# ana.full_score('kb_noah_', include_metric=True, iter=10)
+# ana.full_score('m_emb_azrael_0.89 47', include_metric=True, iter=10)
+# ana.full_score('m_emb_noah_', include_metric=True, iter=10)
 
 # data.synchronise_folder()
 

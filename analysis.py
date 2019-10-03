@@ -760,24 +760,28 @@ def print_results(data, ana_params, optimized_parameters, score_ind, use_metric)
 
 
 def full_analyse(analysis_name, analysis):
-    ana_list = get_analysis(analysis_name)
-    scores = data.read_from_json('full_score_' + str(analysis_name) + '.json')
+    scores = data.read_from_json('data/model_scores/full_score_' + str(analysis_name) + '.json')
     name_list = scores[0]
-    scores = np.array([scores[1:]])
+    ana_list = []
+
+    for name in name_list:
+        ana_list.append(get_analysis(str(name))[0])
+
+    scores = np.array(scores[1:])
 
     ret = np.zeros((11, ana_list.__len__()))
 
     for i, ana in enumerate(ana_list):
-        current_model_name = name_list == str(ana.model_name)
-        index = np.argwhere(np.array(current_model_name) == 1)
-        cur_score = scores[index]
+        current_model_name = (np.array(name_list) == str(ana.model_name)).astype(int)
+        index = np.argwhere(np.array(current_model_name) == 1)[0][0]
+        cur_score = scores[:, index]
 
         if analysis =='ss':
             ret[0, i] = float(ana.subsample_size)
         elif analysis == 'scaling':
             ret[0, i] = float(ana.scaling)
 
-        for j in range(11):
+        for j in range(10):
             ret[j + 1, i] = cur_score[j]
 
     optimized_parameters = ['Subsample Size']
@@ -787,41 +791,66 @@ def full_analyse(analysis_name, analysis):
     return ret, optimized_parameters
 
 
-def full_plot_ss(data):
+def full_plot_ss(data, plot_name, figsize):
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    ss = data[0]
+
+    emb, emb_std = h.zero_to_one(data[7], data[8])
+    cel, cel_std = h.zero_to_one(data[9], data[10])
+
+    comb, comb_std = h.zero_to_one((emb * cel) / (emb + cel), emb_std * ((cel ** 2)/(emb + cel) ** 2))
+
+    cmap = plt.cm.get_cmap('tab20b')
+
+    # plt.scatter(ss, emb, s=50, color=cmap(0.), alpha=0.8, label='EMB')
+    # #ax.errorbars(ss, emb, y_err=emb_std, cmap='tab20b')
+    # plt.scatter(ss, cel, s=50, color=cmap(0.5), alpha=0.9, label='CEL')
+    # plt.scatter(ss, comb, s=50, color=cmap(1.), alpha=0.8, label='Combined')
+
+    ss, emb, cel, comb = zip(*sorted(zip(ss, emb, cel, comb), key=lambda ss: ss[0]))
+
+
+    plt.plot(ss, emb, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.4, label='EMB', linewidth=2., linestyle='--')
+
+    plt.plot(ss, cel, MarkerSize=3, color=cmap(0.55), marker='o', alpha=0.4, label='CEL', linewidth=2., linestyle='--')
+
+    plt.plot(ss, comb, MarkerSize=5, color=cmap(.7), marker='o', alpha=0.9, label='Combined', linewidth=4., linestyle='-')
+
+
+    plt.title('ADAM: Loss vs. Subsample Size')
+    plt.xlabel('Subsample size in pixels')
+    plt.ylabel('Model Loss Offset to [0, 1]')
+
+    ax.legend()
+    plt.savefig('x_images/plots/' + str(plot_name) + '.pdf', figsize=figsize)
+    plt.show()
+
+
+def full_plot_scaling(data, plot_name, figsize):
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
     x = data[0]
     y = data[9]
+
     y_err = data[10]
 
     plt.scatter(x, y, cmap='tab20b')
-    ax.errorbars(x, y, y_err=y_err)
+    # ax.errorbars(x, y, y_err=y_err)
     plt.show()
 
 
-def full_plot_scaling(data):
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    x = data[0]
-    y = data[9]
-    y_err = data[10]
-
-    plt.scatter(x, y, cmap='tab20b')
-    ax.errorbars(x, y, y_err=y_err)
-    plt.show()
-
-
-def full_analysis(analysis, analysis_name):
+def full_analysis(analysis, analysis_name, plot_name, figsize):
     if str(analysis) == 'ss':
         data, optimized_parameters = full_analyse(analysis_name, analysis='ss')
-        full_plot_ss(data)
+        full_plot_ss(data, plot_name=plot_name, figsize=figsize)
     elif str(analysis) == 'scaling':
         data, optimized_parameters = full_analyse(analysis_name, analysis='scaling')
-        full_plot_scaling(data)
+        full_plot_scaling(data, plot_name=plot_name, figsize=figsize)
 
     else:
         print('Analysis Name is not known!')

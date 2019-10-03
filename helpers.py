@@ -1235,4 +1235,6 @@ def det_bandwidth(model_name):
                 dist_ = torch.mean(dist)
                 print(dist_)
 
+def zero_to_one(input, std):
+        return (input - min(input)) / (max(input) - min(input)), std / (max(input) - min(input))
 

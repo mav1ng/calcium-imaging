@@ -39,7 +39,10 @@ import neurofinder as nf
 
 from torchsummary import summary
 
-ana.full_analysis(analysis='ss', analysis_name='ss_adam_')
+# ana.full_analysis(analysis='ss', analysis_name='ss_noah_', plot_name='ss_noah', figsize=(10, 3))
+# ana.full_analysis(analysis='scaling_comb', analysis_name='scale_noah_', plot_name='sc_combined', figsize=(10, 4))
+# ana.full_analysis(analysis='m_emb', analysis_name='m_emb_eve_', plot_name='m_emb_eve_cel', figsize=(15, 11))
+
 
 # """NOAH OPT EMB Margin"""
 # nb_epochs = 50
@@ -74,7 +77,7 @@ ana.full_analysis(analysis='ss', analysis_name='ss_adam_')
 # h.test('3D_emb_init', cl_th=0.75, pp_th=0.2, hole_size=14, obj_size=20)
 
 
-# h.test('noah_opt_75', cl_th=1.5, pp_th=0.175, obj_size=20, hole_size=20, show_image=False, save_image=False)
+# h.test('noah_opt_75', cl_th=1.5, pp_th=0.2, obj_size=20, hole_size=20, show_image=True, save_image=False)
 
 # ana.full_score('m_emb_azrael_', include_metric=False, iter=10)
 # ana.full_score('pre_adam_trained2', include_metric=True, iter=10)

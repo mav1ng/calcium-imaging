@@ -763,13 +763,25 @@ def full_analyse(analysis_name, analysis):
     scores = data.read_from_json('data/model_scores/full_score_' + str(analysis_name) + '.json')
     name_list = scores[0]
     ana_list = []
+    start_index = 1
+    ret_zeroes = 11
+    if analysis == 'm_emb':
+        start_index += 1
+        ret_zeroes += 1
 
     for name in name_list:
         ana_list.append(get_analysis(str(name))[0])
 
     scores = np.array(scores[1:])
 
-    ret = np.zeros((11, ana_list.__len__()))
+    if analysis == 'scaling_comb':
+        scores1 = np.array(data.read_from_json('data/model_scores/full_score_' + 'scale_noah_' + '.json')[1:])
+        scores2 = np.array(data.read_from_json('data/model_scores/full_score_' + 'scale_eve_' + '.json')[1:])
+        scores3 = np.array(data.read_from_json('data/model_scores/full_score_' + 'scale_adam_' + '.json')[1:])
+        scores = (scores1 + scores2 + scores3) / 3
+        print(scores)
+
+    ret = np.zeros((ret_zeroes, ana_list.__len__()))
 
     for i, ana in enumerate(ana_list):
         current_model_name = (np.array(name_list) == str(ana.model_name)).astype(int)
@@ -778,11 +790,14 @@ def full_analyse(analysis_name, analysis):
 
         if analysis =='ss':
             ret[0, i] = float(ana.subsample_size)
-        elif analysis == 'scaling':
+        elif analysis in ['scaling', 'scaling_comb']:
             ret[0, i] = float(ana.scaling)
+        elif analysis == 'm_emb':
+            ret[0, i] = float(ana.embedding_dim)
+            ret[1, i] = float(ana.margin)
 
         for j in range(10):
-            ret[j + 1, i] = cur_score[j]
+            ret[j + start_index, i] = cur_score[j]
 
     optimized_parameters = ['Subsample Size']
 
@@ -792,8 +807,7 @@ def full_analyse(analysis_name, analysis):
 
 
 def full_plot_ss(data, plot_name, figsize):
-
-    fig = plt.figure()
+    fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
 
     ss = data[0]
@@ -801,7 +815,11 @@ def full_plot_ss(data, plot_name, figsize):
     emb, emb_std = h.zero_to_one(data[7], data[8])
     cel, cel_std = h.zero_to_one(data[9], data[10])
 
-    comb, comb_std = h.zero_to_one((emb * cel) / (emb + cel), emb_std * ((cel ** 2)/(emb + cel) ** 2))
+    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) * (data[9] / np.linalg.norm(data[9]))) / (
+                (data[7] / np.linalg.norm(data[7])) + (data[9] / np.linalg.norm(data[9]))),
+                                   (data[8] / np.linalg.norm(data[8])) * (((data[9] / np.linalg.norm(data[9])) ** 2) / (
+                                               (data[7] / np.linalg.norm(data[7])) + (
+                                                   data[9] / np.linalg.norm(data[9]))) ** 2))
 
     cmap = plt.cm.get_cmap('tab20b')
 
@@ -812,37 +830,104 @@ def full_plot_ss(data, plot_name, figsize):
 
     ss, emb, cel, comb = zip(*sorted(zip(ss, emb, cel, comb), key=lambda ss: ss[0]))
 
+    plt.plot(ss, emb, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.4, label='Embedding Loss', linewidth=2., linestyle='--')
 
-    plt.plot(ss, emb, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.4, label='EMB', linewidth=2., linestyle='--')
+    plt.plot(ss, cel, MarkerSize=3, color=cmap(0.55), marker='o', alpha=0.4, label='Cross Entropy Loss', linewidth=2., linestyle='--')
 
-    plt.plot(ss, cel, MarkerSize=3, color=cmap(0.55), marker='o', alpha=0.4, label='CEL', linewidth=2., linestyle='--')
-
-    plt.plot(ss, comb, MarkerSize=5, color=cmap(.7), marker='o', alpha=0.9, label='Combined', linewidth=4., linestyle='-')
+    plt.plot(ss, comb, MarkerSize=5, color=cmap(.7), marker='o', alpha=0.9, label='Losses Combined', linewidth=4., linestyle='-')
 
 
-    plt.title('ADAM: Loss vs. Subsample Size')
+    plt.title(str(plot_name[3:]).upper() + ': Loss vs. Subsample Size')
     plt.xlabel('Subsample size in pixels')
     plt.ylabel('Model Loss Offset to [0, 1]')
 
     ax.legend()
-    plt.savefig('x_images/plots/' + str(plot_name) + '.pdf', figsize=figsize)
+    plt.tight_layout()
+    plt.savefig('x_images/plots/' + str(plot_name) + '.pdf')
     plt.show()
 
 
 def full_plot_scaling(data, plot_name, figsize):
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111)
 
-    x = data[0]
-    y = data[9]
+    ss = data[0]
 
-    y_err = data[10]
+    emb, emb_std = h.zero_to_one(data[7], data[8])
+    cel, cel_std = h.zero_to_one(data[9], data[10])
 
-    plt.scatter(x, y, cmap='tab20b')
-    # ax.errorbars(x, y, y_err=y_err)
+    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) * (data[9] / np.linalg.norm(data[9]))) / (
+                (data[7] / np.linalg.norm(data[7])) + (data[9] / np.linalg.norm(data[9]))),
+                                   (data[8] / np.linalg.norm(data[8])) * (((data[9] / np.linalg.norm(data[9])) ** 2) / (
+                                               (data[7] / np.linalg.norm(data[7])) + (
+                                                   data[9] / np.linalg.norm(data[9]))) ** 2))
+
+    cmap = plt.cm.get_cmap('tab20b')
+
+    # plt.scatter(ss, emb, s=50, color=cmap(0.), alpha=0.8, label='EMB')
+    # #ax.errorbars(ss, emb, y_err=emb_std, cmap='tab20b')
+    # plt.scatter(ss, cel, s=50, color=cmap(0.5), alpha=0.9, label='CEL')
+    # plt.scatter(ss, comb, s=50, color=cmap(1.), alpha=0.8, label='Combined')
+
+    ss, emb, cel, comb = zip(*sorted(zip(ss, emb, cel, comb), key=lambda ss: ss[0]))
+
+    plt.plot(ss, emb, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.4, label='Embedding Loss', linewidth=2., linestyle='--')
+
+    plt.plot(ss, cel, MarkerSize=3, color=cmap(0.55), marker='o', alpha=0.4, label='Cross Entropy Loss', linewidth=2., linestyle='--')
+
+    plt.plot(ss, comb, MarkerSize=5, color=cmap(.7), marker='o', alpha=0.9, label='Losses Combined', linewidth=4., linestyle='-')
+
+
+    plt.title(str(plot_name[3:]).upper() + ': Loss vs. Scaling Parameter')
+    plt.xlabel('Scaling Parameter')
+    plt.ylabel('Model Loss Offset to [0, 1]')
+
+    ax.legend(loc='upper center')
+    plt.tight_layout()
+    plt.savefig('x_images/plots/' + str(plot_name) + '.pdf')
     plt.show()
 
+def full_plot_m_emb(data, plot_name, figsize):
+
+    fig = plt.figure(figsize=figsize)
+    ax = plt.axes(projection='3d')
+
+    data = np.where(np.isnan(np.array(data)) == 1, 0., np.array(data))
+
+    emb_dim = data[0]
+    margin = data[1]
+
+    emb, emb_std = h.zero_to_one(data[8], data[9])
+    cel, cel_std = h.zero_to_one(data[10], data[11])
+
+    comb, comb_std = h.zero_to_one((data[8] / np.linalg.norm(data[8]) * (data[10] / np.linalg.norm(data[10]))) / (
+                (data[8] / np.linalg.norm(data[8])) + (data[10] / np.linalg.norm(data[10]))),
+                                   (data[9] / np.linalg.norm(data[9])) * (((data[10] / np.linalg.norm(data[10])) ** 2) / (
+                                               (data[8] / np.linalg.norm(data[8])) + (
+                                                   data[10] / np.linalg.norm(data[10]))) ** 2))
+
+    cmap = plt.cm.get_cmap('tab20b')
+
+    # plt.scatter(ss, emb, s=50, color=cmap(0.), alpha=0.8, label='EMB')
+    # #ax.errorbars(ss, emb, y_err=emb_std, cmap='tab20b')
+    # plt.scatter(ss, cel, s=50, color=cmap(0.5), alpha=0.9, label='CEL')
+    # plt.scatter(ss, comb, s=50, color=cmap(1.), alpha=0.8, label='Combined')
+
+    p = ax.scatter3D(emb_dim, margin, cel, s=50, c=cel, cmap='plasma')
+    ax.set_xlabel('Embedding Dimension', fontsize=15)
+    ax.set_ylabel('Margin', fontsize=15)
+    ax.set_zlabel('Loss offset to [0, 1]', fontsize=15)
+    ax.view_init(25, -20)
+
+    fig.colorbar(p, shrink=0.66)
+
+    # plt.title(str(plot_name[6:]).upper() + ': Loss vs. Embedding Dimension and Margin', fontsize=20)
+
+    ax.legend(loc='upper center')
+    plt.tight_layout()
+    plt.savefig('x_images/plots/' + str(plot_name) + '.pdf')
+    plt.show()
 
 def full_analysis(analysis, analysis_name, plot_name, figsize):
     if str(analysis) == 'ss':
@@ -851,6 +936,12 @@ def full_analysis(analysis, analysis_name, plot_name, figsize):
     elif str(analysis) == 'scaling':
         data, optimized_parameters = full_analyse(analysis_name, analysis='scaling')
         full_plot_scaling(data, plot_name=plot_name, figsize=figsize)
+    elif str(analysis) == 'scaling_comb':
+        data, optimized_parameters = full_analyse(analysis_name, analysis='scaling_comb')
+        full_plot_scaling(data, plot_name=plot_name, figsize=figsize)
+    elif str(analysis) == 'm_emb':
+        data, optimized_parameters = full_analyse(analysis_name, analysis='m_emb')
+        full_plot_m_emb(data, plot_name=plot_name, figsize=figsize)
 
     else:
         print('Analysis Name is not known!')

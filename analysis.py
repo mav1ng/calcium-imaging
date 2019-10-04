@@ -799,6 +799,8 @@ def full_analyse(analysis_name, analysis):
             ret[0, i] = float(ana.nb_iterations)
         elif analysis == 'kb':
             ret[0, i] = float(ana.kernel_bandwidth)
+        elif analysis == 'rep':
+            ret[0, i] = float(ana.subsample_size)
 
         for j in range(10):
             ret[j + start_index, i] = cur_score[j]
@@ -1018,6 +1020,52 @@ def full_plot_kb(data, plot_name, figsize):
     plt.show()
 
 
+def full_plot_rep(data, plot_name, figsize):
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111)
+
+    data = np.where(np.isnan(np.array(data)) == 1, 0., np.array(data))
+
+    f1 = data[1]
+
+    emb, emb_std = h.zero_to_one(data[7], data[8])
+    cel, cel_std = h.zero_to_one(data[9], data[10])
+
+    print(emb, cel)
+
+    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) * (data[9] / np.linalg.norm(data[9]))) / (
+                (data[7] / np.linalg.norm(data[7])) + (data[9] / np.linalg.norm(data[9]))),
+                                   (data[8] / np.linalg.norm(data[8])) * (((data[9] / np.linalg.norm(data[9])) ** 2) / (
+                                               (data[7] / np.linalg.norm(data[7])) + (
+                                                   data[9] / np.linalg.norm(data[9]))) ** 2))
+
+    cmap = plt.cm.get_cmap('tab20b')
+
+    # plt.scatter(ss, emb, s=50, color=cmap(0.), alpha=0.8, label='EMB')
+    # #ax.errorbars(ss, emb, y_err=emb_std, cmap='tab20b')
+    # plt.scatter(ss, cel, s=50, color=cmap(0.5), alpha=0.9, label='CEL')
+    # plt.scatter(ss, comb, s=50, color=cmap(1.), alpha=0.8, label='Combined')
+
+    f1, emb, cel, comb = zip(*sorted(zip(f1, emb, cel, comb), key=lambda f1: f1[0]))
+
+    plt.plot(f1, emb, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.7, label='Embedding Loss', linewidth=2., linestyle='')
+
+    plt.plot(f1, cel, MarkerSize=3, color=cmap(0.55), marker='o', alpha=0.9, label='Cross Entropy Loss', linewidth=2., linestyle='')
+
+    plt.plot(f1, comb, MarkerSize=6, color=cmap(.7), marker='^', alpha=0.9, label='Losses Combined', linewidth=4., linestyle='')
+
+
+    plt.title('Loss vs. Metric')
+    plt.xlabel('F1 Score')
+    plt.ylabel('Model Loss Offset to [0, 1]')
+    plt.xlim(0.07, 0.87)
+
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig('x_images/plots/' + str(plot_name) + '.pdf')
+    plt.show()
+
+
 def full_analysis(analysis, analysis_name, plot_name, figsize):
     if str(analysis) == 'ss':
         data, optimized_parameters = full_analyse(analysis_name, analysis='ss')
@@ -1037,9 +1085,16 @@ def full_analysis(analysis, analysis_name, plot_name, figsize):
     elif str(analysis) == 'kb':
         data, optimized_parameters = full_analyse(analysis_name, analysis='kb')
         full_plot_kb(data, plot_name=plot_name, figsize=figsize)
-
+    elif str(analysis) == 'rep':
+        full_data, _ = full_analyse('iter_noah_', analysis='rep')
+        for file in ['kb_noah_', 'm_emb_adam_', 'm_emb_eve_', 'm_emb_noah_', 'scale_adam_', 'scale_eve_',
+                     'scale_noah_', 'ss_adam_', 'ss_eve_', 'ss_noah_']:
+            data, optimized_parameters1 = full_analyse(file, analysis='rep')
+            full_data = np.concatenate([full_data, data], axis=1)
+        full_plot_rep(full_data, plot_name=plot_name, figsize=figsize)
     else:
         print('Analysis Name is not known!')
+
 
 def analysis(analysis, analysis_name, use_metric):
     if str(analysis) == 'lr_ep_bs':

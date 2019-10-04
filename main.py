@@ -44,6 +44,7 @@ from torchsummary import summary
 # ana.full_analysis(analysis='m_emb', analysis_name='m_emb_noah_', plot_name='m_emb_noah', figsize=(15, 11))
 # ana.full_analysis(analysis='iter', analysis_name='iter_noah_', plot_name='iter_noah', figsize=(5, 5))
 # ana.full_analysis(analysis='kb', analysis_name='kb_noah_', plot_name='kb_noah', figsize=(5, 5))
+ana.full_analysis(analysis='rep', analysis_name='m_emb_adam_', plot_name='rep', figsize=(10, 6))
 
 # h.test('kb_noah_25.0', cl_th=1.5, pp_th=0.2, obj_size=20, hole_size=20, show_image=True, save_image=False)
 

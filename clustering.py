@@ -89,8 +89,8 @@ def postprocess_label(prediction, background, th=0., obj_size=18, hole_size=3, e
 
     for b in range(bs):
 
-        # plt.imshow(predict[b], cmap='tab20b')
-        # plt.show()
+        plt.imshow(predict[b], cmap='tab20b')
+        plt.show()
 
         if background is not None:
             predict[b] = np.where(background[b].detach().cpu().numpy() < th, 0., prediction[b])

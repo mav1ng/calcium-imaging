@@ -19,6 +19,9 @@ from numpy import array, zeros
 import scipy.ndimage as ndimage
 import cv2
 
+
+print(np.linspace(0, 50000, 50000))
+
 # data = np.array(data.read_from_json('plot_data/adam_opt_long_val_cel.json'))
 # x = data[:, 0]
 # y = data[:, 2]

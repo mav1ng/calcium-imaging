@@ -213,122 +213,308 @@ def draw_umap(n_neighbors=10, min_dist=0.1, n_components=2, metric='euclidean', 
     plt.title(title, fontsize=18)
     return fig
 
-def plot_learning_curve(model_name, figsize, cutoff_1=0, cutoff_2=0):
+def plot_learning_curve(model_name, figsize, cutoff_1=0, cutoff_2=0, azrael=False):
 
-    d_val_cel_long = np.array(data.read_from_json('data/learning_curves/' + str(model_name) + '_long_val_cel.json'))
     d_val_emb_long = np.array(data.read_from_json('data/learning_curves/' + str(model_name) + '_long_val_emb.json'))
-    d_cel_long = np.array(data.read_from_json('data/learning_curves/' + str(model_name) + '_long_cel.json'))
     d_emb_long = np.array(data.read_from_json('data/learning_curves/' + str(model_name) + '_long_emb.json'))
-
-    d_val_cel_pre = np.array(data.read_from_json('data/learning_curves/pre_' + str(model_name) + '_val_cel.json'))
     d_val_emb_pre = np.array(data.read_from_json('data/learning_curves/pre_' + str(model_name) + '_val_emb.json'))
-    d_cel_pre = np.array(data.read_from_json('data/learning_curves/pre_' + str(model_name) + '_cel.json'))
     d_emb_pre = np.array(data.read_from_json('data/learning_curves/pre_' + str(model_name) + '_emb.json'))
 
-    d_val_cel_long = np.where(np.isnan(d_val_cel_long) == 1, 0., d_val_cel_long)
     d_val_emb_long = np.where(np.isnan(d_val_emb_long) == 1, 0., d_val_emb_long)
-    d_cel_long = np.where(np.isnan(d_cel_long) == 1, 0., d_cel_long)
     d_emb_long = np.where(np.isnan(d_emb_long) == 1, 0., d_emb_long)
-    d_val_cel_pre = np.where(np.isnan(d_val_cel_pre) == 1, 0., d_val_cel_pre)
     d_val_emb_pre = np.where(np.isnan(d_val_emb_pre) == 1, 0., d_val_emb_pre)
-    d_cel_pre = np.where(np.isnan(d_cel_pre) == 1, 0., d_cel_pre)
     d_emb_pre = np.where(np.isnan(d_emb_pre) == 1, 0., d_emb_pre)
 
-    time_val_long = (d_val_cel_long[:, 0] - d_val_cel_long[0, 0]) / 3600
-    time_long = (d_cel_long[:, 0] - d_cel_long[0, 0]) / 3600
-    time_val_pre = (d_val_cel_pre[:, 0] - d_val_cel_pre[0, 0]) / 3600
-    time_pre = (d_cel_pre[:, 0] - d_cel_pre[0, 0]) / 3600
-
-    val_cel_long = d_val_cel_long[:, 2]
     val_emb_long = d_val_emb_long[:, 2]
-    cel_long = d_cel_long[:, 2]
     emb_long = d_emb_long[:, 2]
-
-    val_cel_pre = d_val_cel_pre[:, 2]
     val_emb_pre = d_val_emb_pre[:, 2]
-    cel_pre = d_cel_pre[:, 2]
     emb_pre = d_emb_pre[:, 2]
 
-    val_cel_long = val_cel_long / np.linalg.norm(val_cel_long)
     val_emb_long = val_emb_long / np.linalg.norm(val_emb_long)
-    cel_long = cel_long / np.linalg.norm(cel_long)
     emb_long = emb_long / np.linalg.norm(emb_long)
-
-    val_cel_pre = val_cel_pre / np.linalg.norm(val_cel_pre)
     val_emb_pre = val_emb_pre / np.linalg.norm(val_emb_pre)
-    cel_pre = cel_pre / np.linalg.norm(cel_pre)
     emb_pre = emb_pre / np.linalg.norm(emb_pre)
 
-    comb_val_long = (val_cel_long * val_emb_long) / (val_cel_long + val_emb_long)
-    comb_val_pre = (val_cel_pre * val_emb_pre) / (val_cel_pre + val_emb_pre)
-    comb_long = (cel_long * emb_long) / (cel_long + emb_long)
-    comb_pre = (cel_pre * emb_pre) / (cel_pre + emb_pre)
+    if not azrael:
+        d_val_cel_long = np.array(data.read_from_json('data/learning_curves/' + str(model_name) + '_long_val_cel.json'))
+        d_cel_long = np.array(data.read_from_json('data/learning_curves/' + str(model_name) + '_long_cel.json'))
+        d_val_cel_pre = np.array(data.read_from_json('data/learning_curves/pre_' + str(model_name) + '_val_cel.json'))
+        d_cel_pre = np.array(data.read_from_json('data/learning_curves/pre_' + str(model_name) + '_cel.json'))
 
-    comb_val_long = h.zero_to_one(comb_val_long)
-    comb_val_pre = h.zero_to_one(comb_val_pre)
-    comb_long = h.zero_to_one(comb_long)
-    comb_pre = h.zero_to_one(comb_pre)
+        d_val_cel_long = np.where(np.isnan(d_val_cel_long) == 1, 0., d_val_cel_long)
+        d_cel_long = np.where(np.isnan(d_cel_long) == 1, 0., d_cel_long)
+        d_val_cel_pre = np.where(np.isnan(d_val_cel_pre) == 1, 0., d_val_cel_pre)
+        d_cel_pre = np.where(np.isnan(d_cel_pre) == 1, 0., d_cel_pre)
 
+        time_val_long = (d_val_cel_long[:, 0] - d_val_cel_long[0, 0]) / 3600
+        time_long = (d_cel_long[:, 0] - d_cel_long[0, 0]) / 3600
+        time_val_pre = (d_val_cel_pre[:, 0] - d_val_cel_pre[0, 0]) / 3600
+        time_pre = (d_cel_pre[:, 0] - d_cel_pre[0, 0]) / 3600
+
+        val_cel_long = d_val_cel_long[:, 2]
+        cel_long = d_cel_long[:, 2]
+        val_cel_pre = d_val_cel_pre[:, 2]
+        cel_pre = d_cel_pre[:, 2]
+
+        val_cel_long = val_cel_long / np.linalg.norm(val_cel_long)
+        cel_long = cel_long / np.linalg.norm(cel_long)
+        val_cel_pre = val_cel_pre / np.linalg.norm(val_cel_pre)
+        cel_pre = cel_pre / np.linalg.norm(cel_pre)
+
+        comb_val_long = (val_cel_long * val_emb_long) / (val_cel_long + val_emb_long)
+        comb_val_pre = (val_cel_pre * val_emb_pre) / (val_cel_pre + val_emb_pre)
+        comb_long = (cel_long * emb_long) / (cel_long + emb_long)
+        comb_pre = (cel_pre * emb_pre) / (cel_pre + emb_pre)
+
+        comb_val_long = h.zero_to_one(comb_val_long)
+        comb_val_pre = h.zero_to_one(comb_val_pre)
+        comb_long = h.zero_to_one(comb_long)
+        comb_pre = h.zero_to_one(comb_pre)
+
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+        cmap = plt.cm.get_cmap('tab20b')
+
+        time_val_long, comb_val_long = zip(
+            *sorted(zip(time_val_long, comb_val_long), key=lambda time_val_long: time_val_long[0]))
+        time_long, comb_long = zip(
+            *sorted(zip(time_long, comb_long), key=lambda time_long: time_long[0]))
+        time_val_pre, comb_val_pre = zip(
+            *sorted(zip(time_val_pre, comb_val_pre), key=lambda time_val_pre: time_val_pre[0]))
+        time_pre, comb_pre = zip(
+            *sorted(zip(time_pre, comb_pre), key=lambda time_pre: time_pre[0]))
+
+        plt.plot(time_val_long, comb_val_long, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.4,
+                 label='Random Initialization',
+                 linewidth=2.,
+                 linestyle='-')
+
+        plt.plot(time_val_pre, comb_val_pre, MarkerSize=3, color=cmap(14 / 20), marker='o', alpha=0.4,
+                 label='Pretrained Model', linewidth=2.,
+                 linestyle='-')
+
+        plt.title(str(model_name).upper() + ': Validation Loss vs. Time [h]')
+        plt.xlabel('Time [h]')
+        plt.ylabel('Model Validation Loss Offset to [0, 1]')
+
+        if cutoff_1 != 0:
+            plt.xlim(0, cutoff_1)
+        ax.legend()
+        plt.tight_layout()
+        plt.savefig('x_images/plots/lc_val_' + str(model_name) + '.pdf')
+        plt.show()
+
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+        plt.plot(time_long, comb_long, MarkerSize=3, color=cmap(16 / 20), marker='o', alpha=0.4,
+                 label='Random Initialization',
+                 linewidth=2.,
+                 linestyle='-')
+
+        plt.plot(time_pre, comb_pre, MarkerSize=3, color=cmap(3 / 20), marker='o', alpha=0.4,
+                 label='Pretrained Model', linewidth=2.,
+                 linestyle='-')
+
+        plt.title(str(model_name).upper() + ': Training Loss vs. Time [h]')
+        plt.xlabel('Time [h]')
+        plt.ylabel('Model Training Loss Offset to [0, 1]')
+
+        if cutoff_2 != 0:
+            plt.xlim(0, cutoff_2)
+        ax.legend()
+        plt.tight_layout()
+        plt.savefig('x_images/plots/lc_' + str(model_name) + '.pdf')
+        plt.show()
+
+    else:
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+        cmap = plt.cm.get_cmap('tab20b')
+
+        time_val_long = (d_val_emb_long[:, 0] - d_val_emb_long[0, 0]) / 3600
+        time_long = (d_emb_long[:, 0] - d_emb_long[0, 0]) / 3600
+        time_val_pre = (d_val_emb_pre[:, 0] - d_val_emb_pre[0, 0]) / 3600
+        time_pre = (d_emb_pre[:, 0] - d_emb_pre[0, 0]) / 3600
+
+        time_val_long, val_emb_long = zip(
+            *sorted(zip(time_val_long, val_emb_long), key=lambda time_val_long: time_val_long[0]))
+        time_long, emb_long = zip(
+            *sorted(zip(time_long, emb_long), key=lambda time_long: time_long[0]))
+        time_val_pre, val_emb_pre = zip(
+            *sorted(zip(time_val_pre, val_emb_pre), key=lambda time_val_pre: time_val_pre[0]))
+        time_pre, emb_pre = zip(
+            *sorted(zip(time_pre, emb_pre), key=lambda time_pre: time_pre[0]))
+
+        plt.plot(time_val_long, val_emb_long, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.4,
+                 label='Random Initialization',
+                 linewidth=2.,
+                 linestyle='-')
+
+        plt.plot(time_val_pre, val_emb_pre, MarkerSize=3, color=cmap(14 / 20), marker='o', alpha=0.4,
+                 label='Pretrained Model', linewidth=2.,
+                 linestyle='-')
+
+        plt.title(str(model_name).upper() + ': Validation Loss vs. Time [h]')
+        plt.xlabel('Time [h]')
+        plt.ylabel('Model Validation Loss Offset to [0, 1]')
+
+        if cutoff_1 != 0:
+            plt.xlim(0, cutoff_1)
+        ax.legend()
+        plt.tight_layout()
+        plt.savefig('x_images/plots/lc_val_' + str(model_name) + '.pdf')
+        plt.show()
+
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+        plt.plot(time_long, emb_long, MarkerSize=3, color=cmap(16 / 20), marker='o', alpha=0.4,
+                 label='Random Initialization',
+                 linewidth=2.,
+                 linestyle='-')
+
+        plt.plot(time_pre, emb_pre, MarkerSize=3, color=cmap(3 / 20), marker='o', alpha=0.4,
+                 label='Pretrained Model', linewidth=2.,
+                 linestyle='-')
+
+        plt.title(str(model_name).upper() + ': Training Loss vs. Time [h]')
+        plt.xlabel('Time [h]')
+        plt.ylabel('Model Training Loss Offset to [0, 1]')
+
+        if cutoff_2 != 0:
+            plt.xlim(0, cutoff_2)
+        ax.legend()
+        plt.tight_layout()
+        plt.savefig('x_images/plots/lc_' + str(model_name) + '.pdf')
+        plt.show()
+
+def plot_iter_curve(figsize, cutoff_1=0, cutoff_2=0):
+
+    time_val_1, comb_val_1, time_1, comb_1 = prepare_lc_plot(1)
+    time_val_2, comb_val_2, time_2, comb_2 = prepare_lc_plot(2)
+    time_val_3, comb_val_3, time_3, comb_3 = prepare_lc_plot(3)
+    time_val_5, comb_val_5, time_5, comb_5 = prepare_lc_plot(5)
+    time_val_10, comb_val_10, time_10, comb_10 = prepare_lc_plot(10)
 
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
-
     cmap = plt.cm.get_cmap('tab20b')
 
-    time_val_long, comb_val_long = zip(
-        *sorted(zip(time_val_long, comb_val_long), key=lambda time_val_long: time_val_long[0]))
-    time_long, comb_long = zip(
-        *sorted(zip(time_long, comb_long), key=lambda time_long: time_long[0]))
-    time_val_pre, comb_val_pre = zip(
-        *sorted(zip(time_val_pre, comb_val_pre), key=lambda time_val_pre: time_val_pre[0]))
-    time_pre, comb_pre = zip(
-        *sorted(zip(time_pre, comb_pre), key=lambda time_pre: time_pre[0]))
+    print(time_val_1)
 
-    plt.plot(time_val_long, comb_val_long, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.4, label='Random Initialization',
+    plt.plot(time_val_1, comb_val_1, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.9,
+             label='No. of Iterations = 1',
+             linewidth=3.,
+             linestyle='-')
+    plt.plot(time_val_2, comb_val_2, MarkerSize=3, color=cmap(4/20), marker='o', alpha=0.9,
+             label='No. of Iterations = 2',
+             linewidth=3.,
+             linestyle='-')
+    plt.plot(time_val_3, comb_val_3, MarkerSize=3, color=cmap(13/20), marker='o', alpha=0.9,
+             label='No. of Iterations = 3',
+             linewidth=3.,
+             linestyle='-')
+    plt.plot(time_val_5, comb_val_5, MarkerSize=3, color=cmap(11/20), marker='^', alpha=1.,
+             label='No. of Iterations = 5',
              linewidth=2.,
-             linestyle='-')
+             linestyle=':')
+    plt.plot(time_val_10, comb_val_10, MarkerSize=3, color=cmap(17/20), marker='^', alpha=1.,
+             label='No. of Iterations = 10',
+             linewidth=2.,
+             linestyle=':')
 
-    plt.plot(time_val_pre, comb_val_pre, MarkerSize=3, color=cmap(14/20), marker='o', alpha=0.4,
-             label='Pretrained Model', linewidth=2.,
-             linestyle='-')
-
-    # plt.plot(time_long, comb_long, MarkerSize=3, color=cmap(.25), marker='x', alpha=0.3, label='Random Initialization - Training Loss',
-    #          linewidth=2.,
-    #          linestyle='-')
-    #
-    # plt.plot(time_pre, comb_pre, MarkerSize=3, color=cmap(0.85), marker='x', alpha=0.3,
-    #          label='Pretrained Model - Training Loss', linewidth=2.,
-    #          linestyle='-')
-
-    plt.title(str(model_name).upper() + ': Validation Loss vs. Time [h]')
-    plt.xlabel('Time [h]')
+    plt.title('NOAH With Different Iterations: Validation Loss vs. Number of Epochs')
+    plt.xlabel('Number of Epochs')
     plt.ylabel('Model Validation Loss Offset to [0, 1]')
 
     if cutoff_1 != 0:
         plt.xlim(0, cutoff_1)
+
     ax.legend()
     plt.tight_layout()
-    plt.savefig('x_images/plots/lc_val_' + str(model_name) + '.pdf')
+    plt.savefig('x_images/plots/lc_val_iter.pdf')
     plt.show()
+
+    figsize = (20, 8)
 
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
 
-    plt.plot(time_long, comb_long, MarkerSize=3, color=cmap(16/20), marker='o', alpha=0.4, label='Random Initialization',
-             linewidth=2.,
-             linestyle='-')
+    plt.plot(time_1, comb_1, MarkerSize=5, color=cmap(0.), marker='o', alpha=0.5,
+             label='No. of Iterations = 1',
+             linewidth=1.5,
+             linestyle=' ', markevery=3)
+    plt.plot(time_2, comb_2, MarkerSize=5, color=cmap(4/20), marker='s', alpha=0.5,
+             label='No. of Iterations = 2',
+             linewidth=1.5,
+             linestyle=' ', markevery=3)
+    plt.plot(time_3, comb_3, MarkerSize=5, color=cmap(13/20), marker='x', alpha=0.8,
+             label='No. of Iterations = 3',
+             linewidth=1.5,
+             linestyle=' ', markevery=3)
+    plt.plot(time_5, comb_5, MarkerSize=5, color=cmap(11/20), marker='^', alpha=1.,
+             label='No. of Iterations = 5',
+             linewidth=1.5,
+             linestyle=' ', markevery=5)
+    plt.plot(time_10, comb_10, MarkerSize=3, color=cmap(17/20), marker='^', alpha=.5,
+             label='No. of Iterations = 10',
+             linewidth=1.5,
+             linestyle=':', markevery=5)
 
-    plt.plot(time_pre, comb_pre, MarkerSize=3, color=cmap(3/20), marker='o', alpha=0.4,
-             label='Pretrained Model', linewidth=2.,
-             linestyle='-')
-
-    plt.title(str(model_name).upper() + ': Training Loss vs. Time [h]')
-    plt.xlabel('Time [h]')
+    plt.title('Model With Different Iterations: Training Loss vs. Number of Epochs')
+    plt.xlabel('Number of Epochs')
     plt.ylabel('Model Training Loss Offset to [0, 1]')
 
     if cutoff_2 != 0:
         plt.xlim(0, cutoff_2)
     ax.legend()
     plt.tight_layout()
-    plt.savefig('x_images/plots/lc_' + str(model_name) + '.pdf')
+    plt.savefig('x_images/plots/lc_iter.pdf')
     plt.show()
+
+def prepare_lc_plot(iter_nb):
+    d_val_emb_1 = np.array(data.read_from_json('data/learning_curves/iter_' + str(iter_nb) + '_val_emb.json'))
+    d_emb_1 = np.array(data.read_from_json('data/learning_curves/iter_' + str(iter_nb) + '_emb.json'))
+
+    d_val_emb_1 = np.where(np.isnan(d_val_emb_1) == 1, 0., d_val_emb_1)
+    d_emb_1 = np.where(np.isnan(d_emb_1) == 1, 0., d_emb_1)
+
+    val_emb_1 = d_val_emb_1[:, 2]
+    emb_1 = d_emb_1[:, 2]
+
+    val_emb_1 = val_emb_1 / np.linalg.norm(val_emb_1)
+    emb_1 = emb_1 / np.linalg.norm(emb_1)
+
+    d_val_cel_1 = np.array(data.read_from_json('data/learning_curves/iter_' + str(iter_nb) + '_val_cel.json'))
+    d_cel_1 = np.array(data.read_from_json('data/learning_curves/iter_' + str(iter_nb) + '_cel.json'))
+
+    d_val_cel_1 = np.where(np.isnan(d_val_cel_1) == 1, 0., d_val_cel_1)
+    d_cel_1 = np.where(np.isnan(d_cel_1) == 1, 0., d_cel_1)
+
+    time_val_1 = (d_val_cel_1[:, 0] - d_val_cel_1[0, 0]) / 3600
+    time_1 = (d_cel_1[:, 0] - d_cel_1[0, 0]) / 3600
+
+    val_cel_1 = d_val_cel_1[:, 2]
+    cel_1 = d_cel_1[:, 2]
+
+    val_cel_1 = val_cel_1 / np.linalg.norm(val_cel_1)
+    cel_1 = cel_1 / np.linalg.norm(cel_1)
+
+    comb_val_1 = (val_cel_1 * val_emb_1) / (val_cel_1 + val_emb_1)
+    comb_1 = (cel_1 * emb_1) / (cel_1 + emb_1)
+
+    comb_val_1 = h.zero_to_one(comb_val_1)
+    comb_1 = h.zero_to_one(comb_1)
+
+    training_steps = np.linspace(0, 50, len(comb_1))
+    val_steps = np.linspace(0, 50, len(comb_val_1))
+
+    val_steps, comb_val_1 = zip(
+        *sorted(zip(val_steps, comb_val_1), key=lambda val_steps: val_steps[0]))
+    training_steps, comb_1 = zip(
+        *sorted(zip(training_steps, comb_1), key=lambda training_steps: training_steps[0]))
+
+    return val_steps, comb_val_1, training_steps, comb_1

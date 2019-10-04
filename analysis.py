@@ -795,6 +795,10 @@ def full_analyse(analysis_name, analysis):
         elif analysis == 'm_emb':
             ret[0, i] = float(ana.embedding_dim)
             ret[1, i] = float(ana.margin)
+        elif analysis == 'iter':
+            ret[0, i] = float(ana.nb_iterations)
+        elif analysis == 'kb':
+            ret[0, i] = float(ana.kernel_bandwidth)
 
         for j in range(10):
             ret[j + start_index, i] = cur_score[j]
@@ -888,6 +892,7 @@ def full_plot_scaling(data, plot_name, figsize):
     plt.savefig('x_images/plots/' + str(plot_name) + '.pdf')
     plt.show()
 
+
 def full_plot_m_emb(data, plot_name, figsize):
 
     fig = plt.figure(figsize=figsize)
@@ -914,7 +919,7 @@ def full_plot_m_emb(data, plot_name, figsize):
     # plt.scatter(ss, cel, s=50, color=cmap(0.5), alpha=0.9, label='CEL')
     # plt.scatter(ss, comb, s=50, color=cmap(1.), alpha=0.8, label='Combined')
 
-    p = ax.scatter3D(emb_dim, margin, cel, s=50, c=cel, cmap='plasma')
+    p = ax.scatter3D(emb_dim, margin, comb, s=50, c=cel, cmap='plasma')
     ax.set_xlabel('Embedding Dimension', fontsize=15)
     ax.set_ylabel('Margin', fontsize=15)
     ax.set_zlabel('Loss offset to [0, 1]', fontsize=15)
@@ -929,6 +934,90 @@ def full_plot_m_emb(data, plot_name, figsize):
     plt.savefig('x_images/plots/' + str(plot_name) + '.pdf')
     plt.show()
 
+
+def full_plot_iter(data, plot_name, figsize):
+
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111)
+
+    iter = data[0]
+
+    emb, emb_std = h.zero_to_one(data[7], data[8])
+    cel, cel_std = h.zero_to_one(data[9], data[10])
+
+    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) * (data[9] / np.linalg.norm(data[9]))) / (
+                (data[7] / np.linalg.norm(data[7])) + (data[9] / np.linalg.norm(data[9]))),
+                                   (data[8] / np.linalg.norm(data[8])) * (((data[9] / np.linalg.norm(data[9])) ** 2) / (
+                                               (data[7] / np.linalg.norm(data[7])) + (
+                                                   data[9] / np.linalg.norm(data[9]))) ** 2))
+
+    cmap = plt.cm.get_cmap('tab20b')
+
+    # plt.scatter(ss, emb, s=50, color=cmap(0.), alpha=0.8, label='EMB')
+    # #ax.errorbars(ss, emb, y_err=emb_std, cmap='tab20b')
+    # plt.scatter(ss, cel, s=50, color=cmap(0.5), alpha=0.9, label='CEL')
+    # plt.scatter(ss, comb, s=50, color=cmap(1.), alpha=0.8, label='Combined')
+
+    iter, emb, cel, comb = zip(*sorted(zip(iter, emb, cel, comb), key=lambda iter: iter[0]))
+
+    plt.plot(iter, emb, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.4, label='Embedding Loss', linewidth=2., linestyle='--')
+
+    plt.plot(iter, cel, MarkerSize=3, color=cmap(0.55), marker='o', alpha=0.4, label='Cross Entropy Loss', linewidth=2., linestyle='--')
+
+    plt.plot(iter, comb, MarkerSize=5, color=cmap(.7), marker='o', alpha=0.9, label='Losses Combined', linewidth=4., linestyle='-')
+
+
+    plt.title(str(plot_name[5:]).upper() + ': Loss vs. Number of Iterations')
+    plt.xlabel('Number of Iterations')
+    plt.ylabel('Model Loss Offset to [0, 1]')
+
+    ax.legend(loc='upper center')
+    plt.tight_layout()
+    plt.savefig('x_images/plots/' + str(plot_name) + '.pdf')
+    plt.show()
+
+
+def full_plot_kb(data, plot_name, figsize):
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111)
+
+    kb = data[0]
+
+    emb, emb_std = h.zero_to_one(data[7], data[8])
+    cel, cel_std = h.zero_to_one(data[9], data[10])
+
+    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) * (data[9] / np.linalg.norm(data[9]))) / (
+                (data[7] / np.linalg.norm(data[7])) + (data[9] / np.linalg.norm(data[9]))),
+                                   (data[8] / np.linalg.norm(data[8])) * (((data[9] / np.linalg.norm(data[9])) ** 2) / (
+                                               (data[7] / np.linalg.norm(data[7])) + (
+                                                   data[9] / np.linalg.norm(data[9]))) ** 2))
+
+    cmap = plt.cm.get_cmap('tab20b')
+
+    # plt.scatter(ss, emb, s=50, color=cmap(0.), alpha=0.8, label='EMB')
+    # #ax.errorbars(ss, emb, y_err=emb_std, cmap='tab20b')
+    # plt.scatter(ss, cel, s=50, color=cmap(0.5), alpha=0.9, label='CEL')
+    # plt.scatter(ss, comb, s=50, color=cmap(1.), alpha=0.8, label='Combined')
+
+    kb, emb, cel, comb = zip(*sorted(zip(kb, emb, cel, comb), key=lambda kb: kb[0]))
+
+    plt.plot(kb, emb, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.4, label='Embedding Loss', linewidth=2., linestyle='--')
+
+    plt.plot(kb, cel, MarkerSize=3, color=cmap(0.55), marker='o', alpha=0.4, label='Cross Entropy Loss', linewidth=2., linestyle='--')
+
+    plt.plot(kb, comb, MarkerSize=5, color=cmap(.7), marker='o', alpha=0.9, label='Losses Combined', linewidth=4., linestyle='-')
+
+
+    plt.title(str(plot_name[3:]).upper() + ': Loss vs. Kernel Bandwidth')
+    plt.xlabel('Kernel Bandwidth')
+    plt.ylabel('Model Loss Offset to [0, 1]')
+
+    ax.legend(loc='upper center')
+    plt.tight_layout()
+    plt.savefig('x_images/plots/' + str(plot_name) + '.pdf')
+    plt.show()
+
+
 def full_analysis(analysis, analysis_name, plot_name, figsize):
     if str(analysis) == 'ss':
         data, optimized_parameters = full_analyse(analysis_name, analysis='ss')
@@ -942,6 +1031,12 @@ def full_analysis(analysis, analysis_name, plot_name, figsize):
     elif str(analysis) == 'm_emb':
         data, optimized_parameters = full_analyse(analysis_name, analysis='m_emb')
         full_plot_m_emb(data, plot_name=plot_name, figsize=figsize)
+    elif str(analysis) == 'iter':
+        data, optimized_parameters = full_analyse(analysis_name, analysis='iter')
+        full_plot_iter(data, plot_name=plot_name, figsize=figsize)
+    elif str(analysis) == 'kb':
+        data, optimized_parameters = full_analyse(analysis_name, analysis='kb')
+        full_plot_kb(data, plot_name=plot_name, figsize=figsize)
 
     else:
         print('Analysis Name is not known!')

@@ -43,6 +43,7 @@ from torchsummary import summary
 # ana.full_analysis(analysis='scaling_comb', analysis_name='scale_noah_', plot_name='sc_combined', figsize=(10, 4))
 # ana.full_analysis(analysis='m_emb', analysis_name='m_emb_eve_', plot_name='m_emb_eve_cel', figsize=(15, 11))
 
+v.plot_learning_curve(model_name='noah', cutoff_1=114, cutoff_2=114, figsize=(10, 4))
 
 # """NOAH OPT EMB Margin"""
 # nb_epochs = 50

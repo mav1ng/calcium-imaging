@@ -10,6 +10,8 @@ from sklearn.decomposition import PCA
 import pandas as pd
 from PIL import Image
 import numpy as np
+import data
+import helpers as h
 
 
 def plot_pred_back(data, labels):
@@ -210,3 +212,123 @@ def draw_umap(n_neighbors=10, min_dist=0.1, n_components=2, metric='euclidean', 
         ax.scatter(u[:,0], u[:,1], u[:,2], c=lab, s=100)
     plt.title(title, fontsize=18)
     return fig
+
+def plot_learning_curve(model_name, figsize, cutoff_1=0, cutoff_2=0):
+
+    d_val_cel_long = np.array(data.read_from_json('data/learning_curves/' + str(model_name) + '_long_val_cel.json'))
+    d_val_emb_long = np.array(data.read_from_json('data/learning_curves/' + str(model_name) + '_long_val_emb.json'))
+    d_cel_long = np.array(data.read_from_json('data/learning_curves/' + str(model_name) + '_long_cel.json'))
+    d_emb_long = np.array(data.read_from_json('data/learning_curves/' + str(model_name) + '_long_emb.json'))
+
+    d_val_cel_pre = np.array(data.read_from_json('data/learning_curves/pre_' + str(model_name) + '_val_cel.json'))
+    d_val_emb_pre = np.array(data.read_from_json('data/learning_curves/pre_' + str(model_name) + '_val_emb.json'))
+    d_cel_pre = np.array(data.read_from_json('data/learning_curves/pre_' + str(model_name) + '_cel.json'))
+    d_emb_pre = np.array(data.read_from_json('data/learning_curves/pre_' + str(model_name) + '_emb.json'))
+
+    d_val_cel_long = np.where(np.isnan(d_val_cel_long) == 1, 0., d_val_cel_long)
+    d_val_emb_long = np.where(np.isnan(d_val_emb_long) == 1, 0., d_val_emb_long)
+    d_cel_long = np.where(np.isnan(d_cel_long) == 1, 0., d_cel_long)
+    d_emb_long = np.where(np.isnan(d_emb_long) == 1, 0., d_emb_long)
+    d_val_cel_pre = np.where(np.isnan(d_val_cel_pre) == 1, 0., d_val_cel_pre)
+    d_val_emb_pre = np.where(np.isnan(d_val_emb_pre) == 1, 0., d_val_emb_pre)
+    d_cel_pre = np.where(np.isnan(d_cel_pre) == 1, 0., d_cel_pre)
+    d_emb_pre = np.where(np.isnan(d_emb_pre) == 1, 0., d_emb_pre)
+
+    time_val_long = (d_val_cel_long[:, 0] - d_val_cel_long[0, 0]) / 3600
+    time_long = (d_cel_long[:, 0] - d_cel_long[0, 0]) / 3600
+    time_val_pre = (d_val_cel_pre[:, 0] - d_val_cel_pre[0, 0]) / 3600
+    time_pre = (d_cel_pre[:, 0] - d_cel_pre[0, 0]) / 3600
+
+    val_cel_long = d_val_cel_long[:, 2]
+    val_emb_long = d_val_emb_long[:, 2]
+    cel_long = d_cel_long[:, 2]
+    emb_long = d_emb_long[:, 2]
+
+    val_cel_pre = d_val_cel_pre[:, 2]
+    val_emb_pre = d_val_emb_pre[:, 2]
+    cel_pre = d_cel_pre[:, 2]
+    emb_pre = d_emb_pre[:, 2]
+
+    val_cel_long = val_cel_long / np.linalg.norm(val_cel_long)
+    val_emb_long = val_emb_long / np.linalg.norm(val_emb_long)
+    cel_long = cel_long / np.linalg.norm(cel_long)
+    emb_long = emb_long / np.linalg.norm(emb_long)
+
+    val_cel_pre = val_cel_pre / np.linalg.norm(val_cel_pre)
+    val_emb_pre = val_emb_pre / np.linalg.norm(val_emb_pre)
+    cel_pre = cel_pre / np.linalg.norm(cel_pre)
+    emb_pre = emb_pre / np.linalg.norm(emb_pre)
+
+    comb_val_long = (val_cel_long * val_emb_long) / (val_cel_long + val_emb_long)
+    comb_val_pre = (val_cel_pre * val_emb_pre) / (val_cel_pre + val_emb_pre)
+    comb_long = (cel_long * emb_long) / (cel_long + emb_long)
+    comb_pre = (cel_pre * emb_pre) / (cel_pre + emb_pre)
+
+    comb_val_long = h.zero_to_one(comb_val_long)
+    comb_val_pre = h.zero_to_one(comb_val_pre)
+    comb_long = h.zero_to_one(comb_long)
+    comb_pre = h.zero_to_one(comb_pre)
+
+
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111)
+
+    cmap = plt.cm.get_cmap('tab20b')
+
+    time_val_long, comb_val_long = zip(
+        *sorted(zip(time_val_long, comb_val_long), key=lambda time_val_long: time_val_long[0]))
+    time_long, comb_long = zip(
+        *sorted(zip(time_long, comb_long), key=lambda time_long: time_long[0]))
+    time_val_pre, comb_val_pre = zip(
+        *sorted(zip(time_val_pre, comb_val_pre), key=lambda time_val_pre: time_val_pre[0]))
+    time_pre, comb_pre = zip(
+        *sorted(zip(time_pre, comb_pre), key=lambda time_pre: time_pre[0]))
+
+    plt.plot(time_val_long, comb_val_long, MarkerSize=3, color=cmap(0.), marker='o', alpha=0.4, label='Random Initialization',
+             linewidth=2.,
+             linestyle='-')
+
+    plt.plot(time_val_pre, comb_val_pre, MarkerSize=3, color=cmap(14/20), marker='o', alpha=0.4,
+             label='Pretrained Model', linewidth=2.,
+             linestyle='-')
+
+    # plt.plot(time_long, comb_long, MarkerSize=3, color=cmap(.25), marker='x', alpha=0.3, label='Random Initialization - Training Loss',
+    #          linewidth=2.,
+    #          linestyle='-')
+    #
+    # plt.plot(time_pre, comb_pre, MarkerSize=3, color=cmap(0.85), marker='x', alpha=0.3,
+    #          label='Pretrained Model - Training Loss', linewidth=2.,
+    #          linestyle='-')
+
+    plt.title(str(model_name).upper() + ': Validation Loss vs. Time [h]')
+    plt.xlabel('Time [h]')
+    plt.ylabel('Model Validation Loss Offset to [0, 1]')
+
+    if cutoff_1 != 0:
+        plt.xlim(0, cutoff_1)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig('x_images/plots/lc_val_' + str(model_name) + '.pdf')
+    plt.show()
+
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111)
+
+    plt.plot(time_long, comb_long, MarkerSize=3, color=cmap(16/20), marker='o', alpha=0.4, label='Random Initialization',
+             linewidth=2.,
+             linestyle='-')
+
+    plt.plot(time_pre, comb_pre, MarkerSize=3, color=cmap(3/20), marker='o', alpha=0.4,
+             label='Pretrained Model', linewidth=2.,
+             linestyle='-')
+
+    plt.title(str(model_name).upper() + ': Training Loss vs. Time [h]')
+    plt.xlabel('Time [h]')
+    plt.ylabel('Model Training Loss Offset to [0, 1]')
+
+    if cutoff_2 != 0:
+        plt.xlim(0, cutoff_2)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig('x_images/plots/lc_' + str(model_name) + '.pdf')
+    plt.show()

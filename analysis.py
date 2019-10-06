@@ -846,6 +846,7 @@ def full_plot_ss(data, plot_name, figsize):
     plt.title(str(plot_name[3:]).upper() + ': Loss vs. Subsample Size')
     plt.xlabel('Subsample size in pixels')
     plt.ylabel('Model Loss Offset to [0, 1]')
+    plt.xlim(0, 2916)
 
     ax.legend()
     plt.tight_layout()
@@ -889,6 +890,8 @@ def full_plot_scaling(data, plot_name, figsize):
     plt.xlabel('Scaling Parameter')
     plt.ylabel('Model Loss Offset to [0, 1]')
 
+    plt.xlim(0.1, 10)
+
     ax.legend(loc='upper center')
     plt.tight_layout()
     plt.savefig('x_images/plots/' + str(plot_name) + '.pdf')
@@ -921,7 +924,7 @@ def full_plot_m_emb(data, plot_name, figsize):
     # plt.scatter(ss, cel, s=50, color=cmap(0.5), alpha=0.9, label='CEL')
     # plt.scatter(ss, comb, s=50, color=cmap(1.), alpha=0.8, label='Combined')
 
-    p = ax.scatter3D(emb_dim, margin, comb, s=50, c=cel, cmap='plasma')
+    p = ax.scatter3D(emb_dim, margin, emb, s=50, c=emb, cmap='plasma')
     ax.set_xlabel('Embedding Dimension', fontsize=15)
     ax.set_ylabel('Margin', fontsize=15)
     ax.set_zlabel('Loss offset to [0, 1]', fontsize=15)
@@ -973,6 +976,8 @@ def full_plot_iter(data, plot_name, figsize):
     plt.xlabel('Number of Iterations')
     plt.ylabel('Model Loss Offset to [0, 1]')
 
+    plt.xlim(1, 10)
+
     ax.legend(loc='upper center')
     plt.tight_layout()
     plt.savefig('x_images/plots/' + str(plot_name) + '.pdf')
@@ -1013,6 +1018,8 @@ def full_plot_kb(data, plot_name, figsize):
     plt.title(str(plot_name[3:]).upper() + ': Loss vs. Kernel Bandwidth')
     plt.xlabel('Kernel Bandwidth')
     plt.ylabel('Model Loss Offset to [0, 1]')
+
+    plt.xlim(0.1, 25)
 
     ax.legend(loc='upper center')
     plt.tight_layout()

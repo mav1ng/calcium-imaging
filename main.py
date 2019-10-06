@@ -40,16 +40,16 @@ import neurofinder as nf
 from torchsummary import summary
 
 # ana.full_analysis(analysis='ss', analysis_name='ss_noah_', plot_name='ss_noah', figsize=(10, 3))
-# ana.full_analysis(analysis='scaling_comb', analysis_name='scale_noah_', plot_name='sc_combined', figsize=(10, 4))
-# ana.full_analysis(analysis='m_emb', analysis_name='m_emb_noah_', plot_name='m_emb_noah', figsize=(15, 11))
+# ana.full_analysis(analysis='scaling_comb', analysis_name='scale_adam_', plot_name='sc_combined', figsize=(10, 4))
+# ana.full_analysis(analysis='m_emb', analysis_name='m_emb_azrael_', plot_name='m_emb_azrael', figsize=(10, 7.3333))
 # ana.full_analysis(analysis='iter', analysis_name='iter_noah_', plot_name='iter_noah', figsize=(5, 5))
 # ana.full_analysis(analysis='kb', analysis_name='kb_noah_', plot_name='kb_noah', figsize=(5, 5))
-ana.full_analysis(analysis='rep', analysis_name='m_emb_adam_', plot_name='rep', figsize=(10, 6))
+# ana.full_analysis(analysis='rep', analysis_name='m_emb_adam_', plot_name='rep', figsize=(10, 6))
 
 # h.test('kb_noah_25.0', cl_th=1.5, pp_th=0.2, obj_size=20, hole_size=20, show_image=True, save_image=False)
 
 
-# v.plot_learning_curve(model_name='azrael', cutoff_1=20, cutoff_2=20, figsize=(10, 4), azrael=False)
+v.plot_learning_curve(model_name='noah', cutoff_1=20, cutoff_2=20, figsize=(8, 3.2), azrael=False)
 # v.plot_iter_curve(figsize=(10, 4), cutoff_1=50, cutoff_2=50)
 
 # """NOAH OPT EMB Margin"""

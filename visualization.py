@@ -438,8 +438,6 @@ def plot_iter_curve(figsize, cutoff_1=0, cutoff_2=0):
     plt.savefig('x_images/plots/lc_val_iter.pdf')
     plt.show()
 
-    figsize = (20, 8)
-
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
 
@@ -470,7 +468,7 @@ def plot_iter_curve(figsize, cutoff_1=0, cutoff_2=0):
 
     if cutoff_2 != 0:
         plt.xlim(0, cutoff_2)
-    ax.legend()
+    ax.legend(loc=('upper center'))
     plt.tight_layout()
     plt.savefig('x_images/plots/lc_iter.pdf')
     plt.show()

@@ -821,8 +821,7 @@ def full_plot_ss(data, plot_name, figsize):
     emb, emb_std = h.zero_to_one(data[7], data[8])
     cel, cel_std = h.zero_to_one(data[9], data[10])
 
-    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) * (data[9] / np.linalg.norm(data[9]))) / (
-                (data[7] / np.linalg.norm(data[7])) + (data[9] / np.linalg.norm(data[9]))),
+    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) + (data[9] / np.linalg.norm(data[9]))) / 2,
                                    (data[8] / np.linalg.norm(data[8])) * (((data[9] / np.linalg.norm(data[9])) ** 2) / (
                                                (data[7] / np.linalg.norm(data[7])) + (
                                                    data[9] / np.linalg.norm(data[9]))) ** 2))
@@ -864,8 +863,7 @@ def full_plot_scaling(data, plot_name, figsize):
     emb, emb_std = h.zero_to_one(data[7], data[8])
     cel, cel_std = h.zero_to_one(data[9], data[10])
 
-    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) * (data[9] / np.linalg.norm(data[9]))) / (
-                (data[7] / np.linalg.norm(data[7])) + (data[9] / np.linalg.norm(data[9]))),
+    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) + (data[9] / np.linalg.norm(data[9]))) / 2,
                                    (data[8] / np.linalg.norm(data[8])) * (((data[9] / np.linalg.norm(data[9])) ** 2) / (
                                                (data[7] / np.linalg.norm(data[7])) + (
                                                    data[9] / np.linalg.norm(data[9]))) ** 2))
@@ -911,8 +909,7 @@ def full_plot_m_emb(data, plot_name, figsize):
     emb, emb_std = h.zero_to_one(data[8], data[9])
     cel, cel_std = h.zero_to_one(data[10], data[11])
 
-    comb, comb_std = h.zero_to_one((data[8] / np.linalg.norm(data[8]) * (data[10] / np.linalg.norm(data[10]))) / (
-                (data[8] / np.linalg.norm(data[8])) + (data[10] / np.linalg.norm(data[10]))),
+    comb, comb_std = h.zero_to_one((data[8] / np.linalg.norm(data[8]) + (data[10] / np.linalg.norm(data[10]))) / 2,
                                    (data[9] / np.linalg.norm(data[9])) * (((data[10] / np.linalg.norm(data[10])) ** 2) / (
                                                (data[8] / np.linalg.norm(data[8])) + (
                                                    data[10] / np.linalg.norm(data[10]))) ** 2))
@@ -924,7 +921,7 @@ def full_plot_m_emb(data, plot_name, figsize):
     # plt.scatter(ss, cel, s=50, color=cmap(0.5), alpha=0.9, label='CEL')
     # plt.scatter(ss, comb, s=50, color=cmap(1.), alpha=0.8, label='Combined')
 
-    p = ax.scatter3D(emb_dim, margin, emb, s=50, c=emb, cmap='plasma')
+    p = ax.scatter3D(emb_dim, margin, comb, s=50, c=comb, cmap='plasma')
     ax.set_xlabel('Embedding Dimension', fontsize=15)
     ax.set_ylabel('Margin', fontsize=15)
     ax.set_zlabel('Loss offset to [0, 1]', fontsize=15)
@@ -950,8 +947,7 @@ def full_plot_iter(data, plot_name, figsize):
     emb, emb_std = h.zero_to_one(data[7], data[8])
     cel, cel_std = h.zero_to_one(data[9], data[10])
 
-    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) * (data[9] / np.linalg.norm(data[9]))) / (
-                (data[7] / np.linalg.norm(data[7])) + (data[9] / np.linalg.norm(data[9]))),
+    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) + (data[9] / np.linalg.norm(data[9]))) / 2,
                                    (data[8] / np.linalg.norm(data[8])) * (((data[9] / np.linalg.norm(data[9])) ** 2) / (
                                                (data[7] / np.linalg.norm(data[7])) + (
                                                    data[9] / np.linalg.norm(data[9]))) ** 2))
@@ -993,8 +989,7 @@ def full_plot_kb(data, plot_name, figsize):
     emb, emb_std = h.zero_to_one(data[7], data[8])
     cel, cel_std = h.zero_to_one(data[9], data[10])
 
-    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) * (data[9] / np.linalg.norm(data[9]))) / (
-                (data[7] / np.linalg.norm(data[7])) + (data[9] / np.linalg.norm(data[9]))),
+    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) + (data[9] / np.linalg.norm(data[9]))) / 2,
                                    (data[8] / np.linalg.norm(data[8])) * (((data[9] / np.linalg.norm(data[9])) ** 2) / (
                                                (data[7] / np.linalg.norm(data[7])) + (
                                                    data[9] / np.linalg.norm(data[9]))) ** 2))
@@ -1040,8 +1035,7 @@ def full_plot_rep(data, plot_name, figsize):
 
     print(emb, cel)
 
-    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) * (data[9] / np.linalg.norm(data[9]))) / (
-                (data[7] / np.linalg.norm(data[7])) + (data[9] / np.linalg.norm(data[9]))),
+    comb, comb_std = h.zero_to_one((data[7] / np.linalg.norm(data[7]) + (data[9] / np.linalg.norm(data[9]))) / 2,
                                    (data[8] / np.linalg.norm(data[8])) * (((data[9] / np.linalg.norm(data[9])) ** 2) / (
                                                (data[7] / np.linalg.norm(data[7])) + (
                                                    data[9] / np.linalg.norm(data[9]))) ** 2))

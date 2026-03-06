@@ -1,17 +1,33 @@
+"""Visualization utilities for embeddings, predictions, and training curves.
+
+Provides plotting functions used throughout the pipeline:
+
+- **Embedding visualization**: PCA and UMAP dimensionality reduction of
+  learned pixel embeddings, colored by ground-truth or predicted labels.
+- **Input/label overlays**: Side-by-side display of correlation inputs
+  and ground-truth annotations.
+- **Background prediction**: Visualization of the auxiliary foreground/
+  background classification head output.
+- **Learning curves**: Training and validation loss plots over epochs.
+- **Iteration curves**: Mean-shift convergence visualization.
+- **Result rendering**: Final segmentation masks with color-coded neurons.
+
+All plotting uses matplotlib; figures can be displayed interactively or
+saved to disk for inclusion in reports.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-# import seaborn as sns
 import umap
-# %matplotlib inline
 import matplotlib.pyplot as plt
 import torch
 from sklearn.decomposition import PCA
 import pandas as pd
 from PIL import Image
 import numpy as np
-import data
-import helpers as h
+from src.data import data
+from src.training import helpers as h
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 

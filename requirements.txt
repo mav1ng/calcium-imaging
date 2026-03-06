@@ -1,0 +1,33 @@
+# =============================================================================
+# Calcium Imaging Neuron Segmentation — Python Dependencies
+# =============================================================================
+# Core framework
+torch>=1.4.0,<2.0.0
+torchvision>=0.5.0,<1.0.0
+torchsummary>=1.5.1
+
+# Scientific computing
+numpy>=1.18.0,<2.0.0
+scipy>=1.4.0
+
+# Image processing & computer vision
+scikit-image>=0.16.0
+scikit-learn>=0.22.0
+opencv-python>=4.1.0
+Pillow>=7.0.0
+mahotas>=1.4.0
+
+# Data handling
+pandas>=1.0.0
+h5py>=2.10.0
+hickle>=3.4.0
+
+# Visualization
+matplotlib>=3.1.0
+umap-learn>=0.4.0
+
+# Evaluation
+neurofinder>=1.1.0
+
+# Logging & monitoring
+tensorboard>=2.1.0

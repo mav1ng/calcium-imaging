@@ -1,3 +1,27 @@
+"""Data loading, preprocessing, and I/O for calcium imaging datasets.
+
+This module implements the complete data pipeline:
+
+- **Neurofinder I/O**: Reading raw calcium imaging recordings and ground-truth
+  neuron annotations from the Neurofinder benchmark format.
+- **Correlation generation**: Delegating to ``corr.py`` for spatial correlation
+  feature computation from raw video frames.
+- **Dataset classes**: PyTorch ``Dataset`` implementations (``CombinedDataset``)
+  that serve correlation images + labels to the DataLoader.
+- **Data augmentation**: Random crops, rotations, and flips that correctly
+  handle both correlation channels and corresponding labels.
+- **Serialization**: HDF5/hickle-based compressed storage for preprocessed
+  correlation data, and JSON I/O for Neurofinder evaluation masks.
+- **Utility functions**: Summary image generation, label format conversion,
+  folder synchronization for experiment management.
+
+Key classes:
+    CombinedDataset   Main PyTorch Dataset for training/validation/testing
+    RandomCrop        Random spatial crop augmentation
+    RandomRot         Random rotation augmentation (correlation-aware)
+    RandomFlip        Random flip augmentation (correlation-aware)
+"""
+
 from __future__ import print_function, division
 import os
 import torch
@@ -17,11 +41,11 @@ from numpy import array, zeros
 import numpy as np
 from scipy.misc import imread
 from glob import glob
-import corr
+from . import corr
 import hickle as hkl
 
-import config as c
-import helpers as h
+from src.utils import config as c
+from src.training import helpers as h
 
 from os import listdir, remove
 from os.path import isfile, join, isdir

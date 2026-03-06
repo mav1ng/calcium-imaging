@@ -1,7 +1,32 @@
+"""Training orchestration, evaluation, and utility functions.
+
+This is the main orchestration module that ties together the entire pipeline.
+Key functionality:
+
+- **Setup class**: Configures and runs complete training experiments including
+  data loading, model instantiation, training loop with validation, model
+  checkpointing, and TensorBoard logging.
+- **Evaluation**: ``validate()`` computes F1 score via the Neurofinder metric,
+  ``val_score()`` aggregates scores over multiple runs, ``test()`` runs
+  inference on test data with visualization.
+- **Hyperparameter search helpers**: ``find_th()`` searches for optimal
+  clustering thresholds, ``find_optimal_object_size()`` tunes morphological
+  post-processing parameters.
+- **Utility functions**: ``get_diff_labels()`` for instance-aware label
+  conversion, ``emb_subsample()`` for memory-efficient embedding loss
+  computation, ``AverageMeter`` for metric tracking.
+
+Typical usage::
+
+    from helpers import Setup
+    setup = Setup(model_name='experiment_1', save_config=True, ...)
+    setup.main()  # runs full training + validation loop
+"""
+
 import json
 
 import numpy as np
-import clustering as cl
+from src.analysis import clustering as cl
 import skimage.measure as skm
 
 
@@ -15,14 +40,14 @@ from mpl_toolkits.mplot3d import Axes3D
 from torch.utils.tensorboard import SummaryWriter
 import umap
 import torch.nn as nn
-import config as c
-import data
-import corr
-import network as n
-import visualization as v
-import training as t
-import clustering as cl
-import helpers as h
+from src.utils import config as c
+from src.data import data
+from src.data import corr
+from src.models import network as n
+from src.visualization import visualization as v
+from src.training import training as t
+from src.analysis import clustering as cl
+from src.training import helpers as h
 import argparse
 import time
 import random

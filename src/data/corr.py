@@ -1,12 +1,36 @@
+"""Spatial correlation feature computation for calcium imaging data.
+
+Computes per-pixel temporal correlation maps from calcium imaging video
+recordings.  Each pixel is correlated with a set of spatial neighbors defined
+by a configurable mask geometry (suit, starmy, big_star, etc.), producing a
+multi-channel correlation image that serves as input to the U-Net model.
+
+The correlation captures co-activity: pixels belonging to the same neuron
+tend to have high temporal correlation, providing a powerful spatial feature
+for the segmentation network.
+
+Supported mask geometries:
+    suit        8-connected immediate neighborhood (8 channels)
+    small_star  Close + medium-range star pattern (10 channels)
+    starmy      Extended star with long-range offsets (26 channels)
+    big_star    Large star including very long-range (16 channels)
+    right       Single rightward neighbor (1 channel)
+
+Key functions:
+    get_corr          Full-frame correlation computation
+    get_sliced_corr   Temporal-slice-based correlation (noise-robust)
+    get_new_corr      Normalized correlation with max-pooling
+"""
+
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from scipy.stats.stats import pearsonr
 import torch.nn.functional as F
-import config as c
+from src.utils import config as c
 from torchvision import transforms
-import data
-import visualization as v
+from . import data
+from src.visualization import visualization as v
 
 
 def get_right_mask():

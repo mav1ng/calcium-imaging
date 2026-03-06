@@ -1,5 +1,26 @@
-import data
-import helpers as h
+"""Model evaluation, scoring, and systematic ablation analysis.
+
+This module provides tools for:
+
+- Loading trained model configurations from JSON and creating ``Analysis``
+  objects that pair hyperparameters with evaluation metrics.
+- Batch scoring of multiple model variants against the Neurofinder benchmark
+  (F1, precision, recall).
+- Generating comparison tables and visualizations across hyperparameter
+  sweeps (embedding dimension, margin, learning rate, etc.).
+- Full ablation study workflows that scan config directories, evaluate each
+  model, and report optimal configurations.
+
+Key classes and functions:
+    Analysis            Container for model config + evaluation metrics
+    create_analysis     Factory that builds Analysis from a JSON config file
+    score               Batch-score all models matching a name prefix
+    full_score          Extended scoring with Neurofinder metric
+    full_analysis       End-to-end ablation study with visualization
+"""
+
+from src.data import data
+from src.training import helpers as h
 
 from os import listdir
 from os.path import isfile, join
@@ -7,8 +28,8 @@ from os.path import isfile, join
 import json
 import numpy as np
 import torch
-import network as n
-import clustering as cl
+from src.models import network as n
+from . import clustering as cl
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt

@@ -1,3 +1,22 @@
+"""Clustering and post-processing for neuron instance segmentation.
+
+After the U-Net produces per-pixel embeddings, this module converts the
+continuous embedding space into discrete neuron instance labels via:
+
+1. **Agglomerative clustering** (single-linkage) or nearest-neighbor
+   ball queries for initial instance assignment.
+2. **K-means clustering** with elbow-method selection of K.
+3. **Post-processing**: background thresholding, morphological small-object
+   removal, and hole filling for clean segmentation masks.
+
+Key functions:
+    label_emb_sl        Agglomerative clustering (single-linkage)
+    label_embeddings     Nearest-neighbor radius-based clustering
+    postprocess_label    Morphological cleanup of predicted labels
+    cluster_kmean        K-means with automatic cluster count selection
+    get_pos_mat          Position matrix for spatial embedding concatenation
+"""
+
 import torch
 from torch.nn.functional import pdist
 import numpy as np
@@ -5,10 +24,10 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import AgglomerativeClustering
 from skimage import morphology
 import matplotlib.pyplot as plt
-import helpers
-import visualization as v
-import network as n
-import data
+from src.training import helpers
+from src.visualization import visualization as v
+from src.models import network as n
+from src.data import data
 import mahotas as mh
 
 def label_emb_sl(data, th):
